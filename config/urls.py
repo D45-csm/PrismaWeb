@@ -29,4 +29,5 @@ urlpatterns = [
     path('comprobantes/', include('APP.comprobantes.urls')),
     path('compra_insumos/', include('APP.compra_insumos.urls')),
     path('carrito/', include('APP.carrito.urls')),
+    path('insumos/', include('APP.insumos.urls')),
 ]
