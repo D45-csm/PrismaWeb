@@ -43,11 +43,12 @@ INSTALLED_APPS = [
     'APP.recetas',
     'APP.proveedores',
     'APP.productos',
-    'manual_usuario',
+    'APP.manual_usuario',
     'APP.inventario',
     'APP.comprobantes',
     'APP.compra_insumos',
     'APP.carrito',
+    'APP.insumos',
 ]
 
 MIDDLEWARE = [
