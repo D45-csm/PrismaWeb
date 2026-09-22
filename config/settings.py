@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'APP.productos',
     'APP.manual_usuario',
     'APP.inventario',
-    'APP.comprobantes',
+    'APP.ventas',
     'APP.compra_insumos',
     'APP.carrito',
     'APP.insumos',
