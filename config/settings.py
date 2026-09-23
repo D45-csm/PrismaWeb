@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'APP.insumos',
 ]
 
+AUTH_USER_MODEL = 'usuarios.Usuario'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

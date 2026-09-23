@@ -2,4 +2,5 @@ from django.apps import AppConfig
 
 
 class ReservaConfig(AppConfig):
-    name = 'reserva'
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'APP.reserva'

@@ -1,5 +1,5 @@
 from django.db import models
-from usuarios.models import Usuario
+from APP.usuarios.models import Usuario
 # Create your models here.
 class Reserva(models.Model):
     choices_estado = [

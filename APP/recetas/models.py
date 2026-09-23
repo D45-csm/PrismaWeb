@@ -1,5 +1,5 @@
 from django.db import models
-from insumos.models import Insumo
+from APP.insumos.models import Insumo
 
 class Receta(models.Model):
     nombre = models.CharField(max_length=100)

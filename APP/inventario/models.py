@@ -1,6 +1,6 @@
 from django.db import models
-from usuarios.models import Usuario
-from insumos.models import Insumo
+from APP.usuarios.models import Usuario
+from APP.insumos.models import Insumo
 
 class Movimiento(models.Model):
     # Opciones para estandarizar las entradas y salidas
