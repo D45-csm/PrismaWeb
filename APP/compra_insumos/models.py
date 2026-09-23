@@ -1,7 +1,7 @@
 from django.db import models
-from usuarios.models import Usuario
-from proveedores.models import Proveedor
-from insumos.models import Insumo
+from APP.usuarios.models import Usuario
+from APP.proveedores.models import Proveedor
+from APP.insumos.models import Insumo
 
 class CompraInsumo(models.Model):
     # La fecha se puede autogenerar o dejar manual. auto_now_add=True la pone automáticamente al crear el registro.
