@@ -1,6 +1,6 @@
 from django.db import models
-from reserva.models import Reserva 
-from productos.models import Producto
+from APP.reserva.models import Reserva 
+from APP.productos.models import Producto
 
 class Comprobante(models.Model):
     CHOICES_ESTADO = [
