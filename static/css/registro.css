@@ -1,0 +1,511 @@
+
+/* ==========================================
+   REGISTRO DE USUARIO - PRISMA POSTRES
+   ========================================== */
+
+:root {
+    --auth-primary: #7652a3;
+    --auth-primary-dark: #5d3c87;
+    --auth-pink: #e85d75;
+    --auth-text: #30283b;
+    --auth-muted: #8b8496;
+    --auth-border: #e7deef;
+    --auth-white: #ffffff;
+    --auth-bg: #f5f2f8;
+}
+
+/* ==========================================
+   CONFIGURACION GENERAL
+   ========================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+body.auth-page {
+    margin: 0;
+    min-height: 100vh;
+    padding: 20px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--auth-bg);
+    color: var(--auth-text);
+
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+/* ==========================================
+   CONTENEDOR PRINCIPAL
+   ========================================== */
+
+.auth-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    width: 100%;
+    max-width: 1100px;
+    min-height: 650px;
+    height: auto;
+
+    background: var(--auth-white);
+    border-radius: 20px;
+    overflow: hidden;
+
+    box-shadow: 0 10px 40px rgba(48, 40, 59, 0.10);
+}
+
+/* ==========================================
+   LADO IZQUIERDO: IMAGEN
+   ========================================== */
+
+.auth-image {
+    position: relative;
+
+    display: flex;
+    align-items: flex-end;
+
+    min-height: 650px;
+    padding: 40px;
+
+    background-image: url("../img/imagen_registro.jpeg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Capa oscura sobre la imagen */
+
+.auth-image-overlay {
+    position: absolute;
+    inset: 0;
+
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.78) 0%,
+        rgba(0, 0, 0, 0.30) 45%,
+        rgba(0, 0, 0, 0.05) 100%
+    );
+}
+
+/* Texto sobre la imagen */
+
+.auth-image-text {
+    position: relative;
+    z-index: 1;
+
+    width: 100%;
+    color: var(--auth-white);
+}
+
+.auth-image-text h2 {
+    font-size: clamp(2rem, 3.5vw, 2.6rem);
+    font-weight: 800;
+
+    margin-bottom: 12px;
+    line-height: 1.2;
+}
+
+.auth-image-text p {
+    font-size: 1.05rem;
+    font-weight: 400;
+
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* ==========================================
+   LADO DERECHO: FORMULARIO
+   ========================================== */
+
+.auth-form-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+
+    padding: 35px 55px;
+
+    background: var(--auth-white);
+
+    min-height: 650px;
+    height: auto;
+}
+
+/* ==========================================
+   LOGO
+   ========================================== */
+
+.auth-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    margin-bottom: 24px;
+}
+
+.auth-logo img {
+    width: 85px;
+    height: 85px;
+
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+/* ==========================================
+   TITULO Y SUBTITULO
+   ========================================== */
+
+.auth-form-container h2 {
+    color: var(--auth-text);
+
+    font-size: 1.9rem;
+    font-weight: 800;
+
+    text-align: center;
+    margin: 0 0 8px;
+}
+
+.auth-subtitle {
+    color: var(--auth-muted);
+
+    font-size: 0.92rem;
+    text-align: center;
+
+    margin-bottom: 25px;
+}
+
+/* ==========================================
+   FORMULARIO
+   ========================================== */
+
+.auth-form-container form {
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.form-group {
+    margin-bottom: 17px;
+}
+
+/* Etiquetas */
+
+.form-group label {
+    display: block;
+
+    color: var(--auth-text);
+    font-size: 0.9rem;
+    font-weight: 500;
+
+    margin-bottom: 8px;
+}
+
+/* ==========================================
+   CAMPOS DE TEXTO
+   ========================================== */
+
+.form-control {
+    display: block;
+    width: 100%;
+    height: 49px;
+
+    padding: 12px 15px;
+
+    background: #fafafa;
+    color: var(--auth-text);
+
+    border: 1px solid #dedede;
+    border-radius: 10px;
+
+    font-size: 0.92rem;
+
+    outline: none;
+    box-shadow: none;
+
+    transition: border-color 0.25s ease,
+                box-shadow 0.25s ease,
+                background 0.25s ease;
+}
+
+/* Texto de ejemplo */
+
+.form-control::placeholder {
+    color: #aaa1b7;
+}
+
+/* Campo seleccionado */
+
+.form-control:focus {
+    background: var(--auth-white);
+
+    border-color: var(--auth-primary);
+    box-shadow: 0 0 0 4px rgba(118, 82, 163, 0.12);
+}
+
+/* Campos con errores */
+
+.form-control.input-error {
+    border-color: #dc3545;
+}
+
+/* ==========================================
+   MENSAJES DE ERROR
+   ========================================== */
+
+.form-error {
+    color: #c44444;
+
+    font-size: 0.82rem;
+    line-height: 1.5;
+
+    margin-top: 7px;
+}
+
+.auth-alert {
+    padding: 13px 15px;
+    margin-bottom: 20px;
+
+    background: #fff0f0;
+    color: #b83232;
+
+    border: 1px solid #f5caca;
+    border-radius: 10px;
+
+    font-size: 0.9rem;
+}
+
+/* ==========================================
+   BOTON REGISTRARSE
+   ========================================== */
+
+/* Estilos para el boton del formulario */
+
+.auth-form-container button[type="submit"],
+.btn-primary.btn-full {
+    display: block;
+    width: 100%;
+
+    min-height: 50px;
+    padding: 13px 20px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+
+    background: linear-gradient(
+        135deg,
+        #e96770,
+        #c9363c
+    );
+
+    color: var(--auth-white);
+
+    border: none;
+    border-radius: 10px;
+
+    font-size: 1rem;
+    font-weight: 700;
+
+    cursor: pointer;
+    flex-shrink: 0;
+
+    box-shadow: 0 6px 16px rgba(201, 54, 60, 0.18);
+
+    transition: transform 0.25s ease,
+                box-shadow 0.25s ease,
+                background 0.25s ease;
+}
+
+/* Efecto al pasar el cursor */
+
+.auth-form-container button[type="submit"]:hover,
+.btn-primary.btn-full:hover {
+    background: linear-gradient(
+        135deg,
+        #d9505a,
+        #b82e35
+    );
+
+    color: var(--auth-white);
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 9px 20px rgba(201, 54, 60, 0.25);
+}
+
+/* Efecto al presionar */
+
+.auth-form-container button[type="submit"]:active,
+.btn-primary.btn-full:active {
+    transform: translateY(0);
+}
+
+/* ==========================================
+   ENLACE PARA INICIAR SESION
+   ========================================== */
+
+.auth-switch {
+    text-align: center;
+
+    margin: 20px 0 8px;
+
+    color: var(--auth-text);
+    font-size: 0.9rem;
+}
+
+.auth-switch a {
+    color: #c9363c;
+
+    font-weight: 600;
+    text-decoration: none;
+
+    transition: color 0.2s ease;
+}
+
+.auth-switch a:hover {
+    color: var(--auth-primary-dark);
+    text-decoration: underline;
+}
+
+/* ==========================================
+   VOLVER AL INICIO
+   ========================================== */
+
+.back-home {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+
+    margin-top: 0;
+
+    color: var(--auth-muted);
+    font-size: 0.9rem;
+
+    text-decoration: none;
+
+    transition: color 0.2s ease;
+}
+
+.back-home:hover {
+    color: var(--auth-primary);
+}
+
+/* ==========================================
+   RESPONSIVE: TABLET
+   ========================================== */
+
+@media (max-width: 1000px) {
+
+    .auth-form-container {
+        padding: 30px 35px;
+    }
+
+    .auth-image {
+        padding: 30px;
+    }
+
+    .auth-image-text h2 {
+        font-size: 2rem;
+    }
+
+}
+
+/* ==========================================
+   RESPONSIVE: CELULARES
+   ========================================== */
+
+@media (max-width: 768px) {
+
+    body.auth-page {
+        padding: 15px;
+        align-items: flex-start;
+    }
+
+    .auth-container {
+        grid-template-columns: 1fr;
+        max-width: 520px;
+        min-height: auto;
+        height: auto;
+    }
+
+    .auth-image {
+        min-height: 210px;
+        padding: 25px;
+    }
+
+    .auth-image-text h2 {
+        font-size: 1.8rem;
+    }
+
+    .auth-image-text p {
+        font-size: 0.95rem;
+    }
+
+    .auth-form-container {
+        padding: 30px 25px;
+        min-height: auto;
+        height: auto;
+    }
+
+    .auth-logo {
+        margin-bottom: 20px;
+    }
+
+    .auth-logo img {
+        width: 75px;
+        height: 75px;
+    }
+
+    .auth-form-container h2 {
+        font-size: 1.7rem;
+    }
+
+}
+
+/* ==========================================
+   RESPONSIVE: CELULARES PEQUEÑOS
+   ========================================== */
+
+@media (max-width: 480px) {
+
+    body.auth-page {
+        padding: 10px;
+    }
+
+    .auth-container {
+        border-radius: 15px;
+    }
+
+    .auth-image {
+        min-height: 175px;
+        padding: 20px;
+    }
+
+    .auth-image-text h2 {
+        font-size: 1.5rem;
+    }
+
+    .auth-image-text p {
+        font-size: 0.85rem;
+    }
+
+    .auth-form-container {
+        padding: 25px 20px;
+    }
+
+    .auth-form-container h2 {
+        font-size: 1.5rem;
+    }
+
+    .form-control {
+        height: 46px;
+        font-size: 0.9rem;
+    }
+
+    .auth-form-container button[type="submit"],
+    .btn-primary.btn-full {
+        min-height: 47px;
+    }
+
+}
