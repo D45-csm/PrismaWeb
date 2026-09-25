@@ -1,30 +1,69 @@
 {% load static %}
 
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <div class="container-fluid">
 
-  <nav class="navbar navbar-expand-lg bg-body-tertiary" >
-    <div class="container-fluid" style="background-color: gainsboro;">
-      <a class="navbar-brand" href="{% url 'base_cliente' %}">
-          <img src="{% static 'img/logo_prisma.png' %}" alt="Logo" width="80" height="60">
-      </a>
-      
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      </button>
+    <!-- Logo de Prisma -->
+    <a class="navbar-brand" href="{% url 'base_cliente' %}">
+      <img src="{% static 'img/logo_prisma.png' %}" alt="Logo Prisma">
+    </a>
 
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav">
+    <!-- Botón del menú para dispositivos móviles -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Abrir menú de navegación">
 
-          <li class="nav-item"> <a class="nav-link active" aria-current="page" href="{% url 'base_cliente' %}">Inicio</a> </li>
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-          {% if Usuario.is_authenticated %}
-          <li class="nav-item"> <p>Bienvenido, {{ user.username }}</p> <a class="nav-link" href="{% url 'logout'%}">Cerrar sesión</a> </li>
+    <!-- Menú de navegación -->
+    <div class="collapse navbar-collapse" id="navbarNav">
 
-          {% else %}
-          <li class="nav-item"><a class="nav-link" href="{% url 'login'%}">iniciar sesion</a></li>
+      <ul class="navbar-nav">
 
-          <li class="nav-item"><a class="nav-link" href="{% url 'registro' %}">registrarse</a></li>
+        <!-- Inicio -->
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="{% url 'base_cliente' %}">
+            Inicio
+          </a>
+        </li>
 
-          {% endif %}
-        </ul>
-      </div>
+        {% if user.is_authenticated %}
+
+        <!-- Usuario autenticado -->
+        <li class="nav-item">
+          <p class="nav-user">
+            Bienvenido, {{ user.username }}
+          </p>
+        </li>
+
+        <!-- Cerrar sesión -->
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'logout' %}">
+            Cerrar sesión
+          </a>
+        </li>
+
+        {% else %}
+
+        <!-- Iniciar sesión -->
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'login' %}">
+            Iniciar sesión
+          </a>
+        </li>
+
+        <!-- Registrarse -->
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'registro' %}">
+            Registrarse
+          </a>
+        </li>
+
+        {% endif %}
+
+      </ul>
+
     </div>
-  </nav>
+
+  </div>
+</nav>
