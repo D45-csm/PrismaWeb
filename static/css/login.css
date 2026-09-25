@@ -1,0 +1,559 @@
+/* =========================================
+   PRISMA - LOGIN
+   ========================================= */
+
+/* ---------- Variables ---------- */
+:root {
+    --primary: #d35400;
+    --primary-dark: #a94000;
+    --secondary: #f39c12;
+    --text: #2c2c2c;
+    --text-light: #777;
+    --background: #f7f4ef;
+    --white: #ffffff;
+    --border: #dedede;
+    --error: #dc3545;
+    --shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    --radius: 18px;
+}
+
+/* ---------- Reset ---------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text);
+}
+
+/* =========================================
+   PÁGINA DE AUTENTICACIÓN
+   ========================================= */
+
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    background:
+        radial-gradient(circle at top left, rgba(211, 84, 0, 0.08), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(243, 156, 18, 0.10), transparent 35%),
+        var(--background);
+}
+
+/* =========================================
+   CONTENEDOR PRINCIPAL
+   ========================================= */
+
+.auth-container {
+    width: 100%;
+    max-width: 1100px;
+    min-height: 650px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--white);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+/* =========================================
+   PANEL DE IMAGEN
+   ========================================= */
+
+.auth-image {
+    position: relative;
+    min-height: 650px;
+
+    /* Puedes cambiar esta imagen por la que quieras */
+    background-image: url("../img/imagen_login.jpeg");
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+}
+
+.auth-image-overlay {
+    position: absolute;
+    inset: 0;
+
+    background:
+        linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.78) 0%,
+            rgba(0, 0, 0, 0.35) 50%,
+            rgba(0, 0, 0, 0.10) 100%
+        );
+}
+
+/* ---------- Texto sobre la imagen ---------- */
+
+.auth-image-text {
+    position: relative;
+    z-index: 2;
+    padding: 50px;
+    color: var(--white);
+}
+
+.auth-image-text h2 {
+    font-size: 42px;
+    line-height: 1.1;
+    margin-bottom: 15px;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+.auth-image-text p {
+    font-size: 18px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* =========================================
+   FORMULARIO
+   ========================================= */
+
+.auth-form-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 55px 65px;
+    background: var(--white);
+}
+
+/* ---------- Logo ---------- */
+
+.auth-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.auth-logo img {
+    width: 150px;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+/* ---------- Títulos ---------- */
+
+.auth-form-container > h2 {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.auth-subtitle {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 15px;
+    margin-bottom: 30px;
+}
+
+/* =========================================
+   MENSAJE DE AYUDA
+   ========================================= */
+
+.auth-hint {
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background: #fff7e6;
+    border: 1px solid #ffd591;
+    color: #8a5a00;
+    font-size: 14px;
+}
+
+/* =========================================
+   ALERTAS
+   ========================================= */
+
+.auth-alert {
+    padding: 13px 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background: #fff0f1;
+    border: 1px solid #f5b7bd;
+    color: var(--error);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* =========================================
+   FORM GROUP
+   ========================================= */
+
+.form-group {
+    margin-bottom: 21px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #3d3d3d;
+}
+
+/* =========================================
+   INPUTS
+   ========================================= */
+
+.form-group input {
+    width: 100%;
+    height: 52px;
+    padding: 0 16px;
+
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+
+    background: #fafafa;
+    color: var(--text);
+
+    font-family: inherit;
+    font-size: 15px;
+
+    outline: none;
+
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        background 0.25s ease,
+        transform 0.15s ease;
+}
+
+.form-group input::placeholder {
+    color: #aaa;
+}
+
+.form-group input:hover {
+    border-color: #c5c5c5;
+}
+
+.form-group input:focus {
+    background: var(--white);
+    border-color: var(--primary);
+
+    box-shadow:
+        0 0 0 3px rgba(211, 84, 0, 0.12);
+}
+
+/* ---------- Input con error ---------- */
+
+.form-group input.input-error {
+    border-color: var(--error);
+    background: #fffafa;
+}
+
+.form-group input.input-error:focus {
+    box-shadow:
+        0 0 0 3px rgba(220, 53, 69, 0.12);
+}
+
+/* =========================================
+   ERRORES DEL FORMULARIO
+   ========================================= */
+
+.form-error {
+    margin-top: 7px;
+    color: var(--error);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* =========================================
+   BOTÓN INGRESAR
+   ========================================= */
+
+.btn-primary {
+    border: none;
+    cursor: pointer;
+
+    width: 100%;
+    height: 52px;
+
+    border-radius: 10px;
+
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+
+    color: #ffffff;
+
+    /* Degradado rojo */
+
+    background: linear-gradient(
+    135deg,
+    #e96b6b,
+    #c83b3b
+);
+
+
+    box-shadow: 0 6px 15px rgba(184, 46, 46, 0.25);
+
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(
+        135deg,
+        #ef6b6b 0%,
+        #dd4747 50%,
+        #c23535 100%
+    );
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 9px 20px rgba(184, 46, 46, 0.35);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+
+    box-shadow: 0 4px 10px rgba(184, 46, 46, 0.25);
+}
+
+
+/* =========================================
+   ENLACE "REGÍSTRATE AQUÍ"
+   ========================================= */
+
+.auth-switch a {
+    color: #c83b3b;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-switch a:hover {
+    color: #a92e2e;
+    text-decoration: underline;
+}
+
+
+
+/* =========================================
+   BOTÓN VOLVER AL INICIO
+   ========================================= */
+
+.back-home {
+    color: #777;
+    text-decoration: none;
+
+    transition: all 0.25s ease;
+}
+
+.back-home:hover {
+    color: #c93636;
+}
+
+
+/* =========================================
+   ANIMACIONES
+   ========================================= */
+
+.auth-container {
+    animation: loginAppear 0.65s ease-out;
+}
+
+@keyframes loginAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.auth-form-container {
+    animation: formAppear 0.8s ease-out;
+}
+
+@keyframes formAppear {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* =========================================
+   RESPONSIVE - TABLET
+   ========================================= */
+
+@media (max-width: 900px) {
+
+    .auth-container {
+        max-width: 750px;
+        grid-template-columns: 0.85fr 1fr;
+    }
+
+    .auth-image-text {
+        padding: 35px;
+    }
+
+    .auth-image-text h2 {
+        font-size: 32px;
+    }
+
+    .auth-image-text p {
+        font-size: 16px;
+    }
+
+    .auth-form-container {
+        padding: 45px 40px;
+    }
+}
+
+/* =========================================
+   RESPONSIVE - MÓVIL
+   ========================================= */
+
+@media (max-width: 700px) {
+
+    .auth-page {
+        padding: 15px;
+        align-items: flex-start;
+    }
+
+    .auth-container {
+        display: block;
+        max-width: 500px;
+        min-height: auto;
+        margin: 15px auto;
+    }
+
+    .auth-image {
+        min-height: 220px;
+        height: 220px;
+    }
+
+    .auth-image-text {
+        padding: 25px;
+    }
+
+    .auth-image-text h2 {
+        font-size: 28px;
+    }
+
+    .auth-image-text p {
+        font-size: 14px;
+    }
+
+    .auth-form-container {
+        padding: 40px 30px;
+    }
+
+    .auth-logo img {
+        width: 130px;
+    }
+
+    .auth-form-container > h2 {
+        font-size: 27px;
+    }
+}
+
+/* =========================================
+   MÓVILES PEQUEÑOS
+   ========================================= */
+
+@media (max-width: 400px) {
+
+    .auth-page {
+        padding: 0;
+    }
+
+    .auth-container {
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+        min-height: 100vh;
+    }
+
+    .auth-image {
+        height: 190px;
+        min-height: 190px;
+    }
+
+    .auth-image-text {
+        padding: 20px;
+    }
+
+    .auth-image-text h2 {
+        font-size: 24px;
+    }
+
+    .auth-form-container {
+        padding: 35px 22px;
+    }
+
+    .auth-form-container > h2 {
+        font-size: 25px;
+    }
+
+    .form-group input,
+    .btn-full {
+        height: 50px;
+    }
+}
+
+/* =========================================
+   ACCESIBILIDAD
+   ========================================= */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+    outline: 3px solid rgba(211, 84, 0, 0.35);
+    outline-offset: 2px;
+}
+
+/* Reduce animaciones si el usuario las desactiva */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+
+/* =========================================
+   CENTRAR TEXTOS DEBAJO DEL BOTÓN INGRESAR
+   ========================================= */
+
+.auth-switch {
+    text-align: center;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.back-home {
+    display: block;
+    text-align: center;
+    margin-top: 5px;
+}
