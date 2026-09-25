@@ -1,0 +1,603 @@
+
+/* ==========================================
+   PANEL DE ADMINISTRACION - PRISMA POSTRES
+   ========================================== */
+
+:root {
+    --admin-primary: #7652a3;
+    --admin-primary-dark: #5d3c87;
+    --admin-primary-light: #f0e9fa;
+
+    --admin-pink: #f6e5f0;
+    --admin-blue: #e5edfc;
+    --admin-orange: #fff0df;
+
+    --admin-bg: #f7f6fa;
+    --admin-white: #ffffff;
+    --admin-text: #30283b;
+    --admin-muted: #8b8496;
+    --admin-border: #eeeaf3;
+
+    --admin-shadow: 0 5px 25px rgba(54, 35, 80, 0.06);
+}
+
+/* ==========================================
+   FONDO GENERAL
+   ========================================== */
+
+.admin-body {
+    background: var(--admin-bg);
+    color: var(--admin-text);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+}
+
+.admin-main {
+    min-height: calc(100vh - 80px);
+}
+
+/* ==========================================
+   ENCABEZADO DE NAVEGACION - PRISMA
+   ========================================== */
+
+.navbar {
+    background-color: #ffffff !important;
+    padding: 10px 30px;
+    border-bottom: 1px solid #eeeaf3;
+    box-shadow: 0 3px 15px rgba(54, 35, 80, 0.05);
+}
+
+.navbar .container-fluid {
+    background-color: transparent !important;
+    display: flex;
+    align-items: center;
+}
+
+/* Logo */
+
+.navbar .navbar-brand {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin-right: 45px;
+}
+
+.navbar .navbar-brand img {
+    width: 65px;
+    height: 60px;
+    object-fit: contain;
+}
+
+/* Lista de enlaces */
+
+.navbar .navbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+/* Enlaces */
+
+.navbar .navbar-nav .nav-link {
+    color: #30283b !important;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 10px 16px !important;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.25s ease;
+}
+
+.navbar .navbar-nav .nav-link:hover {
+    background-color: #f0e9fa;
+    color: #7652a3 !important;
+}
+
+/* Enlace activo */
+
+.navbar .navbar-nav .nav-link.active {
+    color: #7652a3 !important;
+    font-weight: 700;
+}
+
+/* Mensaje de bienvenida */
+
+.navbar .navbar-nav .nav-user {
+    color: #30283b;
+    font-size: 14px;
+    margin: 0;
+    padding: 8px 12px;
+}
+
+/* Botón del menú móvil */
+
+.navbar .navbar-toggler {
+    border: 1px solid #d9cde8;
+    border-radius: 8px;
+    padding: 7px 10px;
+}
+
+.navbar .navbar-toggler:focus {
+    box-shadow: 0 0 0 3px rgba(118, 82, 163, 0.15);
+}
+
+.navbar .navbar-toggler-icon {
+    background-image: var(--bs-navbar-toggler-icon-bg);
+}
+
+/* Ocultar el botón del menú en computadores */
+
+@media (min-width: 992px) {
+    .navbar .navbar-toggler {
+        display: none !important;
+    }
+}
+
+/* ==========================================
+   CONTENEDOR PRINCIPAL
+   ========================================== */
+
+.admin-dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 35px 25px 60px;
+}
+
+/* ==========================================
+   ENCABEZADO DEL PANEL
+   ========================================== */
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 35px;
+}
+
+.dashboard-tag {
+    display: inline-block;
+    color: var(--admin-primary);
+    background: var(--admin-primary-light);
+    padding: 7px 13px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+}
+
+.dashboard-header h1 {
+    font-size: clamp(1.7rem, 3vw, 2.4rem);
+    font-weight: 800;
+    color: var(--admin-text);
+    margin-bottom: 8px;
+}
+
+.dashboard-header p {
+    color: var(--admin-muted);
+    margin-bottom: 0;
+}
+
+.dashboard-date {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--admin-white);
+    border: 1px solid var(--admin-border);
+    padding: 13px 18px;
+    border-radius: 12px;
+    color: var(--admin-text);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ==========================================
+   TARJETAS DE ESTADISTICAS
+   ========================================== */
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: var(--admin-white);
+    border: 1px solid var(--admin-border);
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 17px;
+    box-shadow: var(--admin-shadow);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(54, 35, 80, 0.10);
+}
+
+.stat-icon {
+    width: 55px;
+    height: 55px;
+    min-width: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    font-size: 1.4rem;
+}
+
+.stat-purple .stat-icon {
+    background: var(--admin-primary-light);
+    color: var(--admin-primary);
+}
+
+.stat-pink .stat-icon {
+    background: var(--admin-pink);
+    color: #bd5c9b;
+}
+
+.stat-blue .stat-icon {
+    background: var(--admin-blue);
+    color: #4f79c6;
+}
+
+.stat-orange .stat-icon {
+    background: var(--admin-orange);
+    color: #d68b36;
+}
+
+.stat-info {
+    min-width: 0;
+}
+
+.stat-info p {
+    color: var(--admin-muted);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.stat-info h3 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--admin-text);
+    margin-bottom: 7px;
+    overflow-wrap: anywhere;
+}
+
+.stat-info span {
+    color: var(--admin-muted);
+    font-size: 0.78rem;
+}
+
+/* ==========================================
+   SECCIONES
+   ========================================== */
+
+.dashboard-section {
+    margin-bottom: 35px;
+    scroll-margin-top: 100px;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.section-heading h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--admin-text);
+    margin-bottom: 6px;
+}
+
+.section-heading p {
+    color: var(--admin-muted);
+    margin-bottom: 0;
+    font-size: 0.92rem;
+}
+
+/* ==========================================
+   ACCESOS RAPIDOS
+   ========================================== */
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.quick-action {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+    background: var(--admin-white);
+    border: 1px solid var(--admin-border);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: var(--admin-shadow);
+    transition: all 0.25s ease;
+    color: inherit;
+    text-decoration: none;
+}
+
+.quick-action:hover {
+    border-color: #d4c2e8;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(54, 35, 80, 0.09);
+    color: inherit;
+}
+
+.quick-icon {
+    width: 58px;
+    height: 58px;
+    min-width: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    font-size: 1.35rem;
+}
+
+.purple-icon {
+    background: var(--admin-primary-light);
+    color: var(--admin-primary);
+}
+
+.blue-icon {
+    background: var(--admin-blue);
+    color: #4f79c6;
+}
+
+.pink-icon {
+    background: var(--admin-pink);
+    color: #bd5c9b;
+}
+
+.orange-icon {
+    background: var(--admin-orange);
+    color: #d68b36;
+}
+
+.quick-info {
+    min-width: 0;
+}
+
+.quick-action h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--admin-text);
+}
+
+.quick-action p {
+    color: var(--admin-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 0;
+}
+
+.action-arrow {
+    margin-left: auto;
+    color: #b4a7c5;
+    font-size: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.quick-action:hover .action-arrow {
+    transform: translateX(4px);
+    color: var(--admin-primary);
+}
+
+/* ==========================================
+   TABLAS
+   ========================================== */
+
+.dashboard-table-container {
+    background: var(--admin-white);
+    border: 1px solid var(--admin-border);
+    border-radius: 16px;
+    overflow-x: auto;
+    box-shadow: var(--admin-shadow);
+}
+
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+.dashboard-table thead {
+    background: #faf8fc;
+}
+
+.dashboard-table th {
+    color: var(--admin-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 18px 22px;
+    text-align: left;
+    border-bottom: 1px solid var(--admin-border);
+    white-space: nowrap;
+}
+
+.dashboard-table td {
+    padding: 18px 22px;
+    border-bottom: 1px solid #f2eff6;
+    color: var(--admin-text);
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.dashboard-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.dashboard-table tbody tr:hover {
+    background: #fcfaff;
+}
+
+/* ==========================================
+   ESTADOS
+   ========================================== */
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.status-pending {
+    background: #fff2d9;
+    color: #a87519;
+}
+
+.status-low {
+    background: #fde8e8;
+    color: #c44444;
+}
+
+.status-active {
+    background: #e0f5e8;
+    color: #368653;
+}
+
+/* ==========================================
+   MENSAJES VACIOS
+   ========================================== */
+
+.empty-state {
+    text-align: center;
+    padding: 35px 20px !important;
+    color: var(--admin-muted) !important;
+}
+
+.empty-state i {
+    display: block;
+    font-size: 1.8rem;
+    color: #c7bbd6;
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    margin-bottom: 0;
+}
+
+/* ==========================================
+   DISEÑO RESPONSIVE
+   ========================================== */
+
+@media (max-width: 1100px) {
+    .dashboard-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/* ==========================================
+   TABLET Y MOVILES
+   ========================================== */
+
+@media (max-width: 991px) {
+    .navbar {
+        padding: 10px 18px;
+    }
+
+    .navbar .navbar-brand {
+        margin-right: 0;
+    }
+
+    .navbar .navbar-collapse {
+        padding-top: 15px;
+    }
+
+    .navbar .navbar-nav {
+        align-items: stretch;
+        gap: 5px;
+    }
+
+    .navbar .navbar-nav .nav-link {
+        display: block;
+        padding: 12px 15px !important;
+    }
+
+    .navbar .navbar-nav .nav-user {
+        padding: 12px 15px;
+    }
+
+    .admin-dashboard {
+        padding: 25px 16px 40px;
+    }
+
+    .dashboard-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dashboard-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .quick-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        padding: 18px;
+        gap: 12px;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        font-size: 1.2rem;
+    }
+
+    .stat-info h3 {
+        font-size: 1.5rem;
+    }
+
+    .section-heading h2 {
+        font-size: 1.2rem;
+    }
+}
+
+/* ==========================================
+   CELULARES PEQUEÑOS
+   ========================================== */
+
+@media (max-width: 480px) {
+    .dashboard-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .quick-action {
+        padding: 17px;
+        gap: 12px;
+    }
+
+    .quick-icon {
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        font-size: 1.15rem;
+    }
+
+    .quick-action p {
+        font-size: 0.8rem;
+    }
+}
