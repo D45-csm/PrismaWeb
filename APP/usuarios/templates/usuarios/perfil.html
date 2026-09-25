@@ -1,0 +1,29 @@
+{% extends 'base_admin.html' %}
+
+{% include 'partials/header.html' %}
+
+{% block content %}
+<div class="container my-5 d-flex justify-content-center align-items-center">
+    <div class="card shadow-lg p-4 text-center border-0" style="max-width: 450px; width: 100%; border-radius: 15px;">
+        <div class="card-body">
+            <!-- Insignia o perfil -->
+            <div class="mb-3">
+                <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill">Administrador</span>
+            </div>
+
+            <!-- Saludo principal -->
+            <h2 class="card-title text-primary fw-bold mb-2">¡Hola, {{ user.username }}!</h2>
+            
+            <!-- Correo del usuario -->
+            <p class="card-text text-secondary mb-4">
+                <strong>Correo:</strong> {{ user.email }}
+            </p>
+
+            <!-- Botón de cerrar sesión -->
+            <a href="{% url 'logout' %}" class="btn btn-outline-danger w-100 fw-semibold py-2">
+                Cerrar sesión
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
