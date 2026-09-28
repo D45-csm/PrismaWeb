@@ -1,0 +1,760 @@
+/* ============================================
+   1. VARIABLES GLOBALES - COLORES PRISMA
+   ============================================ */
+
+:root {
+    --rojo: #e63227;
+    --naranja: #f47b20;
+    --amarillo: #f7d417;
+    --verde: #7ab648;
+    --teal: #0f9b8e;
+    --azul: #2f6fd0;
+    --morado: #6a2c91;
+    --magenta: #b0197e;
+
+    --blanco: #ffffff;
+    --negro: #2c2c2c;
+    --gris: #8a8a8a;
+    --gris-claro: #f7f7f9;
+    --crema: #fffaf3;
+
+    --sombra: 0 8px 24px rgba(0, 0, 0, 0.10);
+    --sombra-hover: 0 14px 35px rgba(0, 0, 0, 0.15);
+
+    --transicion: all .35s cubic-bezier(.4, 0, .2, 1);
+
+    --arcoiris: linear-gradient(
+        90deg,
+        var(--rojo),
+        var(--naranja),
+        var(--amarillo),
+        var(--verde),
+        var(--azul),
+        var(--morado),
+        var(--magenta)
+    );
+}
+
+
+/* ============================================
+   2. RESET Y ESTILOS GENERALES
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--negro);
+    background: var(--blanco);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+    font-family: inherit;
+}
+
+
+/* ============================================
+   3. HEADER Y NAVEGACIÓN
+   ============================================ */
+
+#header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    transition: var(--transicion);
+}
+
+#header.scrolled {
+    background: rgba(0, 0, 0, 0.90);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Barra de navegación */
+
+#header .navbar {
+    padding: 12px 0;
+}
+
+#header .container {
+    max-width: 1200px;
+}
+
+/* Logo */
+
+.logo img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+
+    transition: var(--transicion);
+}
+
+.logo img:hover {
+    transform: scale(1.08) rotate(6deg);
+}
+
+/* Enlaces del menú */
+
+#header .navbar-nav {
+    gap: 25px;
+}
+
+#header .navbar-nav .nav-link {
+    color: var(--blanco);
+    font-weight: 500;
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+
+    position: relative;
+    padding: 8px 0;
+
+    transition: var(--transicion);
+}
+
+#header .navbar-nav .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+
+    width: 0;
+    height: 2px;
+
+    background: var(--arcoiris);
+    border-radius: 2px;
+
+    transition: var(--transicion);
+}
+
+#header .navbar-nav .nav-link:hover::after,
+#header .navbar-nav .nav-link.active::after {
+    width: 100%;
+}
+
+#header .navbar-nav .nav-link:hover {
+    color: var(--amarillo);
+}
+
+#header .navbar-nav .nav-link.active {
+    color: var(--amarillo);
+}
+
+/* Botón de menú móvil */
+
+#header .navbar-toggler {
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 8px 10px;
+    box-shadow: none;
+}
+
+#header .navbar-toggler:focus {
+    box-shadow: 0 0 0 2px rgba(247, 212, 23, 0.3);
+}
+
+/* Icono del menú en blanco */
+
+#header .navbar-toggler-icon {
+    filter: invert(1);
+}
+
+
+/* ============================================
+   4. BOTONES DE USUARIO Y CARRITO
+   ============================================ */
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+/* Botón de usuario */
+
+.btn-login {
+    background: transparent;
+    color: var(--blanco);
+
+    padding: 9px 13px;
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    font-size: 1.1rem;
+    transition: var(--transicion);
+}
+
+.btn-login:hover {
+    background: rgba(176, 25, 126, 0.25);
+    border-color: var(--magenta);
+    color: var(--blanco);
+    transform: translateY(-2px);
+}
+
+/* Botón del carrito */
+
+.btn-cart {
+    background: transparent;
+    color: var(--blanco);
+
+    padding: 9px 12px;
+    border-radius: 50%;
+
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(255, 255, 255, 0.3);
+
+    font-size: 1.1rem;
+    transition: var(--transicion);
+}
+
+.btn-cart:hover {
+    background: rgba(230, 50, 39, 0.25);
+    border-color: var(--rojo);
+    color: var(--blanco);
+    transform: translateY(-2px);
+}
+
+/* Contador del carrito */
+
+.cart-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+
+    background: var(--rojo);
+    color: var(--blanco);
+
+    font-size: 10px;
+    font-weight: bold;
+
+    min-width: 18px;
+    height: 18px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* ============================================
+   5. HERO SECTION
+   ============================================ */
+
+.hero {
+    min-height: 100vh;
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+    overflow: hidden;
+
+    background:
+        url("../img/imagen_inicio.jpeg");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Capa de oscurecimiento */
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+
+    background: linear-gradient(
+        135deg,
+        rgba(45, 45, 45, 0.30),
+        rgba(35, 35, 35, 0.20),
+        rgba(0, 0, 0, 0.30)
+    );
+}
+
+/* Contenido principal */
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+
+    color: var(--blanco);
+    padding-top: 80px;
+}
+
+.hero-content h1 {
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 800;
+    line-height: 1.2;
+
+    margin-bottom: 20px;
+
+    text-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+}
+
+.hero-content p {
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    margin-bottom: 30px;
+    letter-spacing: 2px;
+}
+
+/* Botón de temporada */
+
+.hero-content .btn-secondary {
+    background: #000000;
+    color: #ffffff;
+
+    border: none;
+    border-radius: 30px;
+
+    padding: 14px 30px;
+
+    font-size: 1rem;
+    font-weight: 600;
+
+    box-shadow: var(--sombra);
+
+    transition: var(--transicion);
+}
+
+.hero-content .btn-secondary:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--sombra-hover);
+    filter: brightness(1.08);
+}
+
+/* Indicador de desplazamiento */
+
+.scroll-indicator {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    color: var(--blanco);
+    font-size: 1.5rem;
+
+    animation: flecha-abajo 1.5s infinite;
+}
+
+
+/* ============================================
+   6. ANIMACIONES
+   ============================================ */
+
+.animate-fade-up {
+    opacity: 0;
+    animation: aparecer-arriba 1s ease forwards;
+}
+
+.delay-1 {
+    animation-delay: 0.3s;
+}
+
+.delay-2 {
+    animation-delay: 0.6s;
+}
+
+@keyframes aparecer-arriba {
+    from {
+        opacity: 0;
+        transform: translateY(35px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes flecha-abajo {
+    0%, 100% {
+        transform: translate(-50%, 0);
+    }
+
+    50% {
+        transform: translate(-50%, 10px);
+    }
+}
+
+
+/* ============================================
+   7. SECCIÓN DE PRODUCTOS FAVORITOS
+   ============================================ */
+
+.featured {
+    background: var(--crema);
+    padding-top: 80px !important;
+    padding-bottom: 80px !important;
+}
+
+/* Título de sección */
+
+.section-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--negro);
+}
+
+.title-text {
+    display: inline-block;
+    background: none;
+
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: #000000;
+
+    color: #000000;
+}
+
+/* Línea decorativa */
+
+.title-line {
+    width: 100px;
+    height: 4px;
+
+    margin: 15px auto 0;
+
+    background: var(--arcoiris);
+    border-radius: 10px;
+}
+
+
+/* ============================================
+   8. TARJETAS DE PRODUCTOS
+   ============================================ */
+
+.featured-card {
+    background: var(--blanco);
+    border-radius: 18px;
+
+    overflow: hidden;
+
+    box-shadow: var(--sombra);
+
+    transition: var(--transicion);
+}
+
+.featured-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--sombra-hover);
+}
+
+/* Imagen del producto */
+
+.featured-image {
+    width: 100%;
+    height: 280px;
+
+    overflow: hidden;
+    position: relative;
+}
+
+.featured-image img {
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    transition: var(--transicion);
+}
+
+.featured-card:hover .featured-image img {
+    transform: scale(1.08);
+}
+
+/* Información del producto */
+
+.featured-info {
+    text-align: center;
+    padding: 25px !important;
+}
+
+.featured-info h3 {
+    font-size: 1.35rem;
+    font-weight: 700;
+
+    color: var(--negro);
+
+    margin-bottom: 12px;
+}
+
+.featured-info p {
+    color: var(--gris);
+    font-size: 0.95rem;
+
+    margin-bottom: 18px;
+}
+
+/* Precio */
+
+.price {
+    display: inline-block;
+
+    color: var(--magenta);
+
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+
+
+/* ============================================
+   9. FOOTER
+   ============================================ */
+
+.footer {
+    background: #17131b;
+    color: var(--blanco);
+
+    padding: 60px 0 20px;
+}
+
+.footer-content {
+    padding-bottom: 35px;
+}
+
+/* Secciones del footer */
+
+.footer-section h4 {
+    font-size: 1.2rem;
+    font-weight: 700;
+
+    margin-bottom: 20px;
+
+    color: var(--blanco);
+}
+
+.footer-section h4::after {
+    content: '';
+    display: block;
+
+    width: 45px;
+    height: 3px;
+
+    margin-top: 10px;
+
+    background: var(--arcoiris);
+    border-radius: 5px;
+}
+
+.footer-section p {
+    color: #c8c2cc;
+    font-size: 0.95rem;
+}
+
+/* Listas */
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-section ul li {
+    margin-bottom: 12px;
+    color: #c8c2cc;
+
+    font-size: 0.95rem;
+    overflow-wrap: anywhere;
+}
+
+.footer-section ul li a {
+    color: #c8c2cc;
+    transition: var(--transicion);
+}
+
+.footer-section ul li a:hover {
+    color: var(--amarillo);
+    padding-left: 5px;
+}
+
+.footer-section ul li i {
+    color: var(--magenta);
+    margin-right: 8px;
+}
+
+/* Copyright */
+
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 25px;
+}
+
+.footer-bottom p {
+    color: #a9a3ad;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+
+/* ============================================
+   10. DISEÑO RESPONSIVE
+   ============================================ */
+
+/* Tablets y pantallas medianas */
+
+@media (max-width: 991.98px) {
+
+    #header .navbar-collapse {
+        background: rgba(0, 0, 0, 0.95);
+
+        padding: 20px;
+        margin-top: 12px;
+
+        border-radius: 12px;
+    }
+
+    #header .navbar-nav {
+        gap: 5px;
+    }
+
+    #header .navbar-nav .nav-link {
+        padding: 10px 0;
+    }
+
+    #header .navbar-nav .nav-link::after {
+        bottom: 4px;
+    }
+
+    .header-actions {
+        margin-top: 15px;
+        justify-content: flex-start;
+    }
+
+    .hero {
+        min-height: 85vh;
+    }
+
+    .featured-image {
+        height: 240px;
+    }
+}
+
+
+/* Celulares */
+
+@media (max-width: 575.98px) {
+
+    #header .navbar {
+        padding: 10px 0;
+    }
+
+    .logo img {
+        width: 45px;
+        height: 45px;
+    }
+
+    .hero {
+        min-height: 75vh;
+    }
+
+    .hero-content {
+        padding-top: 90px;
+    }
+
+    .hero-content h1 {
+        font-size: 2.3rem;
+    }
+
+    .hero-content p {
+        font-size: 1.1rem;
+        letter-spacing: 1px;
+    }
+
+    .hero-content .btn-secondary {
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+
+    .featured {
+        padding-top: 50px !important;
+        padding-bottom: 50px !important;
+    }
+
+    .featured-image {
+        height: 250px;
+    }
+
+    .featured-info h3 {
+        font-size: 1.2rem;
+    }
+
+    .footer {
+        padding-top: 40px;
+    }
+
+    .footer-section {
+        text-align: center;
+    }
+
+    .footer-section h4::after {
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+
+/* ============================================
+   11. ACCESIBILIDAD: MOVIMIENTO REDUCIDO
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}

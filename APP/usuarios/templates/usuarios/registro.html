@@ -1,91 +1,183 @@
+
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>registro</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-4">
-        <a href="{% url 'base_cliente' %}" class="btn btn-link mb-3">ir a inicio</a>
-        
-        <h2 class="mb-4">registro de usuario</h2>
-        
-        <form method="post" action="{% url 'registro' %}" novalidate>
-            {% csrf_token %}
 
-            <!--errores generales-->
-            {% if form.non_field_errors %}
-                <div class="alert alert-danger">
+    <title>Registro - Prisma</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="{% static 'css/registro.css' %}">
+</head>
+
+<body class="auth-page">
+
+    <div class="auth-container">
+
+        <!-- LADO IZQUIERDO: IMAGEN -->
+        <div class="auth-image">
+
+            <div class="auth-image-overlay"></div>
+
+            <div class="auth-image-text">
+                <h2>Bienvenido a Prisma</h2>
+                <p>Donde Cada Sabor Cuenta Una Historia</p>
+            </div>
+
+        </div>
+
+        <!-- LADO DERECHO: FORMULARIO -->
+        <div class="auth-form-container">
+
+            <!-- Logo -->
+            <div class="auth-logo">
+                <img src="{% static 'img/logo_prisma.png' %}" alt="Logo Prisma">
+            </div>
+
+            <!-- Título -->
+            <h2>Crear Cuenta</h2>
+
+            <p class="auth-subtitle">
+                Regístrate para disfrutar de nuestros postres
+            </p>
+
+            <!-- Formulario -->
+            <form method="post" action="{% url 'registro' %}" novalidate>
+
+                {% csrf_token %}
+
+                <!-- Errores generales -->
+                {% if form.non_field_errors %}
+                <div class="auth-alert">
                     {{ form.non_field_errors|striptags }}
                 </div>
-            {% endif %}
-
-            <!--nombre-->
-            <div class="mb-3">
-                <label for="{{ form.username.id_for_label }}" class="form-label">nombre</label>
-                <input type="text" 
-                       name="{{ form.username.html_name }}" 
-                       id="{{ form.username.id_for_label }}" 
-                       class="form-control"
-                       value="{{ form.username.value|default_if_none:'' }}">
-                
-                {% if form.username.errors %}
-                <div class="text-danger mt-1">
-                    {{ form.username.errors|striptags }}
-                </div>
                 {% endif %}
-            </div>
 
-            <!--correo-->
-            <div class="mb-3">
-                <label for="{{ form.email.id_for_label }}" class="form-label">correo</label>
-                <input type="email" 
-                       name="{{ form.email.html_name }}" 
-                       id="{{ form.email.id_for_label }}" 
-                       class="form-control"
-                       value="{{ form.email.value|default_if_none:'' }}">
-                
-                {% if form.email.errors %}
-                <div class="text-danger mt-1">
-                    {{ form.email.errors|striptags }}
+                <!-- Nombre de usuario -->
+                <div class="form-group">
+
+                    <label for="{{ form.username.id_for_label }}">
+                        Nombre de usuario
+                    </label>
+
+                    <input
+                        type="text"
+                        name="{{ form.username.html_name }}"
+                        id="{{ form.username.id_for_label }}"
+                        class="form-control {% if form.username.errors %}input-error{% endif %}"
+                        placeholder="Ingresa tu nombre de usuario"
+                        value="{{ form.username.value|default_if_none:'' }}"
+                    >
+
+                    {% if form.username.errors %}
+                    <div class="form-error">
+                        {{ form.username.errors|striptags }}
+                    </div>
+                    {% endif %}
+
                 </div>
-                {% endif %}
-            </div>
 
-            <!--contraseña-->
-            <div class="mb-3">
-                <label for="{{ form.password1.id_for_label }}" class="form-label">contraseña</label>
-                <input type="password" 
-                       name="{{ form.password1.html_name }}" 
-                       id="{{ form.password1.id_for_label }}" 
-                       class="form-control">
+                <!-- Correo electrónico -->
+                <div class="form-group">
 
-                {% if form.password1.errors %}
-                <div class="text-danger mt-1">
-                    {{ form.password1.errors|striptags }}
+                    <label for="{{ form.email.id_for_label }}">
+                        Correo electrónico
+                    </label>
+
+                    <input
+                        type="email"
+                        name="{{ form.email.html_name }}"
+                        id="{{ form.email.id_for_label }}"
+                        class="form-control {% if form.email.errors %}input-error{% endif %}"
+                        placeholder="Ingresa tu correo electrónico"
+                        value="{{ form.email.value|default_if_none:'' }}"
+                    >
+
+                    {% if form.email.errors %}
+                    <div class="form-error">
+                        {{ form.email.errors|striptags }}
+                    </div>
+                    {% endif %}
+
                 </div>
-                {% endif %}
-            </div>
 
-            <!--confirmar contraseña-->
-            <div class="mb-3">
-                <label for="{{ form.password2.id_for_label }}" class="form-label">confirmar contraseña</label>
-                <input type="password" 
-                       name="{{ form.password2.html_name }}" 
-                       id="{{ form.password2.id_for_label }}" 
-                       class="form-control">
+                <!-- Contraseña -->
+                <div class="form-group">
 
-                {% if form.password2.errors %}
-                <div class="text-danger mt-1">
-                    {{ form.password2.errors|striptags }}
+                    <label for="{{ form.password1.id_for_label }}">
+                        Contraseña
+                    </label>
+
+                    <input
+                        type="password"
+                        name="{{ form.password1.html_name }}"
+                        id="{{ form.password1.id_for_label }}"
+                        class="form-control {% if form.password1.errors %}input-error{% endif %}"
+                        placeholder="Crea una contraseña"
+                    >
+
+                    {% if form.password1.errors %}
+                    <div class="form-error">
+                        {{ form.password1.errors|striptags }}
+                    </div>
+                    {% endif %}
+
                 </div>
-                {% endif %}
-            </div>
 
-            <button type="submit" class="btn btn-primary">registrarse</button>
-        </form>
+                <!-- Confirmar contraseña -->
+                <div class="form-group">
+
+                    <label for="{{ form.password2.id_for_label }}">
+                        Confirmar contraseña
+                    </label>
+
+                    <input
+                        type="password"
+                        name="{{ form.password2.html_name }}"
+                        id="{{ form.password2.id_for_label }}"
+                        class="form-control {% if form.password2.errors %}input-error{% endif %}"
+                        placeholder="Confirma tu contraseña"
+                    >
+
+                    {% if form.password2.errors %}
+                    <div class="form-error">
+                        {{ form.password2.errors|striptags }}
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- Botón -->
+                <button type="submit" class="btn-primary btn-full">
+                    Registrarse
+                </button>
+
+            </form>
+
+            <!-- Enlace para iniciar sesión -->
+            <p class="auth-switch">
+                ¿Ya tienes una cuenta?
+                <a href="{% url 'login' %}">Inicia sesión aquí</a>
+            </p>
+
+            <!-- Volver al inicio -->
+            <a href="{% url 'base_cliente' %}" class="back-home">
+                <i class="fas fa-arrow-left"></i>
+                Volver al inicio
+            </a>
+
+        </div>
+
     </div>
+
 </body>
 </html>

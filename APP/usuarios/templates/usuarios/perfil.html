@@ -1,29 +1,354 @@
 {% extends 'base_admin.html' %}
 
-{% include 'partials/header.html' %}
+{% block title %}Panel de administración | Prisma{% endblock %}
 
 {% block content %}
-<div class="container my-5 d-flex justify-content-center align-items-center">
-    <div class="card shadow-lg p-4 text-center border-0" style="max-width: 450px; width: 100%; border-radius: 15px;">
-        <div class="card-body">
-            <!-- Insignia o perfil -->
-            <div class="mb-3">
-                <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill">Administrador</span>
+
+<div class="admin-dashboard">
+
+    <!-- ENCABEZADO DEL PANEL -->
+    <section class="dashboard-header">
+        <div>
+            <span class="dashboard-tag">PRISMA POSTRES</span>
+
+            <h1>Panel de administración</h1>
+
+            <p>
+                Bienvenido, {{ user.username }}.
+                Aquí tienes el resumen de tu negocio.
+            </p>
+        </div>
+
+        <div class="dashboard-date">
+            <i class="fa-regular fa-calendar"></i>
+            <span>{% now "d/m/Y" %}</span>
+        </div>
+    </section>
+
+
+    <!-- TARJETAS DE ESTADÍSTICAS -->
+    <section class="dashboard-stats">
+
+        <!-- Reservas -->
+        <div class="stat-card stat-purple">
+            <div class="stat-icon">
+                <i class="fa-regular fa-calendar-check"></i>
             </div>
 
-            <!-- Saludo principal -->
-            <h2 class="card-title text-primary fw-bold mb-2">¡Hola, {{ user.username }}!</h2>
-            
-            <!-- Correo del usuario -->
-            <p class="card-text text-secondary mb-4">
-                <strong>Correo:</strong> {{ user.email }}
-            </p>
-
-            <!-- Botón de cerrar sesión -->
-            <a href="{% url 'logout' %}" class="btn btn-outline-danger w-100 fw-semibold py-2">
-                Cerrar sesión
-            </a>
+            <div class="stat-info">
+                <p>Reservas de hoy</p>
+                <h3>{{ total_reservas_hoy|default:"0" }}</h3>
+                <span>Reservas registradas</span>
+            </div>
         </div>
-    </div>
+
+        <!-- Ventas -->
+        <div class="stat-card stat-pink">
+            <div class="stat-icon">
+                <i class="fa-solid fa-bag-shopping"></i>
+            </div>
+
+            <div class="stat-info">
+                <p>Ventas del día</p>
+                <h3>${{ ventas_hoy|default:"0" }}</h3>
+                <span>Ingresos registrados</span>
+            </div>
+        </div>
+
+        <!-- Productos -->
+        <div class="stat-card stat-blue">
+            <div class="stat-icon">
+                <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+
+            <div class="stat-info">
+                <p>Productos registrados</p>
+                <h3>{{ total_productos|default:"0" }}</h3>
+                <span>Productos del catálogo</span>
+            </div>
+        </div>
+
+        <!-- Insumos -->
+        <div class="stat-card stat-orange">
+            <div class="stat-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+
+            <div class="stat-info">
+                <p>Insumos por agotarse</p>
+                <h3>{{ insumos_bajos|default:"0" }}</h3>
+                <span>Requieren reposición</span>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- ACCESOS RÁPIDOS -->
+    <section class="dashboard-section">
+
+        <div class="section-heading">
+            <div>
+                <h2>Accesos rápidos</h2>
+                <p>Administra las principales áreas de tu postrería.</p>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+
+            <!-- Reservas -->
+            <a href="#reservas" class="quick-action">
+                <div class="quick-icon purple-icon">
+                    <i class="fa-regular fa-calendar-days"></i>
+                </div>
+
+                <div class="quick-info">
+                    <h3>Reservas</h3>
+                    <p>Consulta y organiza las reservas de los clientes.</p>
+                </div>
+
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
+            <!-- Inventario -->
+            <a href="#inventario" class="quick-action">
+                <div class="quick-icon blue-icon">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+
+                <div class="quick-info">
+                    <h3>Inventario</h3>
+                    <p>Controla las existencias de productos e insumos.</p>
+                </div>
+
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
+            <!-- Compras -->
+            <a href="#compras" class="quick-action">
+                <div class="quick-icon pink-icon">
+                    <i class="fa-solid fa-truck"></i>
+                </div>
+
+                <div class="quick-info">
+                    <h3>Compras de insumos</h3>
+                    <p>Registra compras y consulta los proveedores.</p>
+                </div>
+
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
+            <!-- Productos -->
+            <a href="#productos" class="quick-action">
+                <div class="quick-icon orange-icon">
+                    <i class="fa-solid fa-cake-candles"></i>
+                </div>
+
+                <div class="quick-info">
+                    <h3>Productos</h3>
+                    <p>Administra los postres y bebidas del catálogo.</p>
+                </div>
+
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
+        </div>
+    </section>
+
+
+    <!-- RESERVAS RECIENTES -->
+    <section class="dashboard-section" id="reservas">
+
+        <div class="section-heading">
+            <div>
+                <h2>Reservas recientes</h2>
+                <p>Consulta las últimas reservas registradas.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-table-container">
+            <table class="dashboard-table">
+
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Personas</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for reserva in reservas_recientes %}
+                    <tr>
+                        <td>{{ reserva.nombre_cliente }}</td>
+                        <td>{{ reserva.fecha|date:"d/m/Y" }}</td>
+                        <td>{{ reserva.hora|time:"h:i A" }}</td>
+                        <td>{{ reserva.numero_personas }}</td>
+                        <td>
+                            <span class="status-badge status-pending">
+                                {{ reserva.estado|default:"Pendiente" }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <i class="fa-regular fa-calendar-xmark"></i>
+                            <p>No hay reservas recientes para mostrar.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </section>
+
+
+    <!-- INVENTARIO -->
+    <section class="dashboard-section" id="inventario">
+
+        <div class="section-heading">
+            <div>
+                <h2>Inventario por revisar</h2>
+                <p>Insumos que necesitan atención o reposición.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-table-container">
+            <table class="dashboard-table">
+
+                <thead>
+                    <tr>
+                        <th>Insumo</th>
+                        <th>Cantidad disponible</th>
+                        <th>Stock mínimo</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for insumo in inventario_bajo %}
+                    <tr>
+                        <td>{{ insumo.nombre }}</td>
+                        <td>{{ insumo.cantidad }}</td>
+                        <td>{{ insumo.stock_minimo }}</td>
+                        <td>
+                            <span class="status-badge status-low">
+                                Stock bajo
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <i class="fa-solid fa-box-open"></i>
+                            <p>No hay insumos pendientes de revisión.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </section>
+
+
+    <!-- COMPRAS RECIENTES -->
+    <section class="dashboard-section" id="compras">
+
+        <div class="section-heading">
+            <div>
+                <h2>Compras recientes</h2>
+                <p>Últimos registros de compras de insumos.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-table-container">
+            <table class="dashboard-table">
+
+                <thead>
+                    <tr>
+                        <th>Proveedor</th>
+                        <th>Fecha</th>
+                        <th>Insumo</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for compra in compras_recientes %}
+                    <tr>
+                        <td>{{ compra.proveedor }}</td>
+                        <td>{{ compra.fecha|date:"d/m/Y" }}</td>
+                        <td>{{ compra.insumo }}</td>
+                        <td>${{ compra.total }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <i class="fa-solid fa-receipt"></i>
+                            <p>No hay compras recientes para mostrar.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </section>
+
+
+    <!-- PRODUCTOS -->
+    <section class="dashboard-section" id="productos">
+
+        <div class="section-heading">
+            <div>
+                <h2>Productos del catálogo</h2>
+                <p>Productos registrados en Prisma Postres.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-table-container">
+            <table class="dashboard-table">
+
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for producto in productos_recientes %}
+                    <tr>
+                        <td>{{ producto.nombre }}</td>
+                        <td>{{ producto.categoria }}</td>
+                        <td>${{ producto.precio }}</td>
+                        <td>
+                            <span class="status-badge status-active">
+                                Activo
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="empty-state">
+                            <i class="fa-solid fa-cookie-bite"></i>
+                            <p>No hay productos registrados para mostrar.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </section>
+
 </div>
+
 {% endblock %}
