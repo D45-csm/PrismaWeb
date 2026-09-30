@@ -3,8 +3,14 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from .forms import RegistroForm, LoginForm
 from django.contrib import messages
-
+from .models import Usuario
 # Create your views here.
+
+
+def lista_usuarios(request):
+    usuarios= Usuario.objects.all() #trae todos los registros de usuario
+    return render(request, 'usuarios/lista_usuarios.html', {'usuarios': usuarios}) 
+
 def registro_view(request):
     if request.method == 'POST': #valida si el metodo es POST
         form = RegistroForm(request.POST) #instancia de RegistroForm ubicada en forms.py con los datos del POST
@@ -37,3 +43,4 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     return render(request, 'usuarios/perfil.html') #renderiza la plantilla de perfil
+    
