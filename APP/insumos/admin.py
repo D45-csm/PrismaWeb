@@ -1,3 +1,5 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import CategoriaInsumo, Insumo
+
+admin.site.register((CategoriaInsumo, Insumo))
