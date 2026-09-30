@@ -1,12 +1,70 @@
 {% extends 'base_admin.html' %}
+{% load static %}
 
-{% block title %}Lista de Usuarios{% endblock %}
+{% block title %}Lista de Usuarios - PRISMA{% endblock %}
 
 {% block content %}
-    <h2>Lista de Usuarios</h2>
-    <ul>
-        {% for usuario in usuarios %}
-            <li>{{ usuario.username }}</li>
-        {% endfor %}
-    </ul>
+<link rel="stylesheet" href="{% static 'css/lista_usuarios.css' %}">
+
+<div class="prisma-container">
+    <!-- Botón para volver al Panel de Administración -->
+    <div class="prisma-header-nav">
+        <a href="{% url 'perfil' %}" class="btn-back">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Volver al Panel
+        </a>
+    </div>
+
+    <h1 class="prisma-title">Lista de usuarios</h1>
+    <p class="prisma-subtitle">Administra y visualiza los usuarios registrados en el sistema.</p>
+
+    <div class="prisma-card">
+        <ul class="user-list">
+            {% for usuario in usuarios %}
+                <li class="user-item">
+                    <div class="user-info-wrapper">
+                        <div class="user-icon-box">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        
+                        <div class="user-details">
+                            <div class="user-detail-group">
+                                <span class="user-detail-label">Usuario</span>
+                                <span class="user-detail-value">{{ usuario.username }}</span>
+                            </div>
+                            
+                            <div class="user-detail-group">
+                                <span class="user-detail-label">Correo</span>
+                                <span class="user-detail-value">{{ usuario.email }}</span>
+                            </div>
+                            
+                            <div class="user-detail-group">
+                                <span class="user-detail-label">Teléfono</span>
+                                <span class="user-detail-value">{{ usuario.telefono|default:"No registrado" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            {% empty %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    </div>
+                    <p class="fw-bold mb-1">No hay usuarios registrados</p>
+                    <small>Cuando se registren nuevos usuarios, aparecerán en esta sección.</small>
+                </div>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
 {% endblock %}
