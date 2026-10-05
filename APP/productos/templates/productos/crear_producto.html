@@ -1,0 +1,150 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Crear producto</title>
+
+    <link rel="stylesheet" href="{% static 'css/crear_producto.css' %}">
+</head>
+
+<body>
+
+    <!-- HEADER ADMINISTRADOR -->
+    <header class="admin-header">
+
+        <div class="logo">
+            <span>PrismaWeb</span>
+            <small>ADMINISTRACIÓN</small>
+        </div>
+
+        <nav>
+            <a href="#">Inicio</a>
+            <a href="#">Productos</a>
+            <a href="#">Inventario</a>
+            <a href="#">Usuarios</a>
+        </nav>
+
+        <div class="admin-user">
+            <span>Administrador</span>
+            <div class="user-icon">♙</div>
+        </div>
+
+    </header>
+
+
+    <!-- CONTENIDO -->
+    <main class="crear-container">
+
+        <div class="breadcrumb">
+            Administración / Productos / <strong>Crear producto</strong>
+        </div>
+
+        <h1>Crear producto</h1>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            {% csrf_token %}
+
+            <div class="producto-contenido">
+
+                <!-- GALERÍA -->
+                <section class="galeria">
+
+                    <div class="miniaturas">
+
+                        <label class="miniatura">
+                            <span>+</span>
+                            <input type="file" name="imagen_1">
+                        </label>
+
+                        <label class="miniatura">
+                            <span>+</span>
+                            <input type="file" name="imagen_2">
+                        </label>
+
+                        <label class="miniatura">
+                            <span>+</span>
+                            <input type="file" name="imagen_3">
+                        </label>
+
+                    </div>
+
+
+                    <label class="imagen-principal">
+
+                        <span class="plus-grande">+</span>
+
+                        <span class="texto-imagen">
+                            Agregar imagen principal
+                        </span>
+
+                        <input type="file" name="imagen">
+
+                    </label>
+
+                </section>
+
+
+                <!-- INFORMACIÓN -->
+                <section class="informacion">
+
+                    <div class="campo">
+                        <label for="nombre">Nombre del producto</label>
+                        <input
+                            type="text"
+                            id="nombre"
+                            name="nombre"
+                            placeholder="Escribe el nombre del producto"
+                        >
+                    </div>
+
+
+                    <div class="campo precio">
+                        <label for="precio">Precio</label>
+
+                        <div class="precio-input">
+                            <span>$</span>
+
+                            <input
+                                type="number"
+                                id="precio"
+                                name="precio"
+                                placeholder="0"
+                                step="0.01"
+                            >
+                        </div>
+                    </div>
+
+
+                    <div class="linea"></div>
+
+
+                    <div class="campo">
+                        <label for="descripcion">Descripción</label>
+
+                        <textarea
+                            id="descripcion"
+                            name="descripcion"
+                            placeholder="Escribe una descripción del producto"
+                        ></textarea>
+                    </div>
+
+
+                    <button type="submit">
+                        Crear producto
+                    </button>
+
+                </section>
+
+            </div>
+
+        </form>
+
+    </main>
+
+</body>
+</html>
