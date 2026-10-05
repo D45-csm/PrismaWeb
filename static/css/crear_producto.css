@@ -1,0 +1,414 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #fffdfb;
+    color: #5b4a45;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+
+/* =========================
+   HEADER ADMINISTRADOR
+========================= */
+
+.admin-header {
+    height: 92px;
+    width: 100%;
+    background: #ffffff;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 55px;
+
+    border-bottom: 1px solid #eaded8;
+}
+
+
+/* Logo */
+
+.logo {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+}
+
+.logo span {
+    color: #a85d52;
+    font-size: 29px;
+    font-weight: bold;
+}
+
+.logo small {
+    color: #9d8178;
+    font-size: 9px;
+    letter-spacing: 3px;
+    margin-top: 6px;
+}
+
+
+/* Menú */
+
+.admin-header nav {
+    display: flex;
+    gap: 38px;
+}
+
+.admin-header nav a {
+    text-decoration: none;
+    color: #806c65;
+    font-size: 16px;
+    transition: 0.2s;
+}
+
+.admin-header nav a:hover {
+    color: #a85d52;
+}
+
+
+/* Administrador */
+
+.admin-user {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    color: #806c65;
+    font-size: 14px;
+}
+
+.user-icon {
+    width: 38px;
+    height: 38px;
+
+    border: 1px solid #d8b9af;
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #a85d52;
+    font-size: 20px;
+}
+
+
+/* =========================
+   CONTENIDO
+========================= */
+
+.crear-container {
+    width: 90%;
+    max-width: 1350px;
+    margin: 45px auto;
+}
+
+
+/* Ruta */
+
+.breadcrumb {
+    color: #9a8983;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.breadcrumb strong {
+    color: #a85d52;
+}
+
+
+/* Título */
+
+h1 {
+    color: #5c4842;
+    font-size: 31px;
+    font-weight: normal;
+    margin-bottom: 35px;
+}
+
+
+/* =========================
+   PRODUCTO
+========================= */
+
+.producto-contenido {
+    display: grid;
+    grid-template-columns: 58% 42%;
+    gap: 55px;
+}
+
+
+/* =========================
+   GALERÍA
+========================= */
+
+.galeria {
+    display: flex;
+    gap: 18px;
+}
+
+
+/* Miniaturas */
+
+.miniaturas {
+    width: 82px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+
+.miniatura {
+    width: 78px;
+    height: 78px;
+
+    background: #f6f0ed;
+    border: 1px solid #ddcbc4;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+}
+
+
+.miniatura span {
+    font-family: Arial, sans-serif;
+    font-size: 35px;
+    font-weight: 200;
+    color: #a85d52;
+}
+
+
+.miniatura input {
+    display: none;
+}
+
+
+/* Imagen principal */
+
+.imagen-principal {
+    flex: 1;
+    height: 510px;
+
+    background: #f6f0ed;
+    border: 1px solid #e0d1ca;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+.imagen-principal:hover {
+    background: #f2e9e5;
+}
+
+
+.plus-grande {
+    font-family: Arial, sans-serif;
+    font-size: 82px;
+    font-weight: 200;
+    line-height: 1;
+
+    color: #a85d52;
+}
+
+
+.texto-imagen {
+    margin-top: 15px;
+
+    color: #907a72;
+    font-size: 18px;
+}
+
+
+.imagen-principal input {
+    display: none;
+}
+
+
+/* =========================
+   INFORMACIÓN
+========================= */
+
+.informacion {
+    padding: 5px 15px 0 5px;
+}
+
+
+.campo {
+    margin-bottom: 24px;
+}
+
+
+.campo label {
+    display: block;
+
+    color: #76625b;
+    font-size: 14px;
+
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+
+    margin-bottom: 10px;
+}
+
+
+/* Inputs */
+
+.campo input,
+.campo textarea {
+    width: 100%;
+
+    border: none;
+    border-bottom: 1px solid #b9aaa4;
+
+    background: transparent;
+
+    padding: 10px 2px;
+
+    color: #5d4c47;
+
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 20px;
+
+    outline: none;
+}
+
+
+.campo input::placeholder,
+.campo textarea::placeholder {
+    color: #a99b95;
+}
+
+
+.campo input:focus,
+.campo textarea:focus {
+    border-bottom: 2px solid #a85d52;
+}
+
+
+/* Precio */
+
+.precio-input {
+    display: flex;
+    align-items: center;
+
+    border-bottom: 1px solid #b9aaa4;
+}
+
+
+.precio-input span {
+    font-size: 20px;
+    color: #5d4c47;
+}
+
+
+.precio-input input {
+    border-bottom: none;
+}
+
+
+/* Línea */
+
+.linea {
+    width: 100%;
+    height: 1px;
+
+    background: #d9ccc7;
+
+    margin: 35px 0;
+}
+
+
+/* Descripción */
+
+.campo textarea {
+    height: 150px;
+
+    border: 1px solid #d9cbc5;
+    padding: 15px;
+
+    resize: none;
+
+    font-size: 17px;
+
+    background: #fffdfc;
+}
+
+
+/* =========================
+   BOTÓN
+========================= */
+
+button[type="submit"] {
+    width: 100%;
+
+    margin-top: 15px;
+
+    padding: 16px;
+
+    border: none;
+    border-radius: 3px;
+
+    background: #a85d52;
+    color: white;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    letter-spacing: 3px;
+    text-transform: uppercase;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+button[type="submit"]:hover {
+    background: #8f4941;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+
+    .admin-header {
+        padding: 0 25px;
+    }
+
+    .admin-header nav {
+        display: none;
+    }
+
+    .producto-contenido {
+        grid-template-columns: 1fr;
+    }
+
+    .imagen-principal {
+        height: 400px;
+    }
+
+    .informacion {
+        padding: 20px 0;
+    }
+}
