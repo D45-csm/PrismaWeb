@@ -1,42 +1,12 @@
+{% extends 'base_admin.html' %}
+
+
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Crear producto</title>
-
-    <link rel="stylesheet" href="{% static 'css/crear_producto.css' %}">
-</head>
-
-<body>
-
-    <!-- HEADER ADMINISTRADOR -->
-    <header class="admin-header">
-
-        <div class="logo">
-            <span>PrismaWeb</span>
-            <small>ADMINISTRACIÓN</small>
-        </div>
-
-        <nav>
-            <a href="#">Inicio</a>
-            <a href="#">Productos</a>
-            <a href="#">Inventario</a>
-            <a href="#">Usuarios</a>
-        </nav>
-
-        <div class="admin-user">
-            <span>Administrador</span>
-            <div class="user-icon">♙</div>
-        </div>
-
-    </header>
-
-
-    <!-- CONTENIDO -->
+    {% block content %}
+     <link rel="stylesheet" href="{% static 'css/crear_producto.css' %}">
+        <!-- CONTENIDO -->
     <main class="crear-container">
 
         <div class="breadcrumb">
@@ -146,5 +116,5 @@
 
     </main>
 
-</body>
-</html>
+    {% endblock %}
+
