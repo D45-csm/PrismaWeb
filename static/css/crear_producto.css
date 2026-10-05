@@ -11,9 +11,7 @@ body {
 }
 
 
-/* =========================
-   HEADER ADMINISTRADOR
-========================= */
+/* HEADER ADMINISTRADOR */
 
 .admin-header {
     height: 92px;
@@ -98,9 +96,7 @@ body {
 }
 
 
-/* =========================
-   CONTENIDO
-========================= */
+/* CONTENIDO */
 
 .crear-container {
     width: 90%;
@@ -115,6 +111,7 @@ body {
     color: #9a8983;
     font-size: 14px;
     margin-bottom: 15px;
+    font-family: Georgia, "Times New Roman", serif;
 }
 
 .breadcrumb strong {
@@ -129,12 +126,11 @@ h1 {
     font-size: 31px;
     font-weight: normal;
     margin-bottom: 35px;
+    font-family: Georgia, "Times New Roman", serif;
 }
 
 
-/* =========================
-   PRODUCTO
-========================= */
+/* PRODUCTO */
 
 .producto-contenido {
     display: grid;
@@ -143,9 +139,7 @@ h1 {
 }
 
 
-/* =========================
-   GALERÍA
-========================= */
+/* GALERÍA */
 
 .galeria {
     display: flex;
@@ -240,9 +234,7 @@ h1 {
 }
 
 
-/* =========================
-   INFORMACIÓN
-========================= */
+/* INFORMACIÓN */
 
 .informacion {
     padding: 5px 15px 0 5px;
@@ -350,9 +342,7 @@ h1 {
 }
 
 
-/* =========================
-   BOTÓN
-========================= */
+/* BOTÓN */
 
 button[type="submit"] {
     width: 100%;
@@ -386,9 +376,7 @@ button[type="submit"]:hover {
 }
 
 
-/* =========================
-   RESPONSIVE
-========================= */
+/* RESPONSIVE */
 
 @media (max-width: 900px) {
 
