@@ -1,116 +1,871 @@
 {% extends 'base_admin.html' %}
 
-
 {% load static %}
 
+{% block content %}
 
-    {% block content %}
-     <link rel="stylesheet" href="{% static 'css/crear_producto.css' %}">
-        <!-- CONTENIDO -->
-    <main class="crear-container">
+<link rel="stylesheet" href="{% static 'css/crear_producto.css' %}">
 
-        <div class="breadcrumb">
-            Administración / Productos / <strong>Crear producto</strong>
+
+<!-- ==========================================
+     MENSAJES
+========================================== -->
+
+{% if messages %}
+
+<div class="mensajes">
+
+    {% for message in messages %}
+
+    <div class="alerta
+        {% if message.tags == 'error' %}
+            alerta-error
+        {% else %}
+            alerta-exito
+        {% endif %}
+    ">
+
+        <div class="alerta-icono">
+
+            {% if message.tags == 'error' %}
+                !
+            {% else %}
+                ✓
+            {% endif %}
+
         </div>
 
-        <h1>Crear Producto</h1>
+        <div class="alerta-texto">
 
-        <form method="POST" enctype="multipart/form-data">
+            {% if message.tags == 'error' %}
 
-            {% csrf_token %}
+                <strong>Algo salió mal</strong>
 
-            <div class="producto-contenido">
+            {% else %}
 
-                <!-- GALERÍA -->
-                <section class="galeria">
+                <strong>
+                    {% if producto_editar %}
+                        ¡Producto actualizado!
+                    {% else %}
+                        ¡Producto creado!
+                    {% endif %}
+                </strong>
 
-                    <div class="miniaturas">
+            {% endif %}
+
+            <span>{{ message }}</span>
+
+        </div>
+
+        <button type="button"
+                class="cerrar-alerta"
+                onclick="cerrarAlerta(this)">
+            ×
+        </button>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+{% endif %}
+
+
+
+<main class="crear-container">
+
+
+    <!-- ==========================================
+         ENCABEZADO
+    ========================================== -->
+
+    <div class="breadcrumb">
+
+        Administración / Productos /
+
+        <strong>
+            {% if producto_editar %}
+                Editar producto
+            {% else %}
+                Crear producto
+            {% endif %}
+        </strong>
+
+    </div>
+
+
+    <h1>
+
+        {% if producto_editar %}
+            Editar Producto
+        {% else %}
+            Crear Producto
+        {% endif %}
+
+    </h1>
+
+
+
+    <!-- ==========================================
+         FORMULARIO
+    ========================================== -->
+
+    <form method="POST" enctype="multipart/form-data">
+
+        {% csrf_token %}
+
+
+        <div class="producto-contenido">
+
+
+            <!-- ==================================
+                 GALERÍA
+            ================================== -->
+
+            <section class="galeria">
+
+
+                <!-- ==================================
+                     MINIATURAS
+                ================================== -->
+
+                <div class="miniaturas">
+
+
+                    <!-- IMAGEN 2 -->
+
+                    <div class="contenedor-miniatura">
 
                         <label class="miniatura">
-                            <span>+</span>
-                            <input type="file" name="imagen_1">
+
+                            <input
+                                type="file"
+                                name="imagen_2"
+                                accept="image/*"
+                                onchange="mostrarImagen(this, 'preview2')"
+                            >
+
+                            {% if producto_editar and producto_editar.imagen_2 %}
+
+                                <img
+                                    id="preview2"
+                                    class="mostrar"
+                                    src="{{ producto_editar.imagen_2.url }}"
+                                    alt="Imagen 2"
+                                >
+
+                            {% else %}
+
+                                <img
+                                    id="preview2"
+                                    alt="Imagen 2"
+                                >
+
+                            {% endif %}
+
+                            <span class="plus">+</span>
+
                         </label>
 
-                        <label class="miniatura">
-                            <span>+</span>
-                            <input type="file" name="imagen_2">
-                        </label>
 
-                        <label class="miniatura">
-                            <span>+</span>
-                            <input type="file" name="imagen_3">
-                        </label>
+                        <button
+                            type="button"
+                            class="eliminar-imagen"
+                            onclick="eliminarImagen('preview2', this)"
+                        >
+                            🗑 Eliminar imagen
+                        </button>
+
+
+                        <input
+                            type="hidden"
+                            name="eliminar_imagen_2"
+                            value="0"
+                        >
 
                     </div>
 
+
+
+                    <!-- IMAGEN 3 -->
+
+                    <div class="contenedor-miniatura">
+
+                        <label class="miniatura">
+
+                            <input
+                                type="file"
+                                name="imagen_3"
+                                accept="image/*"
+                                onchange="mostrarImagen(this, 'preview3')"
+                            >
+
+                            {% if producto_editar and producto_editar.imagen_3 %}
+
+                                <img
+                                    id="preview3"
+                                    class="mostrar"
+                                    src="{{ producto_editar.imagen_3.url }}"
+                                    alt="Imagen 3"
+                                >
+
+                            {% else %}
+
+                                <img
+                                    id="preview3"
+                                    alt="Imagen 3"
+                                >
+
+                            {% endif %}
+
+                            <span class="plus">+</span>
+
+                        </label>
+
+
+                        <button
+                            type="button"
+                            class="eliminar-imagen"
+                            onclick="eliminarImagen('preview3', this)"
+                        >
+                            🗑 Eliminar imagen
+                        </button>
+
+
+                        <input
+                            type="hidden"
+                            name="eliminar_imagen_3"
+                            value="0"
+                        >
+
+                    </div>
+
+
+
+                    <!-- IMAGEN 4 -->
+
+                    <div class="contenedor-miniatura">
+
+                        <label class="miniatura">
+
+                            <input
+                                type="file"
+                                name="imagen_4"
+                                accept="image/*"
+                                onchange="mostrarImagen(this, 'preview4')"
+                            >
+
+                            {% if producto_editar and producto_editar.imagen_4 %}
+
+                                <img
+                                    id="preview4"
+                                    class="mostrar"
+                                    src="{{ producto_editar.imagen_4.url }}"
+                                    alt="Imagen 4"
+                                >
+
+                            {% else %}
+
+                                <img
+                                    id="preview4"
+                                    alt="Imagen 4"
+                                >
+
+                            {% endif %}
+
+                            <span class="plus">+</span>
+
+                        </label>
+
+
+                        <button
+                            type="button"
+                            class="eliminar-imagen"
+                            onclick="eliminarImagen('preview4', this)"
+                        >
+                            🗑 Eliminar imagen
+                        </button>
+
+
+                        <input
+                            type="hidden"
+                            name="eliminar_imagen_4"
+                            value="0"
+                        >
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- ==================================
+                     IMAGEN PRINCIPAL
+                ================================== -->
+
+                <div class="principal-contenedor">
 
                     <label class="imagen-principal">
 
-                        <span class="plus-grande">+</span>
+                        <input
+                            type="file"
+                            name="imagen_principal"
+                            accept="image/*"
+                            onchange="mostrarImagenPrincipal(this)"
+                        >
 
-                        <span class="texto-imagen">
-                            Agregar imagen principal
-                        </span>
 
-                        <input type="file" name="imagen">
+                        {% if producto_editar and producto_editar.imagen_principal %}
+
+                            <img
+                                id="previewPrincipal"
+                                class="mostrar"
+                                src="{{ producto_editar.imagen_principal.url }}"
+                                alt="Imagen principal"
+                            >
+
+                            <div
+                                id="contenidoPrincipal"
+                                class="contenido-oculto"
+                            >
+                            </div>
+
+                        {% else %}
+
+                            <img
+                                id="previewPrincipal"
+                                alt="Imagen principal"
+                            >
+
+                            <div id="contenidoPrincipal">
+
+                                <span class="plus-grande">
+                                    +
+                                </span>
+
+                                <span class="texto-imagen">
+                                    Agregar imagen principal
+                                </span>
+
+                            </div>
+
+                        {% endif %}
 
                     </label>
 
-                </section>
 
-
-                <!-- INFORMACIÓN -->
-                <section class="informacion">
-
-                    <div class="campo">
-                        <label for="nombre">Nombre del producto</label>
-                        <input
-                            type="text"
-                            id="nombre"
-                            name="nombre"
-                            placeholder="Escribe el nombre del producto"
-                        >
-                    </div>
-
-
-                    <div class="campo precio">
-                        <label for="precio">Precio</label>
-
-                        <div class="precio-input">
-                            <span>$</span>
-
-                            <input
-                                type="number"
-                                id="precio"
-                                name="precio"
-                                placeholder="0"
-                                step="0.01"
-                            >
-                        </div>
-                    </div>
-
-
-                    <div class="campo">
-                        <label for="descripcion">Descripción</label>
-
-                        <textarea
-                            id="descripcion"
-                            name="descripcion"
-                            placeholder="Escribe una descripción del producto"
-                        ></textarea>
-                    </div>
-
-                    <button type="submit">
-                        Crear producto
+                    <button
+                        type="button"
+                        class="eliminar-imagen principal"
+                        onclick="eliminarImagenPrincipal()"
+                    >
+                        🗑 Eliminar imagen principal
                     </button>
 
-                </section>
 
-            </div>
+                    <input
+                        type="hidden"
+                        name="eliminar_imagen_principal"
+                        id="eliminarImagenPrincipalInput"
+                        value="0"
+                    >
 
-        </form>
+                </div>
 
-    </main>
+            </section>
 
-    {% endblock %}
 
+
+            <!-- ==================================
+                 INFORMACIÓN
+            ================================== -->
+
+            <section class="informacion">
+
+
+                <!-- NOMBRE -->
+
+                <div class="campo">
+
+                    <label for="nombre">
+                        Nombre del producto
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre"
+                        name="nombre"
+                        placeholder="Escribe el nombre del producto"
+                        value="{% if producto_editar %}{{ producto_editar.nombre }}{% endif %}"
+                        required
+                    >
+
+                </div>
+
+
+
+                <!-- PRECIO -->
+
+                <div class="campo precio">
+
+                    <label for="precio">
+                        Precio
+                    </label>
+
+                    <div class="precio-input">
+
+                        <span>$</span>
+
+                        <input
+                            type="number"
+                            id="precio"
+                            name="precio"
+                            placeholder="0"
+                            step="0.01"
+                            min="0"
+                            value="{% if producto_editar %}{{ producto_editar.precio }}{% endif %}"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- CATEGORÍA -->
+
+                <div class="campo">
+
+                    <label for="categoria">
+                        Categoría
+                    </label>
+
+                    <select
+                        id="categoria"
+                        name="categoria"
+                        required
+                    >
+
+                        <option value="">
+                            Selecciona una categoría
+                        </option>
+
+
+                        {% for categoria in categorias %}
+
+                            <option
+                                value="{{ categoria.id }}"
+                                {% if producto_editar and producto_editar.categoria.id == categoria.id %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ categoria.nombre }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- DESCRIPCIÓN -->
+
+                <div class="campo">
+
+                    <label for="descripcion">
+                        Descripción
+                    </label>
+
+                    <textarea
+                        id="descripcion"
+                        name="descripcion"
+                        placeholder="Escribe una descripción del producto"
+                        required
+                    >{% if producto_editar %}{{ producto_editar.descripcion }}{% endif %}</textarea>
+
+                </div>
+
+
+
+                <!-- BOTÓN -->
+
+                <button
+                    type="submit"
+                    class="boton-principal"
+                >
+
+                    {% if producto_editar %}
+                        Guardar cambios
+                    {% else %}
+                        Crear producto
+                    {% endif %}
+
+                </button>
+
+
+                {% if producto_editar %}
+
+                    <a
+                        href="{% url 'crear_producto' %}"
+                        class="boton-cancelar"
+                    >
+                        Cancelar edición
+                    </a>
+
+                {% endif %}
+
+
+            </section>
+
+        </div>
+
+    </form>
+
+
+
+    <!-- ==========================================
+         PRODUCTOS CREADOS
+    ========================================== -->
+
+    <section class="productos-creados">
+
+        <h2>
+            Productos creados
+        </h2>
+
+
+        <div class="productos-grid">
+
+
+            {% for producto in productos %}
+
+                <article class="producto-card">
+
+
+                    <!-- IMAGEN PRINCIPAL -->
+
+                    <div class="producto-imagen">
+
+                        {% if producto.imagen_principal %}
+
+                            <img
+                                src="{{ producto.imagen_principal.url }}"
+                                alt="{{ producto.nombre }}"
+                            >
+
+                        {% else %}
+
+                            <div class="sin-imagen">
+                                Sin imagen
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+
+                    <!-- INFORMACIÓN -->
+
+                    <div class="producto-info">
+
+                        <h3>
+                            {{ producto.nombre }}
+                        </h3>
+
+
+                        <p class="producto-precio">
+                            ${{ producto.precio }}
+                        </p>
+
+
+                        <p class="producto-descripcion">
+                            {{ producto.descripcion }}
+                        </p>
+
+
+
+                        <!-- BOTONES -->
+
+                        <div class="acciones-producto">
+
+                            <a
+                                href="{% url 'editar_producto' producto.id %}"
+                                class="boton-editar"
+                            >
+                                Editar
+                            </a>
+
+
+                            <form
+                                method="POST"
+                                action="{% url 'eliminar_producto' producto.id %}"
+                                onsubmit="return confirmarEliminacion();"
+                            >
+
+                                {% csrf_token %}
+
+                                <button
+                                    type="submit"
+                                    class="boton-eliminar"
+                                >
+                                    Eliminar
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+
+            {% empty %}
+
+                <p class="sin-productos">
+                    Todavía no hay productos creados.
+                </p>
+
+            {% endfor %}
+
+
+        </div>
+
+    </section>
+
+</main>
+
+
+
+<!-- ==========================================
+     JAVASCRIPT
+========================================== -->
+
+<script>
+
+
+    /* ==========================================
+       MOSTRAR IMÁGENES PEQUEÑAS
+    ========================================== */
+
+    function mostrarImagen(input, idImagen) {
+
+        const imagen = document.getElementById(idImagen);
+
+        const contenedor = input.parentElement;
+
+        const plus = contenedor.querySelector(".plus");
+
+
+        if (input.files && input.files[0]) {
+
+            const lector = new FileReader();
+
+
+            lector.onload = function (e) {
+
+                imagen.src = e.target.result;
+
+                imagen.classList.add("mostrar");
+
+                plus.style.display = "none";
+
+            };
+
+
+            lector.readAsDataURL(input.files[0]);
+
+        }
+
+    }
+
+
+
+    /* ==========================================
+       MOSTRAR IMAGEN PRINCIPAL
+    ========================================== */
+
+    function mostrarImagenPrincipal(input) {
+
+        const imagen =
+            document.getElementById("previewPrincipal");
+
+        const contenido =
+            document.getElementById("contenidoPrincipal");
+
+
+        if (input.files && input.files[0]) {
+
+            const lector = new FileReader();
+
+
+            lector.onload = function (e) {
+
+                imagen.src = e.target.result;
+
+                imagen.classList.add("mostrar");
+
+                contenido.style.display = "none";
+
+            };
+
+
+            lector.readAsDataURL(input.files[0]);
+
+        }
+
+    }
+
+
+
+    /* ==========================================
+       ELIMINAR IMAGEN PEQUEÑA
+    ========================================== */
+
+    function eliminarImagen(idImagen, boton) {
+
+        const imagen =
+            document.getElementById(idImagen);
+
+        const contenedor =
+            boton.parentElement;
+
+        const input =
+            contenedor.querySelector(
+                'input[type="file"]'
+            );
+
+        const plus =
+            contenedor.querySelector(".plus");
+
+        const eliminar =
+            contenedor.querySelector(
+                'input[type="hidden"]'
+            );
+
+
+        imagen.src = "";
+
+        imagen.classList.remove("mostrar");
+
+        input.value = "";
+
+        plus.style.display = "block";
+
+
+        if (eliminar) {
+
+            eliminar.value = "1";
+
+        }
+
+    }
+
+
+
+    /* ==========================================
+       ELIMINAR IMAGEN PRINCIPAL
+    ========================================== */
+
+    function eliminarImagenPrincipal() {
+
+        const imagen =
+            document.getElementById("previewPrincipal");
+
+        const contenido =
+            document.getElementById("contenidoPrincipal");
+
+        const input =
+            document.querySelector(
+                'input[name="imagen_principal"]'
+            );
+
+        const eliminar =
+            document.getElementById(
+                "eliminarImagenPrincipalInput"
+            );
+
+
+        imagen.src = "";
+
+        imagen.classList.remove("mostrar");
+
+        input.value = "";
+
+        contenido.style.display = "flex";
+
+        eliminar.value = "1";
+
+    }
+
+
+
+    /* ==========================================
+       CERRAR ALERTA
+    ========================================== */
+
+    function cerrarAlerta(boton) {
+
+        const alerta = boton.parentElement;
+
+        alerta.classList.add("ocultar");
+
+
+        setTimeout(function () {
+
+            alerta.remove();
+
+        }, 300);
+
+    }
+
+
+
+    /* ==========================================
+       CERRAR ALERTA AUTOMÁTICAMENTE
+    ========================================== */
+
+    setTimeout(function () {
+
+        const alerta =
+            document.querySelector(".alerta");
+
+
+        if (alerta) {
+
+            alerta.classList.add("ocultar");
+
+
+            setTimeout(function () {
+
+                alerta.remove();
+
+            }, 300);
+
+        }
+
+    }, 4000);
+
+
+
+    /* ==========================================
+       CONFIRMAR ELIMINACIÓN
+    ========================================== */
+
+    function confirmarEliminacion() {
+
+        return confirm(
+            "¿Estás segura de que quieres eliminar este producto?"
+        );
+
+    }
+
+</script>
+
+
+{% endblock %}
