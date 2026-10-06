@@ -5,7 +5,21 @@
 
 <link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}">
 
+<!-- IMPORTAR LIBRERÍA SWEETALERT2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <main class="gestion-container">
+
+    <!-- 🌟 NUEVO: BLOQUE DE ALERTAS DE DJANGO PARA EVITAR EL MENSAJE FANTASMA 🌟 -->
+    {% if messages %}
+        <div class="contenedor-alertas" style="margin-bottom: 20px;">
+            {% for message in messages %}
+                <div class="alerta {{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 
     <!-- BREADCRUMB -->
     <div class="breadcrumb">
@@ -71,7 +85,8 @@
                             Editar
                         </a>
 
-                        <form method="POST" action="{% url 'eliminar_producto' producto.id %}" onsubmit="return confirmarEliminacion();">
+                        <!-- FORMULARIO ELIMINAR -->
+                        <form method="POST" action="{% url 'eliminar_producto' producto.id %}" class="form-eliminar">
                             {% csrf_token %}
                             <button type="submit" class="boton-eliminar">Eliminar</button>
                         </form>
@@ -89,6 +104,7 @@
 
 </main>
 
+<!-- TU ARCHIVO JS (Asegúrate de que cargue después del HTML) -->
 <script src="{% static 'js/gestion_productos.js' %}"></script>
 
 {% endblock %}
