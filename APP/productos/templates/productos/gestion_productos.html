@@ -1,0 +1,94 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}">
+
+<main class="gestion-container">
+
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb">
+        Administración / <strong>Gestión de Productos</strong>
+    </div>
+
+    <!-- ENCABEZADO Y BOTÓN CREAR -->
+    <div class="header-acciones">
+        <div>
+            <h1>Gestión de Productos</h1>
+            <p class="subtitulo">Administra los productos de tu catálogo, edítalos o cambia su visibilidad.</p>
+        </div>
+
+        <a href="{% url 'crear_producto' %}" class="boton-crear">
+            <span class="icono-mas">+</span> Crear Producto
+        </a>
+    </div>
+
+    <!-- LISTA / GRID DE PRODUCTOS -->
+    <section class="productos-grid">
+        {% for producto in productos %}
+            <article class="producto-card {% if not producto.activo %}producto-inactivo{% endif %}">
+                
+                <!-- IMAGEN -->
+                <div class="producto-imagen">
+                    {% if producto.imagen_principal %}
+                        <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}">
+                    {% else %}
+                        <div class="sin-imagen">Sin imagen</div>
+                    {% endif %}
+
+                    <!-- CATEGORÍA BADGE -->
+                    <span class="categoria-badge">{{ producto.categoria.nombre }}</span>
+                </div>
+
+                <!-- INFORMACIÓN -->
+                <div class="producto-info">
+                    
+                    <div class="producto-header">
+                        <h3 class="producto-titulo">{{ producto.nombre }}</h3>
+                        <span class="producto-precio">${{ producto.precio }}</span>
+                    </div>
+
+                    <p class="producto-descripcion">{{ producto.descripcion|truncatewords:15 }}</p>
+
+                    <!-- SWITCH DE ESTADO (ACTIVAR / DESACTIVAR) -->
+                    <div class="estado-container">
+                        <span class="estado-label">
+                            Estado: <strong id="estado-texto-{{ producto.id }}">{% if producto.activo %}Activo{% else %}Inactivo{% endif %}</strong>
+                        </span>
+
+                        <label class="switch">
+                            <input type="checkbox" 
+                                   onchange="cambiarEstadoProducto('{{ producto.id }}', this)"
+                                   {% if producto.activo %}checked{% endif %}>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <!-- BOTONES DE ACCIÓN -->
+                    <div class="acciones-producto">
+                        <a href="{% url 'editar_producto' producto.id %}" class="boton-editar">
+                            Editar
+                        </a>
+
+                        <form method="POST" action="{% url 'eliminar_producto' producto.id %}" onsubmit="return confirmarEliminacion();">
+                            {% csrf_token %}
+                            <button type="submit" class="boton-eliminar">Eliminar</button>
+                        </form>
+                    </div>
+
+                </div>
+            </article>
+        {% empty %}
+            <div class="sin-productos-card">
+                <p class="sin-productos">Aún no has registrado ningún producto.</p>
+                <a href="{% url 'crear_producto' %}" class="boton-secundario">Agregar primer producto</a>
+            </div>
+        {% endfor %}
+    </section>
+
+</main>
+
+<script src="{% static 'js/gestion_productos.js' %}"></script>
+
+{% endblock %}

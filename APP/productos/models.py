@@ -1,5 +1,6 @@
+from decimal import Decimal
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
-
 
 class CategoriaProducto(models.Model):
     nombre = models.CharField(max_length=100)
@@ -43,9 +44,13 @@ class Producto(models.Model):
     )
 
     precio = models.DecimalField(
-        max_digits=10,
-        decimal_places=2
-    )
+            max_digits=10,
+            decimal_places=2,
+            validators=[
+                MinValueValidator(Decimal('0.01')),
+                MaxValueValidator(Decimal('99999999.99'))  # Evita guardar precios gigantes en la BD
+            ]
+        )
 
     activo = models.BooleanField(default=True)
 
