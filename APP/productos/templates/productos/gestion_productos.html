@@ -3,14 +3,28 @@
 
 {% block content %}
 
-<link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}">
+<!-- Vinculación del CSS con control de caché -->
+<link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}?v=1.1">
 
 <!-- IMPORTAR LIBRERÍA SWEETALERT2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <main class="gestion-container">
 
-    <!-- 🌟 NUEVO: BLOQUE DE ALERTAS DE DJANGO PARA EVITAR EL MENSAJE FANTASMA 🌟 -->
+    <!-- BOTÓN DE NAVEGACIÓN (ÚNICAMENTE ADMINISTRACIÓN) -->
+    <div class="acciones-navegacion">
+        <a href="{% url 'perfil' %}" class="btn-nav">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Administración</span>
+        </a>
+    </div>
+
+    <!-- BLOQUE DE ALERTAS DE DJANGO -->
     {% if messages %}
         <div class="contenedor-alertas" style="margin-bottom: 20px;">
             {% for message in messages %}
@@ -104,7 +118,6 @@
 
 </main>
 
-<!-- TU ARCHIVO JS (Asegúrate de que cargue después del HTML) -->
 <script src="{% static 'js/gestion_productos.js' %}"></script>
 
 {% endblock %}
