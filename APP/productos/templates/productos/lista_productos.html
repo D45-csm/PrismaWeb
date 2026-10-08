@@ -1,0 +1,165 @@
+{% load static %}
+
+<section class="productos-grid">
+<link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}">
+    {% for producto in productos %}
+
+        <article class="producto-card {% if not producto.activo %}producto-inactivo{% endif %}">
+
+            <!-- IMAGEN -->
+            <div class="producto-imagen">
+
+                {% if producto.imagen_principal %}
+                    <img src="{{ producto.imagen_principal.url }}"
+                         alt="{{ producto.nombre }}">
+                {% else %}
+                    <div class="sin-imagen">Sin imagen</div>
+                {% endif %}
+
+                <span class="categoria-badge">
+                    {{ producto.categoria.nombre }}
+                </span>
+
+            </div>
+
+
+            <!-- INFORMACIÓN -->
+            <div class="producto-info">
+
+                <div class="producto-header">
+
+                    <h3 class="producto-titulo">
+                        {{ producto.nombre }}
+                    </h3>
+
+                    <span class="producto-precio">
+                        ${{ producto.precio }}
+                    </span>
+
+                </div>
+
+                <p class="producto-descripcion">
+                    {{ producto.descripcion|truncatewords:15 }}
+                </p>
+
+
+                {% if user.is_authenticated and user.is_staff %}
+
+                    <!-- ========================== -->
+                    <!-- INTERFAZ ADMINISTRADOR -->
+                    <!-- ========================== -->
+
+                    <div class="estado-container">
+
+                        <span class="estado-label">
+
+                            Estado:
+
+                            <strong id="estado-texto-{{ producto.id }}">
+                                {% if producto.activo %}
+                                    Activo
+                                {% else %}
+                                    Inactivo
+                                {% endif %}
+                            </strong>
+
+                        </span>
+
+                        <label class="switch">
+
+                            <input
+                                type="checkbox"
+                                onchange="cambiarEstadoProducto('{{ producto.id }}', this)"
+                                {% if producto.activo %}checked{% endif %}
+                            >
+
+                            <span class="slider round"></span>
+
+                        </label>
+
+                    </div>
+
+
+                    <!-- BOTONES ADMIN -->
+                    <div class="acciones-producto">
+
+                        <a
+                            href="{% url 'editar_producto' producto.id %}"
+                            class="boton-editar">
+                            Editar
+                        </a>
+
+
+                        <form
+                            method="POST"
+                            action="{% url 'eliminar_producto' producto.id %}"
+                            class="form-eliminar">
+
+                            {% csrf_token %}
+
+                            <button
+                                type="submit"
+                                class="boton-eliminar">
+                                Eliminar
+                            </button>
+
+                        </form>
+
+                    </div>
+
+
+                {% else %}
+
+                    <!-- ========================== -->
+                    <!-- INTERFAZ CLIENTE -->
+                    <!-- ========================== -->
+
+                    {% if producto.activo %}
+
+                        <div class="acciones-cliente">
+
+                            <a
+                                href="{% url 'lista_productos' %}"
+                                class="boton-ver-producto">
+                                Ver producto
+                            </a>
+
+                        </div>
+
+                    {% endif %}
+
+                {% endif %}
+
+            </div>
+
+        </article>
+
+    {% empty %}
+
+        <div class="sin-productos-card">
+
+            {% if user.is_authenticated and user.is_staff %}
+
+                <p class="sin-productos">
+                    Aún no has registrado ningún producto
+                </p>
+
+                <a
+                    href="{% url 'crear_producto' %}"
+                    class="boton-secundario">
+                    Agregar primer producto
+                </a>
+
+            {% else %}
+
+                <p class="sin-productos">
+                    No hay productos disponibles
+                </p>
+
+            {% endif %}
+
+        </div>
+
+    {% endfor %}
+
+</section>
