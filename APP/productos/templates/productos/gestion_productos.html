@@ -4,7 +4,7 @@
 {% block content %}
 
 <!-- Vinculación del CSS con control de caché -->
-<link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}?v=1.1">
+<link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}">
 
 <!-- IMPORTAR LIBRERÍA SWEETALERT2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -51,71 +51,8 @@
     </div>
 
     <!-- LISTA / GRID DE PRODUCTOS -->
-    <section class="productos-grid">
-        {% for producto in productos %}
-            <article class="producto-card {% if not producto.activo %}producto-inactivo{% endif %}">
-                
-                <!-- IMAGEN -->
-                <div class="producto-imagen">
-                    {% if producto.imagen_principal %}
-                        <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}">
-                    {% else %}
-                        <div class="sin-imagen">Sin imagen</div>
-                    {% endif %}
-
-                    <!-- CATEGORÍA BADGE -->
-                    <span class="categoria-badge">{{ producto.categoria.nombre }}</span>
-                </div>
-
-                <!-- INFORMACIÓN -->
-                <div class="producto-info">
-                    
-                    <div class="producto-header">
-                        <h3 class="producto-titulo">{{ producto.nombre }}</h3>
-                        <span class="producto-precio">${{ producto.precio }}</span>
-                    </div>
-
-                    <p class="producto-descripcion">{{ producto.descripcion|truncatewords:15 }}</p>
-
-                    <!-- SWITCH DE ESTADO (ACTIVAR / DESACTIVAR) -->
-                    <div class="estado-container">
-                        <span class="estado-label">
-                            Estado: <strong id="estado-texto-{{ producto.id }}">{% if producto.activo %}Activo{% else %}Inactivo{% endif %}</strong>
-                        </span>
-
-                        <label class="switch">
-                            <input type="checkbox" 
-                                   onchange="cambiarEstadoProducto('{{ producto.id }}', this)"
-                                   {% if producto.activo %}checked{% endif %}>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-
-                    <!-- BOTONES DE ACCIÓN -->
-                    <div class="acciones-producto">
-                        <a href="{% url 'editar_producto' producto.id %}" class="boton-editar">
-                            Editar
-                        </a>
-
-                        <!-- FORMULARIO ELIMINAR -->
-                        <form method="POST" action="{% url 'eliminar_producto' producto.id %}" class="form-eliminar">
-                            {% csrf_token %}
-                            <button type="submit" class="boton-eliminar">Eliminar</button>
-                        </form>
-                    </div>
-
-                </div>
-            </article>
-        {% empty %}
-            <div class="sin-productos-card">
-                <p class="sin-productos">Aún no has registrado ningún producto</p>
-                <a href="{% url 'crear_producto' %}" class="boton-secundario">Agregar primer producto</a>
-            </div>
-        {% endfor %}
-    </section>
+     {% include 'productos/lista_productos.html' %}
 
 </main>
-
-<script src="{% static 'js/gestion_productos.js' %}"></script>
 
 {% endblock %}
