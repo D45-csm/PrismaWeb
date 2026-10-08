@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 Swal.fire({
                     title: '<h3 style="font-family: Georgia, \'Times New Roman\', serif; font-size: 20px; color: #111827; margin: 0;">Campos incompletos</h3>',
-                    html: '<p style="color: #6b7280; font-size: 13px; margin-top: 8px; margin-bottom: 0; line-height: 1.4;">Debes llenar todos los campos e incluir las 4 imágenes requeridas para poder guardar el producto.</p>',
+                    html: '<p style="color: #6b7280; font-size: 13px; margin-top: 8px; margin-bottom: 0; line-height: 1.4;">Debes llenar todos los campos e incluir las 4 imágenes requeridas para poder guardar el producto</p>',
                     icon: 'warning',
                     iconColor: '#f59e0b',
                     background: '#ffffff',

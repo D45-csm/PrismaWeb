@@ -24,13 +24,11 @@
         </a>
     </div>
 
-    <!-- BLOQUE DE ALERTAS DE DJANGO -->
+    <!-- BLOQUE DE ALERTAS DE DJANGO (OCULTO PARA SER PROCESADO POR JS) -->
     {% if messages %}
-        <div class="contenedor-alertas" style="margin-bottom: 20px;">
+        <div id="django-messages" style="display: none;">
             {% for message in messages %}
-                <div class="alerta {{ message.tags }}">
-                    {{ message }}
-                </div>
+                <div class="django-message" data-tags="{{ message.tags }}" data-text="{{ message }}"></div>
             {% endfor %}
         </div>
     {% endif %}
@@ -44,7 +42,7 @@
     <div class="header-acciones">
         <div>
             <h1>Gestión de Productos</h1>
-            <p class="subtitulo">Administra los productos de tu catálogo, edítalos o cambia su visibilidad.</p>
+            <p class="subtitulo">Administra los productos de tu catálogo, edítalos o cambia su visibilidad</p>
         </div>
 
         <a href="{% url 'crear_producto' %}" class="boton-crear">
@@ -110,7 +108,7 @@
             </article>
         {% empty %}
             <div class="sin-productos-card">
-                <p class="sin-productos">Aún no has registrado ningún producto.</p>
+                <p class="sin-productos">Aún no has registrado ningún producto</p>
                 <a href="{% url 'crear_producto' %}" class="boton-secundario">Agregar primer producto</a>
             </div>
         {% endfor %}
