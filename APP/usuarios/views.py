@@ -40,7 +40,7 @@ def logout_view(request):
     messages.success(request, 'Has cerrado sesión correctamente.')
     return redirect('base_cliente') #redirecciona a la vista base_cliente
 
-@login_required
+@login_required(login_url='login')
 def profile_view(request):
     return render(request, 'usuarios/perfil.html') #renderiza la plantilla de perfil
     
