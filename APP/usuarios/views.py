@@ -35,6 +35,9 @@ def login_view(request):
         form = LoginForm()
     return render(request, 'usuarios/login.html', {'form': form})
 
+def recuperar_view(request):
+    return render(request, 'usuarios/recuperar.html')
+
 def logout_view(request):
     logout(request) #cierra la sesion del usuario
     messages.success(request, 'Has cerrado sesión correctamente.')

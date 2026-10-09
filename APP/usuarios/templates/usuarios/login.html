@@ -1,16 +1,10 @@
-<!DOCTYPE html>
+{% extends 'base_prisma.html' %}
 {% load static %}
-<html lang="es">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Prisma</title>
-    <link rel="stylesheet" href="{% static 'css/login.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
+{% block title %}Iniciar Sesión - Prisma{% endblock %}
+{% block body_attrs %} class="auth-page"{% endblock %}
 
-<body class="auth-page">
+{% block content %}
     <div class="auth-container">
         <div class="auth-image">
             <div class="auth-image-overlay"></div>
@@ -19,55 +13,48 @@
                 <p>Donde Cada Sabor Cuenta Una Historia</p>
             </div>
         </div>
+
         <div class="auth-form-container">
             <div class="auth-logo">
-                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
+                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo">
             </div>
             <h2>Iniciar Sesión</h2>
             <p class="auth-subtitle">Accede a tu cuenta para hacer pedidos</p>
-            <p class="auth-hint" id="authHint" style="display:none;"></p>
 
-            {% if form.non_field_errors %}
-            <div class="auth-alert">
-                {{ form.non_field_errors|striptags }}
-            </div>
-            {% endif %}
+            <div class="auth-hint" id="authHint" style="display:none;"></div>
 
-            <form meid="loginForm" method="post" action="{% url 'login' %}" novalidate data-backend="django">
-                {% csrf_token %}
-
+            <form id="loginForm">
                 <div class="form-group">
-                    <label for="{{ form.username.id_for_label }}">Usuario</label>
-                    <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
-                        class="{% if form.username.errors %}input-error{% endif %}" placeholder="Tu usuario"
-                        value="{{ form.username.value|default_if_none:'' }}">
-                    {% if form.username.errors %}
-                    <div class="form-error">{{ form.username.errors|striptags }}</div>
-                    {% endif %}
+                    <label for="nombre">Nombre</label>
+                    <input type="text" id="nombre" placeholder="Tu nombre completo" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="{{ form.password.id_for_label }}">Contraseña</label>
-                    <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
-                        class="{% if form.password.errors %}input-error{% endif %}" placeholder="••••••••">
-                    {% if form.password.errors %}
-                    <div class="form-error">{{ form.password.errors|striptags }}</div>
-                    {% endif %}
+                    <label for="loginEmail">Correo</label>
+                    <input type="email" id="loginEmail" placeholder="tucorreo@ejemplo.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+
+                <div class="auth-row">
+                    <label class="remember-me">
+                        <input type="checkbox" id="rememberMe">
+                        Recuérdame
+                    </label>
+                    <a href="{% url 'recuperar' %}" class="forgot-link">¿Olvidaste tu contraseña?</a>
                 </div>
 
                 <button type="submit" class="btn-primary btn-full">Ingresar</button>
             </form>
 
-            <p class="auth-switch">
-                ¿No tienes cuenta? <a href="{% url 'registro' %}">Regístrate aquí</a>
-            </p>
-            <a href="{% url 'base_cliente' %}" class="back-home">
-                <i class="fas fa-arrow-left"></i> Volver al inicio
-            </a>
+            <div class="auth-switch">
+                <p>¿No tienes cuenta? <a href="{% url 'registro' %}">Regístrate aquí</a></p>
+            </div>
+
+            <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
         </div>
     </div>
-
-    <script src="{% static 'script.js' %}"></script>
-</body>
-
-</html>
+{% endblock %}

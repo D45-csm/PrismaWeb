@@ -169,7 +169,7 @@ button, input, textarea, select { font-family: inherit; outline: none; }
     justify-content: center;
     text-align: center;
     position: relative;
-    background: url('../img/postres-hero.jpg.png') center/cover no-repeat fixed;
+    background: url('../img/imagen_inicio.jpeg') center/cover no-repeat fixed;
 }
 .hero-overlay {
     position: absolute;

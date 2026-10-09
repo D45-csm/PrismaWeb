@@ -1,0 +1,85 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Contactos - Prisma{% endblock %}
+{% block body_attrs %} class="contact-page"{% endblock %}
+
+{% block content %}
+    {% include 'partials/header_cliente.html' with active='contactos' %}
+
+    <!-- Contact Hero -->
+    <section class="contact-hero">
+        <div class="reservas-blob blob-a"></div>
+        <div class="reservas-blob blob-b"></div>
+        <div class="container contact-hero-content">
+            <span class="reservas-eyebrow"><i class="fas fa-comments"></i> Hablemos</span>
+            <h1 class="animate-fade-up">Contáctanos</h1>
+            <p class="animate-fade-up delay-1">Estamos aquí para endulzar tu día</p>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section">
+        <div class="container">
+            <div class="contact-hub">
+                <div class="contact-panel">
+                    <h2>Visítanos o escríbenos</h2>
+                    <div class="contact-info-list">
+                        <div class="info-item">
+                            <span class="info-icon" style="background:linear-gradient(135deg,var(--rojo),var(--magenta))"><i class="fas fa-map-marker-alt"></i></span>
+                            <p>Cr 10 # 3-65, Tibasosa, Boyacá — Único punto de venta</p>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon" style="background:linear-gradient(135deg,var(--naranja),var(--amarillo))"><i class="fas fa-clock"></i></span>
+                            <p>Lun - Dom: 9am - 8pm</p>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon" style="background:linear-gradient(135deg,var(--azul),var(--morado))"><i class="fas fa-envelope"></i></span>
+                            <p>juansebastiangirataguarin12@gmail.com</p>
+                        </div>
+                    </div>
+                    <div class="contact-map-note">
+                        <i class="fas fa-cake-candles"></i>
+                        <p>Pasa por nuestro punto en Tibasosa y prueba el postre del día — siempre tenemos algo recién horneado.</p>
+                    </div>
+                </div>
+
+                <div class="contact-grid">
+                    <a href="https://wa.me/573118689862" target="_blank" class="contact-card whatsapp">
+                        <span class="card-icon"><i class="fab fa-whatsapp"></i></span>
+                        <h3>WhatsApp</h3>
+                        <p>+57 3118689862</p>
+                    </a>
+                    <a href="https://instagram.com/prisma_pasteleria1" target="_blank" class="contact-card instagram">
+                        <span class="card-icon"><i class="fab fa-instagram"></i></span>
+                        <h3>Instagram</h3>
+                        <p>@prisma_pasteleria1</p>
+                    </a>
+                    <div class="contact-card nequi">
+                        <span class="card-icon"><i class="fas fa-mobile-alt"></i></span>
+                        <h3>Nequi</h3>
+                        <p>3118689862</p>
+                    </div>
+                    <div class="contact-card daviplata">
+                        <span class="card-icon"><i class="fas fa-wallet"></i></span>
+                        <h3>Daviplata</h3>
+                        <p>3118689862</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <a href="https://wa.me/573118689862" target="_blank" class="whatsapp-float" title="Escríbenos por WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 Prisma - El arte del postre. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+{% endblock %}

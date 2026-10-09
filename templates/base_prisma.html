@@ -1,0 +1,32 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Prisma - El arte del postre{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body{% block body_attrs %}{% endblock %}>
+{% block content %}{% endblock %}
+
+    <!-- Rutas de Django para que script.js navegue sin usar archivos .html -->
+    <script>
+        window.PRISMA = {
+            imgBase: "{% static 'img/' %}",
+            urls: {
+                inicio: "{% url 'base_cliente' %}",
+                productos: "{% url 'productos' %}",
+                temporada: "{% url 'temporada' %}",
+                reservas: "{% url 'reservas' %}",
+                contactos: "{% url 'contactos' %}",
+                carrito: "{% url 'carrito' %}",
+                login: "{% url 'login' %}",
+                registro: "{% url 'registro' %}",
+                recuperar: "{% url 'recuperar' %}"
+            }
+        };
+    </script>
+    <script src="{% static 'js/script.js' %}"></script>
+</body>
+</html>

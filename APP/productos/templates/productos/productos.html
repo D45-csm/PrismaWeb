@@ -1,0 +1,76 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Productos - Prisma{% endblock %}
+
+{% block content %}
+    {% include 'partials/header_cliente.html' with active='productos' %}
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo" class="page-header-logo">
+            <h1>Nuestros Productos</h1>
+            <p>Descubre nuestra selección de postres artesanales</p>
+        </div>
+    </section>
+
+        <!-- Products Section -->
+    <section class="products-section">
+        <div class="container">
+            <!-- Filters -->
+            <div class="filters">
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar postres...">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filtrarProductos('todos')">Todos</button>
+                    <button class="filter-btn" onclick="filtrarProductos('frutas')">Frutas</button>
+                    <button class="filter-btn" onclick="filtrarProductos('chocolate')">Chocolate</button>
+                    <button class="filter-btn" onclick="filtrarProductos('especiales')">Especiales</button>
+                </div>
+            </div>
+
+            <!-- Grid donde se pintan los productos -->
+            <div class="product-grid" id="productosGrid"></div>
+        </div>
+    </section>
+
+    <!-- MODAL DE PRODUCTO -->
+    <div class="product-modal-overlay" id="productModal">
+        <div class="product-modal">
+            <button class="modal-close" onclick="cerrarModal()">&times;</button>
+            <div class="modal-content">
+                <div class="modal-gallery">
+                    <div class="modal-thumbs" id="modalThumbs"></div>
+                    <div class="modal-main-image">
+                        <button class="modal-nav prev" onclick="navegarGaleria(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <img id="modalMainImage" src="" alt="">
+                        <button class="modal-nav next" onclick="navegarGaleria(1)"><i class="fas fa-chevron-right"></i></button>
+                        <div class="modal-dots" id="modalDots"></div>
+                    </div>
+                </div>
+                <div class="modal-info">
+                    <h2 id="modalTitle"></h2>
+                    <div class="modal-price" id="modalPrice"></div>
+                    
+                    <div class="modal-size-selector">
+                        <div class="modal-section-label">Tamaño</div>
+                        <div class="size-options" id="sizeOptions">
+                            <div class="size-option active" data-size="personal">Personal</div>
+                            <div class="size-option" data-size="mediano">Mediana 12 porciones</div>
+                            <div class="size-option" data-size="grande">Grande 20 porciones</div>
+                        </div>
+                    </div>
+                    
+                    <button class="modal-add-btn" onclick="agregarDesdeModal()">
+                        AGREGAR AL CARRITO
+                    </button>
+                    
+                    <div class="modal-description" id="modalDescription"></div>
+                    <div class="modal-whatsapp">
+                        Por favor confirmar la compra en el WhatsApp <a href="https://wa.me/573118689862" target="_blank">3118689862</a>
+                    </div>
+                    <div class="modal-conservation">Conservación: Refrigerado.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

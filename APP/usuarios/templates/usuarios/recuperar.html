@@ -1,0 +1,53 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Recuperar Contraseña - Prisma{% endblock %}
+{% block body_attrs %} class="auth-page"{% endblock %}
+
+{% block content %}
+    <div class="auth-container">
+        <div class="auth-image">
+            <div class="auth-image-overlay"></div>
+            <div class="auth-image-text">
+                <h2>Recupera tu acceso</h2>
+                <p>Vuelve a disfrutar cada sabor sin contratiempos</p>
+            </div>
+        </div>
+
+        <div class="auth-form-container">
+            <div class="auth-logo">
+                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo">
+            </div>
+            <h2>Recuperar Contraseña</h2>
+            <p class="auth-subtitle">Ingresa tu correo y define tu nueva contraseña</p>
+
+            <div class="auth-note"><i class="fas fa-circle-info"></i>Por tu seguridad no enviamos enlaces por correo: define aquí mismo tu nueva contraseña.</div>
+
+            <form id="recuperarForm">
+                <div class="form-group">
+                    <label for="recCorreo">Correo</label>
+                    <input type="email" id="recCorreo" placeholder="tucorreo@ejemplo.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="nuevaPassword">Nueva contraseña</label>
+                    <input type="password" id="nuevaPassword" placeholder="••••••••" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="nuevaPassword2">Confirmar nueva contraseña</label>
+                    <input type="password" id="nuevaPassword2" placeholder="••••••••" required>
+                    <p class="form-error" id="recuperarPasswordError" style="display:none;">Las contraseñas no coinciden</p>
+                </div>
+
+                <button type="submit" class="btn-primary btn-full">Cambiar Contraseña</button>
+            </form>
+
+            <div class="auth-switch">
+                <p>¿Recordaste tu contraseña? <a href="{% url 'login' %}">Inicia sesión aquí</a></p>
+            </div>
+
+            <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
+        </div>
+    </div>
+{% endblock %}

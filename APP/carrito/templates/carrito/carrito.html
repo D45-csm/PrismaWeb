@@ -1,0 +1,39 @@
+{% extends 'base_prisma.html' %}
+
+{% block title %}Carrito - Prisma{% endblock %}
+{% block body_attrs %} class="carrito-page"{% endblock %}
+
+{% block content %}
+    {% include 'partials/header_cliente.html' %}
+
+    <main class="cart-section">
+        <div class="container">
+            <h1>Tu carrito</h1>
+            <div class="cart-layout">
+                <section class="cart-items-container" aria-label="Productos en el carrito">
+                    <div id="cartItemsList" aria-live="polite"></div>
+                </section>
+
+                <aside class="cart-summary" aria-label="Resumen de compra">
+                    <h3>Resumen de tu pedido</h3>
+                    <div class="summary-row">
+                        <span>Subtotal</span>
+                        <span id="subtotal">$0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Envío</span>
+                        <span>$5.000</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total estimado</span>
+                        <span id="total">$0</span>
+                    </div>
+                    <button class="btn-primary btn-full" type="button" onclick="checkout()">
+                        Continuar con el pedido <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <a class="continue-shopping" href="{% url 'productos' %}">Seguir comprando</a>
+                </aside>
+            </div>
+        </div>
+    </main>
+{% endblock %}

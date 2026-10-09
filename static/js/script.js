@@ -673,43 +673,45 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inputCantidad) inputCantidad.addEventListener('input', actualizarResumenReserva);
         if (selectPostre) selectPostre.addEventListener('change', actualizarResumenReserva);
         actualizarResumenReserva();
+        const fechaEntrega = document.getElementById('fecha');
+        if (fechaEntrega) fechaEntrega.min = hoyISO();
 
-        reservaForm.addEventListener('submit', (e) => {
+        reservaForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const nombre = (document.getElementById('nombre') || {}).value || '';
-            const telefono = (document.getElementById('telefono') || {}).value || '';
-            const fecha = (document.getElementById('fecha') || {}).value || '';
-            const cantidad = inputCantidad ? parseInt(inputCantidad.value, 10) || 1 : 1;
-            const opcion = selectPostre ? selectPostre.options[selectPostre.selectedIndex] : null;
-            const postre = opcion ? opcion.value : '';
-            const precioUnitario = opcion ? Number(opcion.dataset.precio || 0) : 0;
-            const totalReserva = precioUnitario * cantidad;
-            const precioTexto = precioUnitario > 0 ? `$${totalReserva.toLocaleString('es-CO')}` : 'A cotizar';
+            if (!reservaForm.reportValidity()) return;
 
-            const notas = detalles ? detalles.value.trim() : '';
-            const texto = [
-                '🌈 *RESERVA · PRISMA*',
-                '━━━━━━━━━━━━━━',
-                `👤 *Cliente:* ${capitalizar(nombre)}`,
-                `📱 *Teléfono:* ${telefono}`,
-                `📅 *Fecha de la reserva:* ${formatearFecha(fecha)}`,
-                '',
-                `🍰 *Postre:* ${postre}`,
-                `🔢 *Cantidad:* ${cantidad}`,
-                `💰 *Precio estimado:* ${precioTexto}`,
-                '',
-                '📝 *¿Cómo quiero mi reserva?*',
-                notas || 'Sin indicaciones especiales.',
-                '━━━━━━━━━━━━━━',
-                'Quedo atento(a) a la confirmación. ¡Gracias! 🙌'
-            ].join('\n');
-            const mensaje = encodeURIComponent(texto);
+            const submitButton = reservaForm.querySelector('[type="submit"]');
+            const ventanaWhatsApp = window.open('about:blank', '_blank');
+            if (submitButton) submitButton.disabled = true;
 
-            mostrarNotificacion(`✅ Reserva enviada: ${cantidad} x ${postre}`);
-            reservaForm.reset();
-            if (detalles) detalles.dispatchEvent(new Event('input'));
-            actualizarResumenReserva();
-            window.open(`https://wa.me/573118689862?text=${mensaje}`, '_blank');
+            try {
+                const respuesta = await fetch(reservaForm.action || window.location.href, {
+                    method: 'POST',
+                    body: new FormData(reservaForm),
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                const resultado = await respuesta.json();
+                if (!respuesta.ok || !resultado.ok) {
+                    throw new Error(resultado.error || 'No se pudo registrar la reserva.');
+                }
+
+                mostrarNotificacion(resultado.message);
+                if (ventanaWhatsApp) {
+                    ventanaWhatsApp.location.href = resultado.whatsapp_url;
+                } else {
+                    window.location.assign(resultado.whatsapp_url);
+                }
+                reservaForm.reset();
+                if (detalles) detalles.dispatchEvent(new Event('input'));
+                actualizarResumenReserva();
+                if (fechaEntrega) fechaEntrega.min = hoyISO();
+            } catch (error) {
+                if (ventanaWhatsApp) ventanaWhatsApp.close();
+                mostrarNotificacion(error.message || 'Ocurrió un error al enviar la reserva.');
+            } finally {
+                if (submitButton) submitButton.disabled = false;
+            }
         });
     }
 
@@ -809,4 +811,3 @@ document.addEventListener('DOMContentLoaded', () => {
     window.navegarGaleria = navegarGaleria;
     window.filtrarProductos = filtrarProductos;
 });
-

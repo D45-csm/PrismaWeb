@@ -1,0 +1,95 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Prisma - El arte del postre{% endblock %}
+
+{% block content %}
+    {% include 'partials/header_cliente.html' with active='inicio' %}
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1 class="animate-fade-up">Nuestros Cheesecakes</h1>
+            <p class="animate-fade-up delay-1">El Arte del Postre</p>
+            <a href="{% url 'temporada' %}#temporada" class="btn-secondary animate-fade-up delay-2">
+                <i class="fas fa-apple-whole"></i> Conoce los de temporada
+            </a>
+        </div>
+        <div class="scroll-indicator">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <!-- Featured Section -->
+    <section class="featured">
+        <div class="container">
+            <h2 class="section-title">
+                <span class="title-text">NUESTROS FAVORITOS</span>
+                <div class="title-line"></div>
+            </h2>
+            <div class="featured-grid">
+                <div class="featured-card">
+                    <div class="featured-image">
+                        <img src="{% static 'img/manzana_verde.jpeg' %}" alt="Manzana Verde">
+                    </div>
+                    <div class="featured-info">
+                        <h3>Manzana Verde</h3>
+                        <p>Delicioso postre con sabor a manzana verde</p>
+                        <span class="price">$25,000</span>
+                    </div>
+                </div>
+                <div class="featured-card">
+                    <div class="featured-image">
+                        <img src="{% static 'img/cafe_chocolate.jpeg' %}" alt="Café Chocolate">
+                    </div>
+                    <div class="featured-info">
+                        <h3>Café Chocolate</h3>
+                        <p>La combinación perfecta de café y chocolate</p>
+                        <span class="price">$28,000</span>
+                    </div>
+                </div>
+                <div class="featured-card">
+                    <div class="featured-image">
+                        <img src="{% static 'img/fresa_chocolate.jpeg' %}" alt="Fresa Chocolate">
+                    </div>
+                    <div class="featured-info">
+                        <h3>Fresa Chocolate</h3>
+                        <p>Fresa fresca cubierta de chocolate suave</p>
+                        <span class="price">$32,000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Prisma</h4>
+                    <p>El arte del postre</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Enlaces Rápidos</h4>
+                    <ul>
+                        <li><a href="{% url 'base_cliente' %}">Inicio</a></li>
+                        <li><a href="{% url 'productos' %}">Productos</a></li>
+                        <li><a href="{% url 'temporada' %}">Temporada</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contáctanos</h4>
+                    <ul>
+                        <li><i class="fas fa-phone"></i> +57 3118689862</li>
+                        <li><i class="fas fa-envelope"></i>juansebastiangirataguarin12@gmail.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Prisma - El arte del postre. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+{% endblock %}
