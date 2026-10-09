@@ -10,9 +10,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
+        migrations.RenameField(
             model_name='producto',
-            name='imagen',
+            old_name='imagen',
+            new_name='imagen_principal',
         ),
         migrations.AddField(
             model_name='producto',
@@ -27,11 +28,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='producto',
             name='imagen_4',
-            field=models.ImageField(blank=True, null=True, upload_to='productos/'),
-        ),
-        migrations.AddField(
-            model_name='producto',
-            name='imagen_principal',
             field=models.ImageField(blank=True, null=True, upload_to='productos/'),
         ),
     ]
