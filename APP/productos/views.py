@@ -80,8 +80,16 @@ def limpiar_precio(precio_input):
 
 # 1. GESTIÓN Y LISTADO DE PRODUCTOS
 def gestion_productos(request):
-    productos = Producto.objects.all().order_by('-id')
-    return render(request, 'productos/gestion_productos.html', {
+
+    if request.user.is_authenticated and request.user.is_staff:
+        productos = Producto.objects.all().order_by('-id')
+        template = 'productos/gestion_productos.html'
+
+    else:
+        productos = Producto.objects.filter(activo=True).order_by('-id')
+        template = 'productos/lista_productos.html'
+
+    return render(request, template, {
         'productos': productos
     })
 
@@ -144,7 +152,7 @@ def crear_producto(request):
         )
 
         messages.success(request, 'Producto creado correctamente.')
-        return redirect('gestion_productos')
+        return redirect('lista_productos')
 
     return render(request, 'productos/crear_producto.html', {
         'categorias': categorias,
@@ -231,7 +239,7 @@ def editar_producto(request, id):
         producto.save()
 
         messages.success(request, 'Producto actualizado correctamente.')
-        return redirect('gestion_productos')
+        return redirect('lista_productos')
 
     return render(request, 'productos/crear_producto.html', {
         'producto_editar': producto,
@@ -260,4 +268,4 @@ def eliminar_producto(request, id):
 
         messages.success(request, 'Producto eliminado correctamente.')
 
-    return redirect('gestion_productos')
+    return redirect('lista_productos')
