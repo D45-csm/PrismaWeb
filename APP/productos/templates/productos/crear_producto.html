@@ -6,37 +6,6 @@
 <!-- Vinculación del CSS con versión (?v=1.1) para forzar la recarga de caché -->
 <link rel="stylesheet" href="{% static 'css/crear_producto.css' %}?v=1.2">
 
-<!-- IMPORTAR LIBRERÍA SWEETALERT2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<!-- MENSAJES DE ALERTA DE BACKEND -->
-{% if messages %}
-<div class="mensajes">
-    {% for message in messages %}
-    <div class="alerta {% if message.tags == 'error' %}alerta-error{% else %}alerta-exito{% endif %}">
-        <div class="alerta-icono">
-            {% if message.tags == 'error' %} ! {% else %} ✓ {% endif %}
-        </div>
-
-        <div class="alerta-texto">
-            <strong>
-                {% if message.tags == 'error' %}
-                    No se puede guardar el producto
-                {% else %}
-                    ¡Operación exitosa!
-                {% endif %}
-            </strong>
-
-            <span>{{ message }}</span>
-        </div>
-
-        <button type="button" class="cerrar-alerta" onclick="cerrarAlerta(this)">
-            ×
-        </button>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
 
 <main class="crear-container">
     <!-- BOTONES DE NAVEGACIÓN -->
