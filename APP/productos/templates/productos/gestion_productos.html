@@ -24,15 +24,6 @@
         </a>
     </div>
 
-    <!-- BLOQUE DE ALERTAS DE DJANGO (OCULTO PARA SER PROCESADO POR JS) -->
-    {% if messages %}
-        <div id="django-messages" style="display: none;">
-            {% for message in messages %}
-                <div class="django-message" data-tags="{{ message.tags }}" data-text="{{ message }}"></div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
     <!-- BREADCRUMB -->
     <div class="breadcrumb">
         Administración / <strong>Gestión de Productos</strong>
@@ -54,5 +45,8 @@
      {% include 'productos/lista_productos.html' %}
 
 </main>
+
+<script src="{% static 'js/gestion_productos.js' %}"></script>
+
 
 {% endblock %}
