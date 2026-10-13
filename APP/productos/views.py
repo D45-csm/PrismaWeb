@@ -1,7 +1,7 @@
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Producto, CategoriaProducto
+from .models import Producto, CategoriaProducto, DEFAULT_PRODUCT_IMAGE
 
 # Definir el límite máximo permitido según tu modelo en la BD
 # Para max_digits=10 y decimal_places=2, el máximo es 99,999,999.99 (99.9 millones)
@@ -109,12 +109,11 @@ def crear_producto(request):
         imagen_3 = request.FILES.get('imagen_3')
         imagen_4 = request.FILES.get('imagen_4')
 
-        # Validar campos vacíos e imágenes obligatorias al crear
-        if (not nombre or not descripcion or not precio_input or not categoria_id or 
-            not imagen_principal or not imagen_2 or not imagen_3 or not imagen_4):
+        # Validar campos obligatorios; las imágenes son opcionales.
+        if not nombre or not descripcion or not precio_input or not categoria_id:
             messages.error(
                 request,
-                'Debes completar todos los campos e incluir las 4 imágenes requeridas.'
+                'Debes completar todos los campos obligatorios.'
             )
             return render(request, 'productos/crear_producto.html', {
                 'categorias': categorias,
@@ -144,7 +143,7 @@ def crear_producto(request):
             nombre=nombre,
             descripcion=descripcion,
             precio=precio_decimal,
-            imagen_principal=imagen_principal,
+            imagen_principal=imagen_principal or DEFAULT_PRODUCT_IMAGE,
             imagen_2=imagen_2,
             imagen_3=imagen_3,
             imagen_4=imagen_4,
@@ -196,7 +195,8 @@ def editar_producto(request, id):
 
         # ELIMINAR IMÁGENES SI SE SOLICITÓ
         if request.POST.get('eliminar_imagen_principal') == '1':
-            if producto.imagen_principal:
+            if (producto.imagen_principal
+                    and producto.imagen_principal.name != DEFAULT_PRODUCT_IMAGE):
                 producto.imagen_principal.delete(save=False)
             producto.imagen_principal = None
 
@@ -228,14 +228,6 @@ def editar_producto(request, id):
         if request.FILES.get('imagen_4'):
             producto.imagen_4 = request.FILES.get('imagen_4')
 
-        # Verificar que conserve al menos la imagen principal
-        if not producto.imagen_principal:
-            messages.error(request, 'El producto debe conservar la imagen principal.')
-            return render(request, 'productos/crear_producto.html', {
-                'producto_editar': producto,
-                'categorias': categorias,
-            })
-
         producto.save()
 
         messages.success(request, 'Producto actualizado correctamente.')
@@ -252,7 +244,8 @@ def eliminar_producto(request, id):
     producto = get_object_or_404(Producto, id=id)
 
     if request.method == 'POST':
-        if producto.imagen_principal:
+        if (producto.imagen_principal
+                and producto.imagen_principal.name != DEFAULT_PRODUCT_IMAGE):
             producto.imagen_principal.delete(save=False)
 
         if producto.imagen_2:
