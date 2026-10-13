@@ -107,30 +107,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const categoria = document.getElementById('categoria')?.value.trim();
             const descripcion = document.getElementById('descripcion')?.value.trim();
 
-            // 2. Función para verificar si existe una imagen cargada o ya previsualizada
-            function tieneImagen(idInput, idPreview) {
-                const input = document.querySelector(`input[name="${idInput}"]`);
-                const img = document.getElementById(idPreview);
-
-                const archivoCargado = input && input.files && input.files.length > 0;
-                const tienePrevisualizacion = img && img.classList.contains('mostrar') && img.getAttribute('src') !== '';
-
-                return archivoCargado || tienePrevisualizacion;
-            }
-
-            const tienePrincipal = tieneImagen('imagen_principal', 'previewPrincipal');
-            const tieneImg2 = tieneImagen('imagen_2', 'preview2');
-            const tieneImg3 = tieneImagen('imagen_3', 'preview3');
-            const tieneImg4 = tieneImagen('imagen_4', 'preview4');
-
-            // 3. Validar si falta algún campo de texto o alguna de las 4 imágenes
-            if (!nombre || !precio || !categoria || !descripcion || !tienePrincipal || !tieneImg2 || !tieneImg3 || !tieneImg4) {
+            // 2. Las imágenes son opcionales; solo se validan los datos del producto.
+            if (!nombre || !precio || !categoria || !descripcion) {
                 
                 event.preventDefault(); // Cancela el envío a Django
 
                 Swal.fire({
                     title: '<h3 style="font-family: Georgia, \'Times New Roman\', serif; font-size: 20px; color: #111827; margin: 0;">Campos incompletos</h3>',
-                    html: '<p style="color: #6b7280; font-size: 13px; margin-top: 8px; margin-bottom: 0; line-height: 1.4;">Debes llenar todos los campos e incluir las 4 imágenes requeridas para poder guardar el producto</p>',
+                    html: '<p style="color: #6b7280; font-size: 13px; margin-top: 8px; margin-bottom: 0; line-height: 1.4;">Debes completar los datos obligatorios para poder guardar el producto. Las imágenes son opcionales.</p>',
                     icon: 'warning',
                     iconColor: '#f59e0b',
                     background: '#ffffff',
