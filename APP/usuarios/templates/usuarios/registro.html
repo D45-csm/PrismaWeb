@@ -1,4 +1,3 @@
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
@@ -69,14 +68,9 @@
                         Nombre de usuario
                     </label>
 
-                    <input
-                        type="text"
-                        name="{{ form.username.html_name }}"
-                        id="{{ form.username.id_for_label }}"
+                    <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
                         class="form-control {% if form.username.errors %}input-error{% endif %}"
-                        placeholder="Ingresa tu nombre de usuario"
-                        value="{{ form.username.value|default_if_none:'' }}"
-                    >
+                        placeholder="Ingresa tu nombre de usuario" value="{{ form.username.value|default_if_none:'' }}">
 
                     {% if form.username.errors %}
                     <div class="form-error">
@@ -93,18 +87,33 @@
                         Correo electrónico
                     </label>
 
-                    <input
-                        type="email"
-                        name="{{ form.email.html_name }}"
-                        id="{{ form.email.id_for_label }}"
+                    <input type="email" name="{{ form.email.html_name }}" id="{{ form.email.id_for_label }}"
                         class="form-control {% if form.email.errors %}input-error{% endif %}"
-                        placeholder="Ingresa tu correo electrónico"
-                        value="{{ form.email.value|default_if_none:'' }}"
-                    >
+                        placeholder="Ingresa tu correo electrónico" value="{{ form.email.value|default_if_none:'' }}">
 
                     {% if form.email.errors %}
                     <div class="form-error">
                         {{ form.email.errors|striptags }}
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- Teléfono -->
+                <div class="form-group">
+
+                    <label for="{{ form.telefono.id_for_label }}">
+                        Teléfono
+                    </label>
+
+                    <input type="tel" name="{{ form.telefono.html_name }}" id="{{ form.telefono.id_for_label }}"
+                        class="form-control {% if form.telefono.errors %}input-error{% endif %}"
+                        placeholder="Ingresa tu número de teléfono"
+                        value="{{ form.telefono.value|default_if_none:'' }}">
+
+                    {% if form.telefono.errors %}
+                    <div class="form-error">
+                        {{ form.telefono.errors|striptags }}
                     </div>
                     {% endif %}
 
@@ -117,13 +126,9 @@
                         Contraseña
                     </label>
 
-                    <input
-                        type="password"
-                        name="{{ form.password1.html_name }}"
-                        id="{{ form.password1.id_for_label }}"
+                    <input type="password" name="{{ form.password1.html_name }}" id="{{ form.password1.id_for_label }}"
                         class="form-control {% if form.password1.errors %}input-error{% endif %}"
-                        placeholder="Crea una contraseña"
-                    >
+                        placeholder="Crea una contraseña">
 
                     {% if form.password1.errors %}
                     <div class="form-error">
@@ -140,13 +145,9 @@
                         Confirmar contraseña
                     </label>
 
-                    <input
-                        type="password"
-                        name="{{ form.password2.html_name }}"
-                        id="{{ form.password2.id_for_label }}"
+                    <input type="password" name="{{ form.password2.html_name }}" id="{{ form.password2.id_for_label }}"
                         class="form-control {% if form.password2.errors %}input-error{% endif %}"
-                        placeholder="Confirma tu contraseña"
-                    >
+                        placeholder="Confirma tu contraseña">
 
                     {% if form.password2.errors %}
                     <div class="form-error">
@@ -180,4 +181,5 @@
     </div>
 
 </body>
+
 </html>
