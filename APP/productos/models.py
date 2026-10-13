@@ -2,6 +2,9 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
+DEFAULT_PRODUCT_IMAGE = 'productos/imagen_por_defecto.svg'
+
+
 class CategoriaProducto(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
@@ -21,6 +24,7 @@ class Producto(models.Model):
 
     imagen_principal = models.ImageField(
         upload_to='productos/',
+        default=DEFAULT_PRODUCT_IMAGE,
         null=True,
         blank=True
     )
