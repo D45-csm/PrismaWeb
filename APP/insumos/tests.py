@@ -1,7 +1,9 @@
 from django.test import TestCase
 from django.urls import reverse
 
+from APP.inventario.models import Movimiento
 from APP.insumos.models import CategoriaInsumo, Insumo
+from APP.proveedores.models import Proveedor
 from APP.usuarios.models import Usuario
 
 
@@ -24,10 +26,15 @@ class GestionInsumosTests(TestCase):
             nombre='Lácteos',
             descripcion='Ingredientes refrigerados',
         )
+        self.proveedor = Proveedor.objects.create(
+            nombre='Proveedor de prueba',
+            telefono='3001112233',
+        )
         self.insumo = Insumo.objects.create(
             nombre='Leche entera',
             descripcion='Leche fresca',
             categoria=self.categoria,
+            proveedor_referencia=self.proveedor,
             unidad_medida='l',
         )
         self.client.force_login(self.admin)
@@ -45,6 +52,7 @@ class GestionInsumosTests(TestCase):
         self.assertContains(response, 'Tipo')
         self.assertContains(response, 'Tamaño')
         self.assertContains(response, 'Encuentra un insumo')
+        self.assertContains(response, 'Proveedores')
 
     def test_busqueda_categoria_y_estado_filtran_la_lista(self):
         otra_categoria = CategoriaInsumo.objects.create(nombre='Limpieza')
@@ -132,6 +140,10 @@ class GestionInsumosTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['nombre'], 'Leche entera')
         self.assertEqual(response.json()['categoria'], 'Lácteos')
+        self.assertEqual(
+            response.json()['proveedor_referencia'],
+            self.proveedor.nombre,
+        )
         self.assertTrue(response.json()['activo'])
         self.assertIn({'id': 'l', 'nombre': 'Litro'}, response.json()['unidades'])
 
@@ -142,18 +154,94 @@ class GestionInsumosTests(TestCase):
             f'insumo-{self.insumo.pk}-nombre': 'Leche deslactosada',
             f'insumo-{self.insumo.pk}-descripcion': 'Leche fresca',
             f'insumo-{self.insumo.pk}-categoria': self.categoria.pk,
+            f'insumo-{self.insumo.pk}-proveedor_referencia': self.proveedor.pk,
             f'insumo-{self.insumo.pk}-unidad_medida': 'l',
+            f'insumo-{self.insumo.pk}-activo': 'on',
         })
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['nombre'], 'Leche deslactosada')
+        self.assertEqual(
+            response.json()['proveedor_referencia_id'],
+            self.proveedor.pk,
+        )
 
-        response = self.client.post(url, {'accion': 'eliminar_insumo'})
+        response = self.client.post(
+            url,
+            {'accion': 'cambiar_disponibilidad', 'activo': 'false'},
+        )
 
         self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['activo'])
         self.insumo.refresh_from_db()
         self.assertFalse(self.insumo.activo)
         self.assertTrue(Insumo.objects.filter(pk=self.insumo.pk).exists())
+
+    def test_eliminar_insumo_sin_historial_lo_elimina(self):
+        response = self.client.post(
+            reverse('detalle_insumo', args=[self.insumo.pk]),
+            {'accion': 'eliminar_insumo'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['deleted'])
+        self.assertFalse(Insumo.objects.filter(pk=self.insumo.pk).exists())
+
+    def test_eliminar_insumo_con_movimientos_recientes_se_bloquea(self):
+        Movimiento.objects.create(
+            origen='AJUSTE',
+            accion='ENTRADA',
+            usuario=self.admin,
+            insumo=self.insumo,
+            cantidad='1.000',
+            unidad_medida='l',
+        )
+
+        response = self.client.post(
+            reverse('detalle_insumo', args=[self.insumo.pk]),
+            {'accion': 'eliminar_insumo'},
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertTrue(response.json()['blocked_by_history'])
+        self.assertTrue(Insumo.objects.filter(pk=self.insumo.pk).exists())
+
+    def test_crear_insumo_exige_proveedor_y_guarda_categoria_y_unidad(self):
+        response = self.client.post(
+            self.url,
+            {
+                'accion': 'crear_insumo',
+                'nombre': 'Crema',
+                'descripcion': 'Crema de leche',
+                'categoria': self.categoria.pk,
+                'unidad_medida': 'ml',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Insumo.objects.filter(nombre='Crema').exists())
+        self.assertContains(response, 'Selecciona el proveedor de referencia.')
+
+        response = self.client.post(
+            self.url,
+            {
+                'accion': 'crear_insumo',
+                'nombre': 'Crema',
+                'descripcion': 'Crema de leche',
+                'categoria': self.categoria.pk,
+                'proveedor_referencia': self.proveedor.pk,
+                'unidad_medida': 'ml',
+            },
+        )
+
+        crema = Insumo.objects.get(nombre='Crema')
+        self.assertEqual(crema.categoria, self.categoria)
+        self.assertEqual(crema.proveedor_referencia, self.proveedor)
+        self.assertEqual(crema.unidad_medida, 'ml')
+        self.assertRedirects(
+            response,
+            f'{self.url}?categoria={self.categoria.pk}',
+        )
 
     def test_cliente_no_puede_consultar_ni_modificar_detalle_insumo(self):
         self.client.force_login(self.cliente)
@@ -249,6 +337,7 @@ class GestionInsumosTests(TestCase):
                 'nombre': 'Harina',
                 'descripcion': 'Harina de trigo',
                 'categoria': otra_categoria.pk,
+                'proveedor_referencia': self.proveedor.pk,
                 'unidad_medida': 'kg',
             },
         )
@@ -266,7 +355,9 @@ class GestionInsumosTests(TestCase):
                 f'insumo-{harina.pk}-nombre': 'Harina integral',
                 f'insumo-{harina.pk}-descripcion': 'Harina integral de trigo',
                 f'insumo-{harina.pk}-categoria': otra_categoria.pk,
+                f'insumo-{harina.pk}-proveedor_referencia': self.proveedor.pk,
                 f'insumo-{harina.pk}-unidad_medida': 'kg',
+                f'insumo-{harina.pk}-activo': 'on',
             },
         )
         harina.refresh_from_db()

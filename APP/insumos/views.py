@@ -1,10 +1,15 @@
-from django.db.models import Count
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import transaction
+from django.db.models import Count, Q
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from APP.compra_insumos.models import DetalleCompraInsumo
+from APP.inventario.models import Movimiento
+from APP.proveedores.models import Proveedor
+from APP.recetas.models import RecetaInsumo
 from .forms import CategoriaInsumoForm, InsumoForm
 from .models import CategoriaInsumo, Insumo
 
@@ -23,7 +28,10 @@ def _get_posted_object(model, value):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_http_methods(['GET', 'POST'])
 def detalle_insumo(request, pk):
-    insumo = get_object_or_404(Insumo.objects.select_related('categoria'), pk=pk)
+    insumo = get_object_or_404(
+        Insumo.objects.select_related('categoria', 'proveedor_referencia'),
+        pk=pk,
+    )
 
     if request.method == 'GET':
         return JsonResponse({
@@ -32,6 +40,18 @@ def detalle_insumo(request, pk):
             'descripcion': insumo.descripcion or '',
             'categoria': insumo.categoria.nombre,
             'categoria_id': insumo.categoria_id,
+            'proveedor_referencia': (
+                insumo.proveedor_referencia.nombre
+                if insumo.proveedor_referencia_id else ''
+            ),
+            'proveedor_referencia_id': insumo.proveedor_referencia_id,
+            'proveedores': list(
+                Proveedor.objects.filter(
+                    Q(activo=True) | Q(pk=insumo.proveedor_referencia_id),
+                )
+                .order_by('nombre')
+                .values('id', 'nombre')
+            ),
             'categorias': list(
                 CategoriaInsumo.objects.order_by('nombre').values('id', 'nombre')
             ),
@@ -68,13 +88,48 @@ def detalle_insumo(request, pk):
             'categoria_id': insumo.categoria_id,
             'unidad_medida': insumo.unidad_medida,
             'unidad_medida_display': insumo.get_unidad_medida_display(),
-            'imagen': insumo.imagen.url if insumo.imagen else '',
             'activo': insumo.activo,
+            'proveedor_referencia': insumo.proveedor_referencia.nombre,
+            'proveedor_referencia_id': insumo.proveedor_referencia_id,
+            'imagen': insumo.imagen.url if insumo.imagen else '',
             'message': 'Insumo actualizado correctamente.',
         })
 
-    if accion in ('eliminar_insumo', 'restaurar_insumo'):
+    if accion == 'eliminar_insumo':
+        if (
+            Movimiento.objects.filter(insumo=insumo).exists()
+            or DetalleCompraInsumo.objects.filter(insumo=insumo).exists()
+            or RecetaInsumo.objects.filter(insumo=insumo).exists()
+        ):
+            return JsonResponse(
+                {
+                    'error': (
+                        'No se puede eliminar este insumo porque tiene movimientos, '
+                        'compras o recetas asociadas. Puedes desactivarlo para '
+                        'conservar su historial.'
+                    ),
+                    'blocked_by_history': True,
+                },
+                status=409,
+            )
+        with transaction.atomic():
+            insumo.delete()
+        return JsonResponse({
+            'id': pk,
+            'deleted': True,
+            'message': 'Insumo eliminado correctamente.',
+        })
+
+    if accion in ('cambiar_disponibilidad', 'restaurar_insumo'):
         insumo.activo = accion == 'restaurar_insumo'
+        if accion == 'cambiar_disponibilidad':
+            valor = request.POST.get('activo')
+            if valor not in ('true', 'false'):
+                return JsonResponse(
+                    {'error': 'Selecciona si el insumo está disponible.'},
+                    status=400,
+                )
+            insumo.activo = valor == 'true'
         insumo.save(update_fields=['activo'])
         return JsonResponse({
             'id': insumo.pk,
@@ -82,7 +137,7 @@ def detalle_insumo(request, pk):
             'message': (
                 'Insumo restaurado correctamente.'
                 if insumo.activo else
-                'Insumo eliminado del inventario. Su historial se conservó.'
+                'Insumo desactivado. Su historial se conservó.'
             ),
         })
 
@@ -110,7 +165,10 @@ def _render_gestion(request, categoria_form=None, insumo_form=None):
     if campo not in ('nombre', 'tipo', 'tamano'):
         campo = 'nombre'
     estado = request.GET.get('estado', 'activos')
-    insumos = Insumo.objects.select_related('categoria')
+    insumos = Insumo.objects.select_related(
+        'categoria',
+        'proveedor_referencia',
+    )
 
     if estado == 'activos':
         insumos = insumos.filter(activo=True)

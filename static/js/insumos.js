@@ -2,6 +2,7 @@
     const dialog = document.querySelector('#insumoDialog');
     if (!dialog) return;
 
+    const deleteDialog = document.querySelector('#insumoDeleteDialog');
     const details = dialog.querySelector('.insumo-dialog-details');
     const editForm = dialog.querySelector('.insumo-dialog-edit');
     const fields = dialog.querySelector('.insumo-dialog-fields');
@@ -36,6 +37,8 @@
             item.descripcion || 'Aún no tiene descripción.';
         dialog.querySelector('.insumo-dialog-category').textContent = `Categoría: ${item.categoria}`;
         dialog.querySelector('.insumo-dialog-unit').textContent = `Unidad: ${item.unidad_medida_display}`;
+        dialog.querySelector('.insumo-dialog-provider').textContent =
+            `Proveedor: ${item.proveedor_referencia || 'Sin proveedor'}`;
 
         const status = dialog.querySelector('.insumo-dialog-status');
         status.textContent = item.activo ? 'Activo' : 'Desactivado';
@@ -48,12 +51,6 @@
         image.src = item.imagen || '';
         image.alt = item.imagen ? `Imagen de ${item.nombre}` : '';
 
-        const deleteButton = dialog.querySelector('.insumo-dialog-delete');
-        deleteButton.innerHTML = item.activo
-            ? '<i class="fa-regular fa-trash-can"></i> Eliminar'
-            : '<i class="fa-solid fa-rotate-left"></i> Restaurar';
-        deleteButton.classList.toggle('insumo-button-danger', item.activo);
-        deleteButton.classList.toggle('insumo-button-filter', !item.activo);
     };
 
     const buildEditForm = (item) => {
@@ -90,6 +87,34 @@
             unit.append(option);
         });
         fields.append(makeField('Unidad de medida', `${prefix}-unidad_medida`, unit));
+
+        const provider = document.createElement('select');
+        item.proveedores.forEach((providerItem) => {
+            const option = document.createElement('option');
+            option.value = providerItem.id;
+            option.textContent = providerItem.nombre;
+            option.selected =
+                String(providerItem.id) === String(item.proveedor_referencia_id);
+            provider.append(option);
+        });
+        fields.append(makeField(
+            'Proveedor de referencia',
+            `${prefix}-proveedor_referencia`,
+            provider,
+        ));
+
+        const availability = document.createElement('input');
+        availability.type = 'checkbox';
+        availability.checked = item.activo;
+        availability.value = 'on';
+        availability.classList.remove('insumo-input');
+        const availabilityField = makeField(
+            'Disponible en el inventario',
+            `${prefix}-activo`,
+            availability,
+        );
+        availabilityField.classList.add('insumo-field-checkbox');
+        fields.append(availabilityField);
 
         const image = document.createElement('input');
         image.type = 'file';
@@ -151,6 +176,43 @@
         setMessage('');
     });
 
+    dialog.querySelector('.insumo-dialog-delete').addEventListener('click', () => {
+        deleteDialog.querySelector('.insumo-delete-name').textContent = currentItem.nombre;
+        deleteDialog.showModal();
+    });
+    deleteDialog.querySelector('.insumo-delete-cancel').addEventListener('click', () => {
+        deleteDialog.close();
+    });
+    deleteDialog.querySelector('.insumo-delete-confirm').addEventListener('click', async (event) => {
+        const confirmButton = event.currentTarget;
+        confirmButton.disabled = true;
+        setMessage('Verificando historial y eliminando…');
+        const data = new FormData();
+        data.set('accion', 'eliminar_insumo');
+
+        try {
+            const response = await fetch(currentUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: data,
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'No se pudo eliminar el insumo.');
+
+            deleteDialog.close();
+            setMessage(result.message);
+            window.setTimeout(() => window.location.reload(), 700);
+        } catch (error) {
+            deleteDialog.close();
+            setMessage(error.message || 'No se pudo eliminar el insumo.', true);
+        } finally {
+            confirmButton.disabled = false;
+        }
+    });
+
     editForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const formData = new FormData(editForm);
@@ -188,41 +250,6 @@
         }
     });
 
-    dialog.querySelector('.insumo-dialog-delete').addEventListener('click', async (event) => {
-        const deleteButton = event.currentTarget;
-        const action = currentItem.activo ? 'eliminar_insumo' : 'restaurar_insumo';
-        if (currentItem.activo && !window.confirm('¿Eliminar este insumo del inventario? Su historial se conservará.')) {
-            return;
-        }
-
-        const data = new FormData();
-        data.set('accion', action);
-        setMessage(currentItem.activo ? 'Eliminando…' : 'Restaurando…');
-        deleteButton.disabled = true;
-
-        try {
-            const response = await fetch(currentUrl, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: data,
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'No se pudo completar la acción.');
-
-            currentItem.activo = result.activo;
-            renderDetails(currentItem);
-            updateRow(result);
-            setMessage(result.message);
-        } catch (error) {
-            setMessage(error.message || 'No se pudo completar la acción.', true);
-        } finally {
-            deleteButton.disabled = false;
-        }
-    });
-
     const updateRow = (item) => {
         const row = document.querySelector(`[data-insumo-row="${item.id}"]`);
         if (!row) return;
@@ -239,9 +266,16 @@
                 unitIcon,
                 document.createTextNode(` ${item.unidad_medida_display}`),
             );
+            const providerLabel = row.querySelector('.insumo-row-meta > span:nth-child(3)');
+            const providerIcon = providerLabel.querySelector('i');
+            providerLabel.replaceChildren(
+                providerIcon,
+                document.createTextNode(` ${item.proveedor_referencia || 'Sin proveedor'}`),
+            );
             if (item.categoria_id) row.dataset.categoriaId = item.categoria_id;
         }
         if (typeof item.activo === 'boolean') {
+            const wasActive = row.dataset.activo === 'true';
             row.dataset.activo = String(item.activo);
             row.classList.toggle('insumo-row-inactive', !item.activo);
             const badge = row.querySelector('.insumo-status');
@@ -250,7 +284,6 @@
 
             const summary = document.querySelector('.insumo-summary span:nth-child(2)');
             const count = document.querySelector('.insumo-dashboard');
-            const wasActive = row.dataset.activeBeforeUpdate === 'true';
             if (wasActive !== item.activo && count) {
                 const total = Number(count.dataset.insumosCount) + (item.activo ? 1 : -1);
                 count.dataset.insumosCount = String(Math.max(0, total));
@@ -262,17 +295,19 @@
                     );
                 }
             }
-            row.dataset.activeBeforeUpdate = String(item.activo);
         }
 
         const dashboard = document.querySelector('.insumo-dashboard');
         const filterState = dashboard.dataset.estado;
         const categoryFilter = dashboard.dataset.categoriaSeleccionada;
         const queryFilter = dashboard.dataset.query.trim().toLocaleLowerCase();
-        const rowText = [
-            row.querySelector('.insumo-row-select')?.textContent || '',
-            row.querySelector('.insumo-row-info > p')?.textContent || '',
-        ].join(' ').toLocaleLowerCase();
+        const searchField = dashboard.dataset.campo;
+        const filterText = {
+            nombre: row.querySelector('.insumo-row-select')?.textContent || '',
+            tipo: row.querySelector('.insumo-row-meta > span:first-child')?.textContent || '',
+            tamano: row.querySelector('.insumo-row-meta > span:nth-child(2)')?.textContent || '',
+        }[searchField];
+        const rowText = filterText.toLocaleLowerCase();
         row.hidden =
             (filterState === 'activos' && row.dataset.activo !== 'true') ||
             (filterState === 'inactivos' && row.dataset.activo !== 'false') ||

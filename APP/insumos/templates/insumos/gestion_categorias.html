@@ -6,6 +6,7 @@
 {% block content %}
 <div class="admin-dashboard insumo-dashboard" data-insumos-count="{{ total_insumos }}"
      data-estado="{{ estado }}" data-query="{{ query }}"
+     data-campo="{{ campo }}"
      data-categoria-seleccionada="{{ categoria_seleccionada.pk|default:'' }}">
     <a class="insumo-back-button" href="{% url 'perfil' %}">
         <span class="insumo-back-icon"><i class="fa-solid fa-arrow-left"></i></span>
@@ -133,26 +134,32 @@
                     <h2>{% if categoria_seleccionada %}{{ categoria_seleccionada.nombre }}{% else %}Todos los insumos{% endif %}</h2>
                     <p>Busca por nombre, tipo o tamaño y encuentra rápidamente lo que necesitas.</p>
                 </div>
-                <details class="insumo-add-disclosure"{% if insumo_form.errors and not insumo_form.instance.pk %} open{% endif %}>
-                    <summary class="insumo-button insumo-button-primary">
-                        <i class="fa-solid fa-plus"></i> Agregar insumo
-                    </summary>
-                    <form method="post" enctype="multipart/form-data" class="insumo-add-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="accion" value="crear_insumo">
-                        <h3>Nuevo insumo</h3>
-                        {% for field in insumo_form %}
-                            <div class="insumo-field">
-                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                {{ field }}
-                                {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
-                            </div>
-                        {% endfor %}
-                        <button type="submit" class="insumo-button insumo-button-primary">
-                            Crear y guardar insumo
-                        </button>
-                    </form>
-                </details>
+                <div class="insumo-heading-actions">
+                    <a class="insumo-button insumo-button-filter"
+                       href="{% url 'gestion_proveedores' %}">
+                        <i class="fa-solid fa-truck-field"></i> Proveedores
+                    </a>
+                    <details class="insumo-add-disclosure"{% if insumo_form.errors and not insumo_form.instance.pk %} open{% endif %}>
+                        <summary class="insumo-button insumo-button-primary">
+                            <i class="fa-solid fa-plus"></i> Agregar insumo
+                        </summary>
+                        <form method="post" enctype="multipart/form-data" class="insumo-add-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="crear_insumo">
+                            <h3>Nuevo insumo</h3>
+                            {% for field in insumo_form %}
+                                <div class="insumo-field{% if field.name == 'activo' %} insumo-field-checkbox{% endif %}">
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                                </div>
+                            {% endfor %}
+                            <button type="submit" class="insumo-button insumo-button-primary">
+                                Crear y guardar insumo
+                            </button>
+                        </form>
+                    </details>
+                </div>
             </div>
 
             <form method="get" class="insumo-filter-bar" role="search">
@@ -203,7 +210,7 @@
                                  data-insumo-row="{{ insumo.pk }}"
                                  data-categoria-id="{{ insumo.categoria_id }}"
                                  data-activo="{{ insumo.activo|yesno:'true,false' }}"
-                                 data-active-before-update="{{ insumo.activo|yesno:'true,false' }}">
+                                 data-campo="{{ campo }}">
                             <div class="insumo-row-info">
                                 <h3>
                                     <button class="insumo-row-select" type="button"
@@ -215,6 +222,7 @@
                                 <div class="insumo-row-meta">
                                     <span><i class="fa-solid fa-tag"></i> {{ insumo.categoria.nombre }}</span>
                                     <span><i class="fa-solid fa-scale-balanced"></i> {{ insumo.get_unidad_medida_display }}</span>
+                                    <span><i class="fa-solid fa-truck-field"></i> {{ insumo.proveedor_referencia.nombre|default:"Sin proveedor" }}</span>
                                     <span class="insumo-status{% if not insumo.activo %} inactive{% endif %}">
                                         {% if insumo.activo %}Activo{% else %}Desactivado{% endif %}
                                     </span>
@@ -265,6 +273,7 @@
             <div class="insumo-dialog-meta">
                 <span class="insumo-dialog-category"></span>
                 <span class="insumo-dialog-unit"></span>
+                <span class="insumo-dialog-provider"></span>
                 <span class="insumo-dialog-status"></span>
             </div>
         </div>
@@ -282,7 +291,19 @@
         <button type="button" class="insumo-button insumo-button-primary insumo-dialog-update">
             <i class="fa-regular fa-pen-to-square"></i> Actualizar
         </button>
-        <button type="button" class="insumo-button insumo-button-danger insumo-dialog-delete"></button>
+        <button type="button" class="insumo-button insumo-button-danger insumo-dialog-delete">
+            <i class="fa-regular fa-trash-can"></i> Eliminar
+        </button>
+    </div>
+</dialog>
+<dialog class="insumo-delete-dialog" id="insumoDeleteDialog" aria-labelledby="insumoDeleteTitle">
+    <div class="insumo-delete-dialog-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h2 id="insumoDeleteTitle">¿Eliminar este insumo?</h2>
+    <p>Se eliminará <strong class="insumo-delete-name"></strong> si no tiene movimientos, compras ni recetas asociadas.</p>
+    <p class="insumo-delete-warning">Si tiene historial relacionado, el sistema bloqueará la eliminación para proteger los datos.</p>
+    <div class="insumo-dialog-actions">
+        <button type="button" class="insumo-button insumo-button-filter insumo-delete-cancel">Cancelar</button>
+        <button type="button" class="insumo-button insumo-button-danger insumo-delete-confirm">Confirmar eliminación</button>
     </div>
 </dialog>
 <form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>

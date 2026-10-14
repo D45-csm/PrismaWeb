@@ -4,6 +4,7 @@ from django.conf import settings
 from django.urls import reverse
 
 from APP.insumos.models import CategoriaInsumo, Insumo
+from APP.proveedores.models import Proveedor
 
 from .models import Usuario
 
@@ -253,7 +254,11 @@ class GestionCategoriasInsumosTests(TestCase):
                 'nombre': 'Leche',
                 'descripcion': 'Leche para bebidas',
                 'categoria': categoria.pk,
+                'proveedor_referencia': Proveedor.objects.create(
+                    nombre='Proveedor de leche',
+                ).pk,
                 'unidad_medida': 'ml',
+                'activo': 'on',
             },
         )
         self.assertRedirects(

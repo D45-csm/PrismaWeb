@@ -1141,6 +1141,120 @@
     margin-bottom: 22px;
 }
 
+.insumo-heading-actions,
+.provider-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px;
+}
+
+.provider-actions form {
+    margin: 0;
+}
+
+.provider-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+    align-items: start;
+    gap: 20px;
+}
+
+.provider-workspace .insumo-main-panel {
+    min-height: 0;
+}
+
+.provider-form {
+    display: grid;
+    gap: 14px;
+}
+
+.insumo-field-checkbox {
+    justify-content: flex-start;
+}
+
+.insumo-field-checkbox label {
+    order: 1;
+}
+
+.insumo-availability-toggle {
+    width: 42px;
+    height: 23px;
+    flex: 0 0 auto;
+    appearance: none;
+    border: 1px solid #c9c2d2;
+    border-radius: 999px;
+    background:
+        radial-gradient(circle at 11px 50%, #fff 0 7px, transparent 7.5px),
+        #d9d4df;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.insumo-availability-toggle:checked {
+    border-color: var(--admin-primary);
+    background:
+        radial-gradient(circle at 30px 50%, #fff 0 7px, transparent 7.5px),
+        var(--admin-primary);
+}
+
+.insumo-availability-toggle:focus-visible {
+    outline: 3px solid rgba(118, 82, 163, 0.25);
+    outline-offset: 2px;
+}
+
+.insumo-delete-dialog {
+    width: min(430px, calc(100vw - 32px));
+    max-width: none;
+    padding: 28px;
+    border: 1px solid var(--admin-border);
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 24px 80px rgba(35, 24, 51, 0.28);
+    color: var(--admin-text);
+    text-align: center;
+}
+
+.insumo-delete-dialog::backdrop {
+    background: rgba(31, 24, 41, 0.55);
+    backdrop-filter: blur(3px);
+}
+
+.insumo-delete-dialog-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    margin: 0 auto 14px;
+    border-radius: 15px;
+    background: #fff1f1;
+    color: #ae3040;
+    font-size: 1.2rem;
+}
+
+.insumo-delete-dialog h2 {
+    margin: 0 0 10px;
+    font-size: 1.2rem;
+}
+
+.insumo-delete-dialog p {
+    margin: 0 0 12px;
+    color: var(--admin-muted);
+    font-size: 0.9rem;
+}
+
+.insumo-delete-dialog .insumo-delete-warning {
+    padding: 10px;
+    border-radius: 10px;
+    background: #fff8e9;
+    color: #805b16;
+    font-size: 0.8rem;
+}
+
+.insumo-delete-dialog .insumo-dialog-actions {
+    justify-content: center;
+}
+
 .insumo-list-heading h2 {
     font-size: clamp(1.25rem, 2vw, 1.6rem);
 }
@@ -1670,6 +1784,14 @@
     .insumo-list-heading {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .insumo-heading-actions {
+        width: 100%;
+    }
+
+    .provider-workspace {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .insumo-filter-bar {
