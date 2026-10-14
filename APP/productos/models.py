@@ -12,7 +12,7 @@ class Producto(models.Model):
     categoria = models.ForeignKey(CategoriaProducto, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
-    imagen = models.ImageField(upload_to='productos/')
+    imagen = models.ImageField(upload_to='productos/', db_column='imagen_principal')
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     activo = models.BooleanField(default=True)
 
