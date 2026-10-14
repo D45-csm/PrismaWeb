@@ -653,15 +653,18 @@ button, input, textarea, select { font-family: inherit; outline: none; }
    ============================================ */
 .auth-page { background: var(--crema); }
 .auth-container { display: flex; min-height: 100vh; }
+.auth-page { min-height: 100vh; }
 .auth-image { flex: 1; background: url('../img/imagen_fruta_fondo.jpg') center/cover no-repeat; position: relative; }
 .auth-image-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(44,44,44,.6), rgba(110, 110, 110, 0.4)); }
 .auth-image-text { position: absolute;inset: 0; z-index: 2; color: var(--blanco); padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;}
 .auth-image-text h2 { font-size: 3rem; margin-bottom: 15px;font-family: 'cormorant garamond', serif; font-weight: 500; letter-spacing: 1px; justify-content: center; }
 .auth-image-text p { font-size: 1.2rem; opacity: .9; font-family: 'cormorant garamond', serif; }
 .auth-form-container { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 60px; }
+.customer-auth-panel { max-width: 720px; margin: 0 auto; align-items: stretch; }
 .auth-logo { text-align: center; margin-bottom: 40px; }
 .auth-logo img { height: 70px; width: 70px; border-radius: 50%; margin: 0 auto; }
 .auth-form-container h2 { font-size: 3rem;font-weight: 500;letter-spacing: 1px;margin-bottom: 8px;font-family: 'cormorant garamond', serif; }
+.customer-auth-panel > h2 { text-align: center; font-size: clamp(2.3rem, 5vw, 3.2rem); line-height: 1.1; }
 .auth-subtitle { color: var(--gris); margin-bottom: 30px; text-align: center;font-family: 'cormorant garamond', serif; }
 .auth-hint {
     background: rgba(230,50,39,.08);
@@ -694,6 +697,27 @@ button, input, textarea, select { font-family: inherit; outline: none; }
 .forgot-link { color: var(--magenta); font-size: .95rem; }
 .auth-switch { text-align: center; margin-top: 25px; }
 .auth-switch a { color: var(--magenta); font-weight: 600; }
+.customer-login-form-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 22px; flex-wrap: wrap; }
+.customer-login-form-options .remember-me { margin: 0; }
+.customer-login-form-options .remember-me input { flex: 0 0 auto; accent-color: var(--magenta); }
+.customer-recovery-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 18px auto 0;
+    color: var(--magenta);
+    font-weight: 650;
+    text-decoration: none;
+}
+.customer-recovery-link:hover { text-decoration: underline; }
+.customer-auth-panel .auth-switch { margin-top: 20px; }
+.customer-auth-container { justify-content: center; align-items: center; padding: 36px 20px; }
+.customer-auth-container .auth-image { display: none; }
+.customer-auth-container .auth-form-container { flex: 0 1 620px; width: 100%; padding: 44px clamp(24px, 5vw, 60px); }
+.customer-auth-container .auth-logo { margin-bottom: 26px; }
+.customer-auth-container .auth-logo img { width: 58px; height: 58px; }
+.customer-auth-container .auth-subtitle { margin-bottom: 26px; }
 .auth-row {
     display: flex;
     align-items: center;
@@ -990,9 +1014,13 @@ button, input, textarea, select { font-family: inherit; outline: none; }
     .filters { flex-direction: column; }
     .search-input { min-width: 100%; }
     .filter-buttons { justify-content: flex-start; }
-    .auth-container { flex-direction: column; }
-    .auth-image { min-height: 300px; }
-    .auth-image-text { padding: 40px; }
+    .auth-container { flex-direction: column; min-height: 100svh; }
+    .auth-image { min-height: 180px; }
+    .auth-image-text { padding: 24px; }
+    .customer-auth-panel { width: 100%; padding: 34px 24px 28px; }
+    .customer-auth-panel .auth-logo { margin-bottom: 20px; }
+    .customer-auth-panel .auth-logo img { width: 58px; height: 58px; }
+    .customer-auth-panel .auth-subtitle { margin-bottom: 24px; }
     .cart-item { flex-direction: column; }
     .cart-item img { width: 120px; height: 120px; }
     .form-row { grid-template-columns: 1fr; }
@@ -1007,6 +1035,7 @@ button, input, textarea, select { font-family: inherit; outline: none; }
     .contact-hero-content h1 { font-size: 2.2rem; }
     .contact-grid { grid-template-columns: 1fr; }
     .contact-panel, .reservas-info, .reservas-form-card { padding: 30px 22px; }
+    .customer-auth-panel { padding: 28px 20px 24px; }
 }
 
 /* ============================================
@@ -1508,8 +1537,8 @@ button, input, textarea, select { font-family: inherit; outline: none; }
 }
 .pz-close:hover { background: var(--rojo); color: var(--blanco); transform: rotate(90deg); }
 
-/* Ventana de reserva */
-.pz-reserva { max-width: 480px; }
+/* Diálogo del pedido del carrito; el flujo de reservas tiene su propio formulario. */
+.pz-pedido { max-width: 480px; }
 .pz-summary {
     display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
     background: linear-gradient(135deg, rgba(230,50,39,.08), rgba(176,25,126,.08));
@@ -1521,6 +1550,16 @@ button, input, textarea, select { font-family: inherit; outline: none; }
 .pz-field { text-align: left; margin-bottom: 16px; }
 .pz-field > label { display: block; font-weight: 700; font-size: .9rem; margin-bottom: 8px; }
 .pz-field small, .detalles-group small { font-weight: 500; color: var(--gris); }
+.pz-field > input {
+    width: 100%;
+    min-height: 48px;
+    padding: 11px 14px;
+    border: 2px solid var(--gris-claro);
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: var(--transicion);
+}
+.pz-field > input:focus { outline: none; border-color: var(--magenta); box-shadow: 0 0 0 4px rgba(176,25,126,.1); }
 .pz-input {
     display: flex; align-items: center; gap: 10px;
     border: 2px solid var(--gris-claro); border-radius: 12px; padding: 0 14px; transition: var(--transicion);
@@ -1690,6 +1729,6 @@ button, input, textarea, select { font-family: inherit; outline: none; }
     .pz-dialog { padding: 32px 20px 22px; border-radius: 22px; }
     .pz-icon { width: 64px; height: 64px; font-size: 1.6rem; }
     .pz-title { font-size: 1.3rem; }
-    .pz-reserva .pz-actions { flex-direction: column-reverse; }
+    .pz-pedido .pz-actions { flex-direction: column-reverse; }
     .hero-content h1 { font-size: 2.3rem; }
 }
