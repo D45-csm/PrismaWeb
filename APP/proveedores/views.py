@@ -6,7 +6,7 @@ from .forms import ProveedorForm
 # Create your views here.
 
 @login_required
-def Crear_listar(request):
+def gestion_proveedores(request):
     """Vista principal: Muestra la lista y procesa el formulario de creación."""
     proveedores = Proveedor.objects.all().order_by('-id')
     
