@@ -1,7 +1,7 @@
 {% extends 'base_prisma.html' %}
 {% load static %}
 
-{% block title %}Crear Cuenta - Prisma{% endblock %}
+{% block title %}Crear cuenta de cliente - Prisma{% endblock %}
 {% block body_attrs %} class="auth-page"{% endblock %}
 
 {% block content %}
@@ -10,7 +10,7 @@
             <div class="auth-image-overlay"></div>
             <div class="auth-image-text">
                 <h2>Únete a Prisma</h2>
-                <p>Crea tu cuenta y descubre cada sabor</p>
+                <p>Crea tu cuenta de cliente y descubre cada sabor</p>
             </div>
         </div>
 
@@ -18,50 +18,34 @@
             <div class="auth-logo">
                 <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo">
             </div>
-            <h2>Crear Cuenta</h2>
-            <p class="auth-subtitle">Regístrate para hacer tus pedidos y reservas</p>
+            <h2>Crear cuenta de cliente</h2>
+            <p class="auth-subtitle">El registro de clientes no concede acceso administrativo.</p>
 
-            <form id="registroForm">
-                <div class="form-group">
-                    <label for="regNombre">Nombre completo</label>
-                    <input type="text" id="regNombre" placeholder="Tu nombre completo" required>
-                </div>
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" role="status">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
 
-                <div class="form-group">
-                    <label for="regEmail">Correo</label>
-                    <input type="email" id="regEmail" placeholder="tucorreo@ejemplo.com" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="regTelefono">Teléfono</label>
-                    <input type="tel" id="regTelefono" placeholder="300 123 4567" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="regPassword">Contraseña</label>
-                    <input type="password" id="regPassword" placeholder="••••••••" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="regPassword2">Confirmar contraseña</label>
-                    <input type="password" id="regPassword2" placeholder="••••••••" required>
-                    <p class="form-error" id="regPasswordError" style="display:none;">Las contraseñas no coinciden</p>
-                </div>
-
-                <div class="auth-row">
-                    <label class="remember-me">
-                        <input type="checkbox" id="regTerminos" required>
-                        Acepto los términos y condiciones
-                    </label>
-                </div>
-
-                <button type="submit" class="btn-primary btn-full">Crear Cuenta</button>
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="form-error" role="alert">{{ form.non_field_errors }}</div>
+                {% endif %}
+                {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                        {% if field.help_text %}<div class="auth-help">{{ field.help_text|safe }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn-primary btn-full">Crear cuenta</button>
             </form>
 
             <div class="auth-switch">
                 <p>¿Ya tienes cuenta? <a href="{% url 'login' %}">Inicia sesión aquí</a></p>
             </div>
-
             <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
         </div>
     </div>
