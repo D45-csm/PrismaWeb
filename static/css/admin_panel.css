@@ -764,6 +764,40 @@
     margin: 12px 0 28px;
 }
 
+.insumo-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2px;
+    padding: 8px 15px 8px 9px;
+    border: 1px solid rgba(118, 82, 163, 0.16);
+    border-radius: 999px;
+    background: linear-gradient(135deg, #fff, #f5effb);
+    box-shadow: 0 5px 14px rgba(54, 35, 80, 0.08);
+    color: var(--admin-primary-dark);
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.insumo-back-button:hover {
+    transform: translateX(-3px);
+    background: #f0e8f8;
+    box-shadow: 0 8px 18px rgba(54, 35, 80, 0.12);
+    color: var(--admin-primary-dark);
+}
+
+.insumo-back-icon {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--admin-primary);
+    color: #fff;
+}
+
 .insumo-page-heading h1 {
     margin: 0 0 8px;
     color: var(--admin-text);
@@ -1147,10 +1181,16 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px;
+    padding: 10px;
     border: 1px solid var(--admin-border);
-    border-radius: 14px;
-    background: #fbfafe;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #fbfafe, #fff);
+    box-shadow: 0 6px 18px rgba(54, 35, 80, 0.04);
+}
+
+.insumo-search-field {
+    width: 138px;
+    flex: 0 0 138px;
 }
 
 .insumo-search {
@@ -1173,8 +1213,40 @@
 }
 
 .insumo-status-filter {
-    width: 155px;
-    flex: 0 0 155px;
+    width: 128px;
+    flex: 0 0 128px;
+}
+
+.insumo-search-field .insumo-input,
+.insumo-status-filter .insumo-input {
+    cursor: pointer;
+    background-color: #fff;
+}
+
+.insumo-search-prompt {
+    display: grid;
+    min-height: 250px;
+    align-content: center;
+    justify-items: center;
+    padding: 28px;
+    color: var(--admin-muted);
+    text-align: center;
+}
+
+.insumo-search-prompt .insumo-empty-icon {
+    margin-bottom: 14px;
+}
+
+.insumo-search-prompt h3 {
+    margin: 0 0 6px;
+    color: var(--admin-text);
+    font-size: 1.08rem;
+}
+
+.insumo-search-prompt p {
+    max-width: 410px;
+    margin: 0;
+    font-size: 0.88rem;
 }
 
 .insumo-clear-filter {
@@ -1608,6 +1680,11 @@
         flex-basis: 100%;
     }
 
+    .insumo-search-field {
+        min-width: 0;
+        flex: 1;
+    }
+
     .insumo-status-filter {
         min-width: 0;
         flex: 1;
@@ -1650,6 +1727,10 @@
 
     .insumo-filter-bar {
         padding: 9px;
+    }
+
+    .insumo-search-field {
+        flex-basis: 100%;
     }
 
     .insumo-button-filter {

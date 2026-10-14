@@ -7,8 +7,9 @@
 <div class="admin-dashboard insumo-dashboard" data-insumos-count="{{ total_insumos }}"
      data-estado="{{ estado }}" data-query="{{ query }}"
      data-categoria-seleccionada="{{ categoria_seleccionada.pk|default:'' }}">
-    <a class="btn-back" href="{% url 'perfil' %}">
-        <i class="fa-solid fa-arrow-left"></i> Volver al panel
+    <a class="insumo-back-button" href="{% url 'perfil' %}">
+        <span class="insumo-back-icon"><i class="fa-solid fa-arrow-left"></i></span>
+        <span>Volver al panel</span>
     </a>
 
     <section class="insumo-page-heading">
@@ -50,18 +51,19 @@
                 </label>
                 <input type="hidden" name="estado" value="{{ estado }}">
                 {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+                <input type="hidden" name="campo" value="{{ campo }}">
             </form>
 
             <nav class="insumo-category-list" aria-label="Filtrar insumos por categoría">
                 <a class="insumo-category-link{% if not categoria_seleccionada %} selected{% endif %}"
-                   href="{% url 'gestion_insumos' %}?estado={{ estado }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">
+                   href="{% url 'gestion_insumos' %}?estado={{ estado }}&amp;campo={{ campo }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">
                     <span class="insumo-category-icon"><i class="fa-solid fa-border-all"></i></span>
                     <span class="insumo-category-name">Todas las categorías</span>
                     <i class="fa-solid fa-chevron-right insumo-category-arrow"></i>
                 </a>
                 {% for categoria in categorias %}
                     <a class="insumo-category-link{% if categoria_seleccionada.pk == categoria.pk %} selected{% endif %}"
-                       href="?categoria={{ categoria.pk }}&amp;estado={{ estado }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">
+                       href="?categoria={{ categoria.pk }}&amp;estado={{ estado }}&amp;campo={{ campo }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">
                         <span class="insumo-category-icon"><i class="fa-solid fa-tag"></i></span>
                         <span class="insumo-category-name">{{ categoria.nombre }}</span>
                         <span class="insumo-category-count">{{ categoria.total_insumos }}</span>
@@ -129,7 +131,7 @@
                 <div>
                     <span class="insumo-eyebrow">TU INVENTARIO</span>
                     <h2>{% if categoria_seleccionada %}{{ categoria_seleccionada.nombre }}{% else %}Todos los insumos{% endif %}</h2>
-                    <p>Busca, filtra y mantén actualizada la información de tus insumos.</p>
+                    <p>Busca por nombre, tipo o tamaño y encuentra rápidamente lo que necesitas.</p>
                 </div>
                 <details class="insumo-add-disclosure"{% if insumo_form.errors and not insumo_form.instance.pk %} open{% endif %}>
                     <summary class="insumo-button insumo-button-primary">
@@ -157,13 +159,23 @@
                 {% if categoria_seleccionada %}
                     <input type="hidden" name="categoria" value="{{ categoria_seleccionada.pk }}">
                 {% endif %}
+                <label class="insumo-search-field">
+                    <span class="visually-hidden">Buscar por</span>
+                    <select name="campo" class="insumo-input" aria-label="Buscar por">
+                        <option value="nombre"{% if campo == 'nombre' %} selected{% endif %}>Nombre</option>
+                        <option value="tipo"{% if campo == 'tipo' %} selected{% endif %}>Tipo</option>
+                        <option value="tamano"{% if campo == 'tamano' %} selected{% endif %}>Tamaño</option>
+                    </select>
+                </label>
                 <label class="insumo-search">
                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                     <span class="visually-hidden">Buscar insumos</span>
-                    <input type="search" name="q" value="{{ query }}" placeholder="Buscar por nombre o descripción">
+                    <input type="search" name="q" value="{{ query }}"
+                           placeholder="{% if campo == 'tipo' %}Buscar por tipo o categoría{% elif campo == 'tamano' %}Buscar por tamaño o unidad{% else %}Buscar por nombre{% endif %}"
+                           aria-label="Término de búsqueda" required>
                 </label>
                 <label class="insumo-status-filter">
-                    <span class="visually-hidden">Estado de los insumos</span>
+                    <span class="visually-hidden">Mostrar insumos</span>
                     <select name="estado" class="insumo-input">
                         <option value="activos"{% if estado == 'activos' %} selected{% endif %}>Activos</option>
                         <option value="inactivos"{% if estado == 'inactivos' %} selected{% endif %}>Desactivados</option>
@@ -171,56 +183,64 @@
                     </select>
                 </label>
                 <button type="submit" class="insumo-button insumo-button-filter">Buscar</button>
-                {% if query or estado != 'activos' %}
+                {% if query or estado != 'activos' or campo != 'nombre' %}
                     <a class="insumo-clear-filter"
-                       href="{% if categoria_seleccionada %}?categoria={{ categoria_seleccionada.pk }}{% else %}{% url 'gestion_insumos' %}{% endif %}">
+                       href="{% if categoria_seleccionada %}?categoria={{ categoria_seleccionada.pk }}&amp;estado={{ estado }}{% else %}{% url 'gestion_insumos' %}?estado={{ estado }}{% endif %}">
                         Limpiar
                     </a>
                 {% endif %}
             </form>
 
-            <div class="insumo-results-label">
-                <span>{{ insumos|length }} resultado{{ insumos|length|pluralize:"s" }}</span>
-                {% if query %}<span class="insumo-query-chip">“{{ query }}”</span>{% endif %}
-            </div>
+            {% if mostrar_resultados %}
+                <div class="insumo-results-label">
+                    <span>{{ insumos|length }} resultado{{ insumos|length|pluralize:"s" }}</span>
+                    {% if query %}<span class="insumo-query-chip">“{{ query }}”</span>{% endif %}
+                </div>
 
-            <div class="insumo-list">
-                {% for insumo in insumos %}
-                    <article class="insumo-row{% if not insumo.activo %} insumo-row-inactive{% endif %}"
-                             data-insumo-row="{{ insumo.pk }}"
-                             data-categoria-id="{{ insumo.categoria_id }}"
-                             data-activo="{{ insumo.activo|yesno:'true,false' }}"
-                             data-active-before-update="{{ insumo.activo|yesno:'true,false' }}">
-                        <div class="insumo-row-info">
-                            <h3>
-                                <button class="insumo-row-select" type="button"
-                                        data-insumo-url="{% url 'detalle_insumo' insumo.pk %}">
-                                    {{ insumo.nombre }}
-                                </button>
-                            </h3>
-                            <p>{{ insumo.descripcion|default:"Sin descripción" }}</p>
-                            <div class="insumo-row-meta">
-                                <span><i class="fa-solid fa-tag"></i> {{ insumo.categoria.nombre }}</span>
-                                <span><i class="fa-solid fa-scale-balanced"></i> {{ insumo.get_unidad_medida_display }}</span>
-                                <span class="insumo-status{% if not insumo.activo %} inactive{% endif %}">
-                                    {% if insumo.activo %}Activo{% else %}Desactivado{% endif %}
-                                </span>
+                <div class="insumo-list">
+                    {% for insumo in insumos %}
+                        <article class="insumo-row{% if not insumo.activo %} insumo-row-inactive{% endif %}"
+                                 data-insumo-row="{{ insumo.pk }}"
+                                 data-categoria-id="{{ insumo.categoria_id }}"
+                                 data-activo="{{ insumo.activo|yesno:'true,false' }}"
+                                 data-active-before-update="{{ insumo.activo|yesno:'true,false' }}">
+                            <div class="insumo-row-info">
+                                <h3>
+                                    <button class="insumo-row-select" type="button"
+                                            data-insumo-url="{% url 'detalle_insumo' insumo.pk %}">
+                                        {{ insumo.nombre }}
+                                    </button>
+                                </h3>
+                                <p>{{ insumo.descripcion|default:"Sin descripción" }}</p>
+                                <div class="insumo-row-meta">
+                                    <span><i class="fa-solid fa-tag"></i> {{ insumo.categoria.nombre }}</span>
+                                    <span><i class="fa-solid fa-scale-balanced"></i> {{ insumo.get_unidad_medida_display }}</span>
+                                    <span class="insumo-status{% if not insumo.activo %} inactive{% endif %}">
+                                        {% if insumo.activo %}Activo{% else %}Desactivado{% endif %}
+                                    </span>
+                                </div>
                             </div>
+                            <button class="insumo-select-action" type="button"
+                                    data-insumo-url="{% url 'detalle_insumo' insumo.pk %}"
+                                    aria-label="Ver {{ insumo.nombre }}">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </article>
+                    {% empty %}
+                        <div class="insumo-empty-state">
+                            <span class="insumo-empty-icon"><i class="fa-solid fa-box-open"></i></span>
+                            <h3>No encontramos insumos</h3>
+                            <p>Prueba con otro término o cambia el filtro.</p>
                         </div>
-                        <button class="insumo-select-action" type="button"
-                                data-insumo-url="{% url 'detalle_insumo' insumo.pk %}"
-                                aria-label="Ver {{ insumo.nombre }}">
-                            <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </article>
-                {% empty %}
-                    <div class="insumo-empty-state">
-                        <span class="insumo-empty-icon"><i class="fa-solid fa-box-open"></i></span>
-                        <h3>No encontramos insumos</h3>
-                        <p>{% if query %}Prueba con otra búsqueda o limpia los filtros.{% else %}Agrega un insumo o selecciona otra categoría.{% endif %}</p>
-                    </div>
-                {% endfor %}
-            </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="insumo-search-prompt">
+                    <span class="insumo-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <h3>Encuentra un insumo</h3>
+                    <p>Elige si quieres buscar por nombre, tipo o tamaño, escribe lo que buscas y aquí aparecerán los resultados.</p>
+                </div>
+            {% endif %}
 
         </section>
     </div>

@@ -39,8 +39,12 @@ class GestionInsumosTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Gestión de insumos')
         self.assertContains(response, 'Lácteos')
-        self.assertContains(response, 'Leche entera')
-        self.assertContains(response, 'Buscar por nombre o descripción')
+        self.assertNotContains(response, 'data-insumo-row=')
+        self.assertContains(response, 'Buscar por')
+        self.assertContains(response, 'Nombre')
+        self.assertContains(response, 'Tipo')
+        self.assertContains(response, 'Tamaño')
+        self.assertContains(response, 'Encuentra un insumo')
 
     def test_busqueda_categoria_y_estado_filtran_la_lista(self):
         otra_categoria = CategoriaInsumo.objects.create(nombre='Limpieza')
@@ -52,7 +56,12 @@ class GestionInsumosTests(TestCase):
 
         response = self.client.get(
             self.url,
-            {'categoria': self.categoria.pk, 'q': 'leche', 'estado': 'activos'},
+            {
+                'categoria': self.categoria.pk,
+                'q': 'leche',
+                'campo': 'nombre',
+                'estado': 'activos',
+            },
         )
         self.assertEqual(
             list(response.context['insumos']),
@@ -63,6 +72,48 @@ class GestionInsumosTests(TestCase):
         self.insumo.save(update_fields=['activo'])
         response = self.client.get(self.url, {'estado': 'inactivos'})
         self.assertEqual(list(response.context['insumos']), [self.insumo])
+
+    def test_categoria_seleccionada_muestra_su_formulario_de_edicion(self):
+        response = self.client.get(self.url, {'categoria': self.categoria.pk})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Editar categoría')
+        self.assertContains(response, 'name="accion" value="editar_categoria"')
+        self.assertContains(
+            response,
+            f'name="categoria-{self.categoria.pk}-nombre"',
+        )
+        self.assertEqual(
+            response.context['editar_categoria_form'].instance,
+            self.categoria,
+        )
+
+    def test_busca_por_tipo_y_tamano(self):
+        response = self.client.get(
+            self.url,
+            {'q': 'láct', 'campo': 'tipo'},
+        )
+        self.assertEqual(list(response.context['insumos']), [self.insumo])
+
+        response = self.client.get(
+            self.url,
+            {'q': 'litro', 'campo': 'tamano'},
+        )
+        self.assertEqual(list(response.context['insumos']), [self.insumo])
+
+        response = self.client.get(
+            self.url,
+            {'q': 'oz', 'campo': 'tamano'},
+        )
+        self.assertEqual(list(response.context['insumos']), [])
+
+    def test_busqueda_muestra_resultados_solo_despues_de_filtrar(self):
+        response = self.client.get(self.url)
+        self.assertFalse(response.context['mostrar_resultados'])
+
+        response = self.client.get(self.url, {'q': 'leche', 'campo': 'nombre'})
+        self.assertTrue(response.context['mostrar_resultados'])
+        self.assertContains(response, 'Leche entera')
 
     def test_categoria_no_abre_detalle_hasta_pulsar_la_flecha(self):
         response = self.client.get(self.url, {'categoria': self.categoria.pk})

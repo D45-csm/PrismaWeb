@@ -1,4 +1,4 @@
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import Http404, JsonResponse
@@ -106,6 +106,9 @@ def _render_gestion(request, categoria_form=None, insumo_form=None):
         if categoria_busqueda else categorias
     )
     query = request.GET.get('q', '').strip()[:100]
+    campo = request.GET.get('campo', 'nombre')
+    if campo not in ('nombre', 'tipo', 'tamano'):
+        campo = 'nombre'
     estado = request.GET.get('estado', 'activos')
     insumos = Insumo.objects.select_related('categoria')
 
@@ -119,9 +122,18 @@ def _render_gestion(request, categoria_form=None, insumo_form=None):
     if categoria_seleccionada:
         insumos = insumos.filter(categoria=categoria_seleccionada)
     if query:
-        insumos = insumos.filter(
-            Q(nombre__icontains=query) | Q(descripcion__icontains=query),
-        )
+        if campo == 'tipo':
+            insumos = insumos.filter(categoria__nombre__icontains=query)
+        elif campo == 'tamano':
+            unidades_coincidentes = [
+                valor
+                for valor, etiqueta in Insumo.unidad_medida_choices
+                if query.casefold() in valor.casefold()
+                or query.casefold() in etiqueta.casefold()
+            ]
+            insumos = insumos.filter(unidad_medida__in=unidades_coincidentes)
+        else:
+            insumos = insumos.filter(nombre__icontains=query)
     insumos = insumos.order_by('nombre')
     return render(request, 'insumos/gestion_categorias.html', {
         'categorias': categorias_visibles,
@@ -156,7 +168,11 @@ def _render_gestion(request, categoria_form=None, insumo_form=None):
         ),
         'insumos': insumos,
         'query': query,
+        'campo': campo,
         'estado': estado,
+        'mostrar_resultados': bool(
+            query or categoria_seleccionada or estado != 'activos'
+        ),
         'total_insumos': Insumo.objects.filter(activo=True).count(),
     })
 
