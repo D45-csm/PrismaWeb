@@ -58,15 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // "2026-10-03" -> "03/10/2026 (sábado)"
-    const formatearFecha = (valor) => {
-        if (!valor) return 'Lo antes posible';
-        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
-        if (!m) return valor;
-        const f = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-        const dia = f.toLocaleDateString('es-CO', { weekday: 'long' });
-        return `${m[3]}/${m[2]}/${m[1]} (${dia})`;
-    };
-
     // ---------- Diálogos Prisma (reemplazan alert / confirm / prompt) ----------
     const abrirModalPrisma = ({ claseExtra = '', html, alMontar, alAceptar }) => new Promise((resolve) => {
         const previo = document.activeElement;
@@ -151,59 +142,57 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizar();
     };
 
-    // ---------- Ventana de reserva (desde el carrito) ----------
-    const pedirDatosReserva = ({ totalPostres, total }) => abrirModalPrisma({
-        claseExtra: 'pz-reserva',
+    // ---------- Datos de contacto para finalizar un pedido ----------
+    const pedirDatosPedido = ({ totalPostres, total }) => abrirModalPrisma({
+        claseExtra: 'pz-pedido',
         html: `
             <div class="pz-rainbow"></div>
             <button type="button" class="pz-close" data-cancel aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
-            <div class="pz-icon"><i class="fas fa-calendar-check"></i></div>
-            <h3 class="pz-title">Reserva tu pedido</h3>
-            <p class="pz-text">Cuéntanos para cuándo lo quieres y cómo lo imaginas. Prisma te confirmará la reserva por WhatsApp.</p>
+            <div class="pz-icon"><i class="fas fa-bag-shopping"></i></div>
+            <h3 class="pz-title">Completa tu pedido</h3>
+            <p class="pz-text">Déjanos tus datos y la hora aproximada en que pasarás a recoger tu pedido en el local.</p>
             <div class="pz-summary">
                 <span><i class="fas fa-cake-candles"></i>${totalPostres} ${totalPostres === 1 ? 'postre' : 'postres'}</span>
                 <strong>Total estimado: $${total.toLocaleString('es-CO')}</strong>
             </div>
             <div class="pz-field">
-                <label for="pzFecha">¿Para qué fecha?</label>
-                <div class="pz-input" id="pzFechaWrap"><i class="fas fa-calendar-days"></i><input type="date" id="pzFecha" min="${hoyISO()}" data-autofocus></div>
-                <label class="pz-check"><input type="checkbox" id="pzAsap"> Lo quiero lo antes posible</label>
-                <p class="pz-error" id="pzError" hidden>Elige una fecha o marca “lo antes posible”.</p>
+                <label for="pzNombre">Tu nombre</label>
+                <input type="text" id="pzNombre" maxlength="100" autocomplete="name" required>
             </div>
             <div class="pz-field">
-                <label for="pzNotas">¿Cómo quieres tu reserva? <small>(opcional)</small></label>
-                <textarea id="pzNotas" rows="4" maxlength="400" placeholder="Ej: Es para un cumpleaños, con el mensaje “Feliz cumpleaños Ana”, sin nueces y poco dulce…"></textarea>
-                <div class="pz-chips" id="pzChips"></div>
-                <div class="pz-counter"><span id="pzCount">0</span>/400</div>
+                <label for="pzTelefono">Tu teléfono</label>
+                <input type="tel" id="pzTelefono" maxlength="30" autocomplete="tel" required>
             </div>
+            <div class="pz-field">
+                <label for="pzHoraRecogida">¿A qué hora aproximada vendrás a recogerlo?</label>
+                <input type="time" id="pzHoraRecogida" required data-autofocus>
+            </div>
+            <div class="pz-field">
+                <label for="pzNotasPedido">Nota para el pedido <small>(opcional)</small></label>
+                <textarea id="pzNotasPedido" rows="3" maxlength="300" placeholder="Alguna indicación para preparar tu pedido"></textarea>
+            </div>
+            <p class="pz-error" id="pzPedidoError" role="alert" hidden></p>
             <div class="pz-actions">
                 <button type="button" class="pz-btn pz-btn-ghost" data-cancel>Cancelar</button>
-                <button type="button" class="pz-btn pz-btn-primary" data-accept><i class="fab fa-whatsapp"></i> Enviar reserva</button>
+                <button type="button" class="pz-btn pz-btn-primary" data-accept><i class="fab fa-whatsapp"></i> Enviar pedido</button>
             </div>`,
-        alMontar: (dlg) => {
-            const asap = dlg.querySelector('#pzAsap');
-            const fecha = dlg.querySelector('#pzFecha');
-            const wrap = dlg.querySelector('#pzFechaWrap');
-            const error = dlg.querySelector('#pzError');
-            asap.addEventListener('change', () => {
-                fecha.disabled = asap.checked;
-                wrap.classList.toggle('disabled', asap.checked);
-                if (asap.checked) { fecha.value = ''; error.hidden = true; }
-            });
-            fecha.addEventListener('input', () => { error.hidden = true; });
-            activarDetalles(dlg.querySelector('#pzNotas'), dlg.querySelector('#pzChips'), dlg.querySelector('#pzCount'));
-        },
         alAceptar: (dlg) => {
-            const asap = dlg.querySelector('#pzAsap').checked;
-            const fecha = dlg.querySelector('#pzFecha').value;
-            const error = dlg.querySelector('#pzError');
-            if (!asap && (!fecha || fecha < hoyISO())) {
-                error.textContent = fecha ? 'La fecha no puede ser anterior a hoy.' : 'Elige una fecha o marca “lo antes posible”.';
+            const nombre = dlg.querySelector('#pzNombre').value.trim();
+            const telefono = dlg.querySelector('#pzTelefono').value.trim();
+            const horaRecogida = dlg.querySelector('#pzHoraRecogida').value;
+            const error = dlg.querySelector('#pzPedidoError');
+            if (!nombre || !telefono || !horaRecogida) {
+                error.textContent = 'Completa tu nombre, teléfono y hora de recogida.';
                 error.hidden = false;
-                dlg.querySelector('#pzFecha').focus();
+                dlg.querySelector(!nombre ? '#pzNombre' : !telefono ? '#pzTelefono' : '#pzHoraRecogida').focus();
                 return false;
             }
-            return { fecha: asap ? '' : fecha, notas: dlg.querySelector('#pzNotas').value.trim() };
+            return {
+                nombre,
+                telefono,
+                horaRecogida,
+                notas: dlg.querySelector('#pzNotasPedido').value.trim(),
+            };
         }
     });
 
@@ -347,31 +336,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
 
         document.getElementById('subtotal').textContent = '$' + subtotal.toLocaleString('es-CO');
-        document.getElementById('total').textContent = '$' + (subtotal + 5000).toLocaleString('es-CO');
+        document.getElementById('total').textContent = '$' + subtotal.toLocaleString('es-CO');
     };
-
-    const obtenerUsuario = () => JSON.parse(localStorage.getItem('prismaUsuario') || sessionStorage.getItem('prismaUsuario') || 'null');
 
     const checkout = async () => {
         if (carrito.length === 0) {
             mostrarNotificacion('🛒 Tu carrito está vacío');
             return;
         }
-        const usuario = obtenerUsuario();
-        if (!usuario) {
-            mostrarNotificacion('🔒 Inicia sesión para finalizar tu reserva');
-            sessionStorage.setItem('redirectAfterLogin', URLS.carrito);
-            setTimeout(() => { window.location.href = URLS.login; }, 1200);
-            return;
-        }
 
         const totalPostres = carrito.reduce((sum, i) => sum + i.cantidad, 0);
         const subtotal = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
-        const envio = 5000;
-        const total = subtotal + envio;
+        const total = subtotal;
         const fmt = (n) => '$' + n.toLocaleString('es-CO');
 
-        const datos = await pedirDatosReserva({ totalPostres, total });
+        const datos = await pedirDatosPedido({ totalPostres, total });
         if (!datos) return;
 
         const lineas = carrito.map((i, n) =>
@@ -379,59 +358,26 @@ document.addEventListener('DOMContentLoaded', () => {
         ).join('\n');
 
         const texto = [
-            '🌈 *RESERVA · PRISMA*',
+            '🌈 *PEDIDO · PRISMA*',
             '━━━━━━━━━━━━━━',
-            `👤 *Cliente:* ${capitalizar(usuario.nombre)}`,
-            `📅 *Fecha de la reserva:* ${formatearFecha(datos.fecha)}`,
+            `👤 *Cliente:* ${capitalizar(datos.nombre)}`,
+            `📱 *Teléfono:* ${datos.telefono}`,
+            `🕒 *Hora aproximada de recogida en el local:* ${datos.horaRecogida}`,
             '',
-            '🍰 *Postres a reservar*',
+            '🍰 *Productos del pedido*',
             lineas,
             '',
             `🔢 Total de postres: ${totalPostres}`,
-            `🧾 Subtotal: ${fmt(subtotal)}`,
-            `🚚 Envío: ${fmt(envio)}`,
             `💰 *Total estimado: ${fmt(total)}*`,
             '',
-            '📝 *¿Cómo quiero mi reserva?*',
+            '📝 *Nota para el pedido*',
             datos.notas || 'Sin indicaciones especiales.',
             '━━━━━━━━━━━━━━',
-            'Quedo atento(a) a la confirmación. ¡Gracias! 🙌'
+            'Quedo atento(a) a la confirmación de mi pedido. ¡Gracias! 🙌'
         ].join('\n');
 
-        mostrarNotificacion('📲 Abriendo WhatsApp con tu reserva…');
+        mostrarNotificacion('📲 Abriendo WhatsApp para confirmar tu pedido…');
         window.open(`https://wa.me/573118689862?text=${encodeURIComponent(texto)}`, '_blank');
-    };
-
-    // ============================================
-    // SESIÓN DE USUARIO
-    // ============================================
-    const actualizarBotonLogin = () => {
-        const btn = document.querySelector('.btn-login');
-        if (!btn) return;
-        const usuario = obtenerUsuario();
-        if (usuario) {
-            btn.innerHTML = '<i class="fas fa-user-check"></i>';
-            btn.title = `Cerrar sesión (${usuario.nombre})`;
-            btn.onclick = async () => {
-                const nombre = capitalizar(usuario.nombre);
-                const ok = await confirmarPrisma({
-                    inicial: nombre.charAt(0),
-                    titulo: '¿Cerrar sesión?',
-                    mensaje: `Hola, <strong>${escapeHTML(nombre)}</strong>. Tu carrito seguirá guardado para cuando vuelvas. 🍰`,
-                    confirmar: 'Sí, cerrar sesión',
-                    cancelar: 'Seguir aquí'
-                });
-                if (!ok) return;
-                localStorage.removeItem('prismaUsuario');
-                sessionStorage.removeItem('prismaUsuario');
-                mostrarNotificacion(`👋 ¡Hasta pronto, ${nombre}!`);
-                actualizarBotonLogin();
-            };
-        } else {
-            btn.innerHTML = '<i class="fas fa-user"></i>';
-            btn.title = 'Iniciar sesión';
-            btn.onclick = () => { window.location.href = URLS.login; };
-        }
     };
 
     // ============================================
@@ -715,90 +661,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (document.getElementById('loginForm')) {
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const emailInput = document.getElementById('loginEmail') || e.target.querySelector('input[type="email"]');
-            const nombreInput = document.getElementById('nombre');
-            const email = emailInput && emailInput.value ? emailInput.value : 'cliente@prisma.com';
-            const nombre = nombreInput && nombreInput.value ? nombreInput.value : email.split('@')[0];
-            const recordar = document.getElementById('rememberMe');
-            const datosUsuario = { email, nombre };
-
-            if (recordar && recordar.checked) {
-                localStorage.setItem('prismaUsuario', JSON.stringify(datosUsuario));
-            } else {
-                sessionStorage.setItem('prismaUsuario', JSON.stringify(datosUsuario));
-            }
-
-            mostrarNotificacion(`✅ ¡Bienvenido, ${nombre}!`);
-            const destino = sessionStorage.getItem('redirectAfterLogin');
-            sessionStorage.removeItem('redirectAfterLogin');
-            setTimeout(() => { window.location.href = destino || URLS.inicio; }, 900);
-        });
-    }
-
-    if (document.getElementById('registroForm')) {
-        document.getElementById('registroForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const nombre = document.getElementById('regNombre').value;
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPassword').value;
-            const password2 = document.getElementById('regPassword2').value;
-            const inputPassword2 = document.getElementById('regPassword2');
-            const error = document.getElementById('regPasswordError');
-
-            if (password !== password2) {
-                inputPassword2.classList.add('input-error');
-                error.style.display = 'block';
-                return;
-            }
-            inputPassword2.classList.remove('input-error');
-            error.style.display = 'none';
-
-            const datosUsuario = { email, nombre };
-            localStorage.setItem('prismaUsuario', JSON.stringify(datosUsuario));
-
-            mostrarNotificacion(`✅ ¡Cuenta creada! Bienvenido, ${nombre}`);
-            const destino = sessionStorage.getItem('redirectAfterLogin');
-            sessionStorage.removeItem('redirectAfterLogin');
-            setTimeout(() => { window.location.href = destino || URLS.inicio; }, 900);
-        });
-    }
-
-    if (document.getElementById('recuperarForm')) {
-        document.getElementById('recuperarForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const password = document.getElementById('nuevaPassword').value;
-            const password2 = document.getElementById('nuevaPassword2').value;
-            const inputPassword2 = document.getElementById('nuevaPassword2');
-            const error = document.getElementById('recuperarPasswordError');
-
-            if (password !== password2) {
-                inputPassword2.classList.add('input-error');
-                error.style.display = 'block';
-                return;
-            }
-            inputPassword2.classList.remove('input-error');
-            error.style.display = 'none';
-
-            mostrarNotificacion('✅ Tu contraseña se actualizó correctamente');
-            setTimeout(() => { window.location.href = URLS.login; }, 1000);
-        });
-    }
-
-    actualizarBotonLogin();
     construirMenuMovil();
     window.toggleMobileMenu = () => {
         const nav = document.getElementById('navMenu');
         if (nav) setMenuMovil(!nav.classList.contains('mobile-open'));
     };
-
-    const authHint = document.getElementById('authHint');
-    if (authHint && sessionStorage.getItem('redirectAfterLogin')) {
-        authHint.textContent = '🔒 Inicia sesión para finalizar tu reserva';
-        authHint.style.display = 'block';
-    }
 
     // Exponer al ámbito global lo que necesitan los onclick del HTML
     window.agregarAlCarrito = agregarAlCarrito;
