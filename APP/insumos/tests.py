@@ -41,6 +41,15 @@ class GestionInsumosTests(TestCase):
         self.assertContains(response, 'Lácteos')
         self.assertContains(response, 'Leche entera')
         self.assertContains(response, 'Buscar por nombre o descripción')
+        self.assertContains(response, '/static/css/admin_panel.css?v=2')
+
+    def test_no_muestra_notificaciones_de_otros_modulos(self):
+        self.client.post(reverse('logout'))
+        self.client.force_login(self.admin)
+
+        response = self.client.get(self.url)
+
+        self.assertNotContains(response, 'Has cerrado sesión correctamente.')
 
     def test_busqueda_categoria_y_estado_filtran_la_lista(self):
         otra_categoria = CategoriaInsumo.objects.create(nombre='Limpieza')
