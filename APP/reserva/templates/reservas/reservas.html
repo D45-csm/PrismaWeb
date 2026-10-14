@@ -1,0 +1,163 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Reservas - Prisma{% endblock %}
+{% block body_attrs %} class="reservas-page"{% endblock %}
+
+{% block content %}
+
+    {% include 'partials/header_cliente.html' with active='reservas' titles=True %}
+
+    <!-- Hero de Reservas -->
+    <section class="reservas-hero">
+        <div class="reservas-blob blob-1"></div>
+        <div class="reservas-blob blob-2"></div>
+        <div class="reservas-blob blob-3"></div>
+        <div class="container reservas-hero-content">
+            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo" class="reservas-hero-logo">
+            <span class="reservas-eyebrow"><i class="fas fa-calendar-check"></i> Reservas Prisma</span>
+            <h1>Reserva tu postre especial</h1>
+            <p>Cuéntanos la ocasión y lo preparamos fresco, con los sabores que quieras, listo para el día que lo necesitas.</p>
+            <div class="reservas-chip-row">
+                <span class="reservas-chip chip-rojo"><i class="fas fa-clock"></i> Lista en 48h</span>
+                <span class="reservas-chip chip-teal"><i class="fas fa-leaf"></i> Ingredientes frescos</span>
+                <span class="reservas-chip chip-morado"><i class="fas fa-paint-brush"></i> A tu gusto</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contenido principal -->
+    <section class="reservas-section">
+        <div class="container reservas-container">
+
+            <!-- Columna izquierda: por qué reservar -->
+            <div class="reservas-info">
+                <h2>¿Por qué reservar con Prisma?</h2>
+                <div class="reservas-benefit-list">
+                    <div class="reservas-benefit">
+                        <div class="benefit-icon icon-rojo"><i class="fas fa-birthday-cake"></i></div>
+                        <div>
+                            <h3>Postres personalizados</h3>
+                            <p>Elige sabor, tamaño y decoración para tu ocasión especial.</p>
+                        </div>
+                    </div>
+                    <div class="reservas-benefit">
+                        <div class="benefit-icon icon-teal"><i class="fas fa-truck"></i></div>
+                        <div>
+                            <h3>Entregas puntuales</h3>
+                            <p>Coordinamos la hora exacta de recogida o domicilio contigo.</p>
+                        </div>
+                    </div>
+                    <div class="reservas-benefit">
+                        <div class="benefit-icon icon-verde"><i class="fas fa-seedling"></i></div>
+                        <div>
+                            <h3>Ingredientes frescos</h3>
+                            <p>Preparamos cada postre el mismo día de su entrega.</p>
+                        </div>
+                    </div>
+                    <div class="reservas-benefit">
+                        <div class="benefit-icon icon-magenta"><i class="fas fa-heart"></i></div>
+                        <div>
+                            <h3>Atención dedicada</h3>
+                            <p>Te acompañamos por WhatsApp desde la reserva hasta la entrega.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reservas-quote">
+                    <i class="fas fa-quote-left"></i>
+                    <p>Cada postre se prepara el mismo día de la entrega, pensado especialmente para tu ocasión.</p>
+                    <span>— Equipo Prisma</span>
+                </div>
+            </div>
+
+            <!-- Columna derecha: formulario -->
+            <div class="reservas-form-card">
+                <span class="form-card-tag">Completa tu reserva</span>
+                <h2>Cuéntanos los detalles</h2>
+
+                <form id="reservaForm" method="post">
+                    {% csrf_token %}
+                    <div class="form-group-icon">
+                        <label for="nombre">Nombre completo</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="nombre" name="nombre" maxlength="100" placeholder="Tu nombre" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group-icon">
+                            <label for="telefono">Teléfono</label>
+                            <div class="input-wrap">
+                                <i class="fas fa-phone"></i>
+                                <input type="tel" id="telefono" name="telefono" maxlength="30" placeholder="300 123 4567" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group-icon">
+                            <label for="fecha">Fecha de entrega</label>
+                            <div class="input-wrap">
+                                <i class="fas fa-calendar-alt"></i>
+                                <input type="date" id="fecha" name="fecha" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group-icon">
+                            <label for="postre">Postre deseado</label>
+                            <div class="input-wrap">
+                                <i class="fas fa-ice-cream"></i>
+                                <select id="postre" name="postre" required>
+                                    <option value="" disabled selected>Selecciona un postre</option>
+                                    <option value="Manzana Verde Cheesecake" data-precio="25000">Manzana Verde Cheesecake</option>
+                                    <option value="Café Chocolate" data-precio="28000">Café Chocolate</option>
+                                    <option value="Fresa Chocolate" data-precio="32000">Fresa Chocolate</option>
+                                    <option value="Postre Personalizado" data-precio="0">Postre Personalizado (a cotizar)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group-icon">
+                            <label for="cantidad">Cantidad de postres</label>
+                            <div class="input-wrap qty-wrap">
+                                <button type="button" class="qty-btn-reserva" id="qtyMenos" aria-label="Restar">−</button>
+                                <input type="number" id="cantidad" name="cantidad" min="1" max="50" value="1" required>
+                                <button type="button" class="qty-btn-reserva" id="qtyMas" aria-label="Sumar">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="reservas-summary" id="reservasSummary">
+                        <i class="fas fa-shopping-basket"></i>
+                        <span>Vas a reservar <strong id="summaryQty">1</strong> postre(s) de <strong id="summaryPostre">selecciona un postre</strong></span>
+                    </div>
+
+                    <div class="form-group-icon detalles-group">
+                        <label for="detalles"><i class="fas fa-pen-to-square"></i> ¿Cómo quieres tu reserva? <small>(opcional)</small></label>
+                        <textarea id="detalles" name="detalles" rows="4" maxlength="500" placeholder="Cuéntanos la ocasión, mensaje en el postre, sabores, alergias u hora preferida de entrega…"></textarea>
+                        <div class="pz-chips" id="detallesChips"></div>
+                        <div class="pz-counter"><span id="detallesCount">0</span>/500</div>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-full">
+                        Enviar Reserva <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+
+                <p class="form-note"><i class="fas fa-shield-alt"></i> Tus datos están seguros con nosotros</p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 Prisma - El arte del postre. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+{% endblock %}

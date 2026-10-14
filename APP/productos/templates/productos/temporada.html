@@ -1,0 +1,103 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Temporada - Prisma{% endblock %}
+{% block body_attrs %} class="temporada-page"{% endblock %}
+
+{% block content %}
+    {% include 'partials/header_cliente.html' with active='' %}
+
+    <!-- Page Header -->
+    <section class="page-header page-header-season">
+        <div class="container">
+            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo" class="page-header-logo">
+            <h1>Bienvenido Cliente</h1>
+            <p>Encuentra aquí los mejores postres para ti</p>
+        </div>
+    </section>
+
+    <!-- Section de Temporada -->
+    <section class="seasonal-section" id="temporada">
+        <div class="container">
+            <div class="section-title">
+                <h2 class="title-text">Nuestras Creaciones de Temporada</h2>
+                <div class="title-line"></div>
+            </div>
+
+            <!-- Grid de productos de temporada -->
+            <div class="seasonal-grid" id="temporadaGrid"></div>
+        </div>
+    </section>
+
+    <!-- MODAL DE PRODUCTO -->
+    <div class="product-modal-overlay" id="productModal">
+        <div class="product-modal">
+            <button class="modal-close" onclick="cerrarModal()">&times;</button>
+            <div class="modal-content">
+                <div class="modal-gallery">
+                    <div class="modal-thumbs" id="modalThumbs"></div>
+                    <div class="modal-main-image">
+                        <button class="modal-nav prev" onclick="navegarGaleria(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <img id="modalMainImage" src="" alt="">
+                        <button class="modal-nav next" onclick="navegarGaleria(1)"><i class="fas fa-chevron-right"></i></button>
+                        <div class="modal-dots" id="modalDots"></div>
+                    </div>
+                </div>
+                <div class="modal-info">
+                    <h2 id="modalTitle"></h2>
+                    <div class="modal-price" id="modalPrice"></div>
+
+                    <div class="modal-size-selector">
+                        <div class="modal-section-label">Tamaño</div>
+                        <div class="size-options" id="sizeOptions">
+                            <div class="size-option active" data-size="personal">Personal</div>
+                            <div class="size-option" data-size="mediano">Mediana 12 porciones</div>
+                            <div class="size-option" data-size="grande">Grande 20 porciones</div>
+                        </div>
+                    </div>
+
+                    <button class="modal-add-btn" onclick="agregarDesdeModal()">
+                        AGREGAR AL CARRITO
+                    </button>
+
+                    <div class="modal-description" id="modalDescription"></div>
+                    <div class="modal-whatsapp">
+                        Por favor confirmar la compra en el WhatsApp <a href="https://wa.me/573118689862" target="_blank">3118689862</a>
+                    </div>
+                    <div class="modal-conservation">Conservación: Refrigerado.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma"
+                        style="height: 60px; margin-bottom: 15px;">
+                    <p>El arte del postre</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Enlaces Rápidos</h4>
+                    <ul>
+                        <li><a href="{% url 'base_cliente' %}">Inicio</a></li>
+                        <li><a href="{% url 'productos' %}">Productos</a></li>
+                        <li><a href="{% url 'temporada' %}">Temporada</a></li>
+                        <li><a href="{% url 'reservas' %}">Reservas</a></li>
+                        <li><a href="{% url 'contactos' %}">Contactos</a></li>
+                    </ul>
+                </div>
+                <div class="footer-contact">
+                    <h4>Contáctanos</h4>
+                    <p><i class="fas fa-phone"></i> +57 3118689862</p>
+                    <p><i class="fas fa-envelope"></i> juansebastiangirataguarin12@gmail.com</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Prisma - El arte del postre. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+{% endblock %}
