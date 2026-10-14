@@ -6,8 +6,7 @@
 {% block content %}
 <div class="admin-dashboard insumo-dashboard" data-insumos-count="{{ total_insumos }}"
      data-estado="{{ estado }}" data-query="{{ query }}"
-     data-campo="{{ campo }}"
-     data-categoria-seleccionada="{{ categoria_seleccionada.pk|default:'' }}">
+     data-campo="{{ campo }}">
     <a class="insumo-back-button" href="{% url 'perfil' %}">
         <span class="insumo-back-icon"><i class="fa-solid fa-arrow-left"></i></span>
         <span>Volver al panel</span>
@@ -40,7 +39,14 @@
                     <span class="insumo-eyebrow">ORGANIZACIÓN</span>
                     <h2>Categorías</h2>
                 </div>
-                <span class="insumo-count">{{ total_categorias }}</span>
+                <div class="insumo-category-heading-actions">
+                    <span class="insumo-count">{{ total_categorias }}</span>
+                    <button class="insumo-icon-button" type="button"
+                            data-open-category-dialog="crearCategoriaDialog"
+                            aria-label="Crear categoría" title="Crear categoría">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
             </div>
 
             <form method="get" class="insumo-category-search" role="search">
@@ -48,97 +54,58 @@
                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                     <span class="visually-hidden">Buscar categorías</span>
                     <input type="search" name="categoria_q" value="{{ categoria_busqueda }}"
-                           placeholder="Buscar categoría">
+                           placeholder="Buscar categoría" aria-label="Buscar categoría">
                 </label>
                 <input type="hidden" name="estado" value="{{ estado }}">
                 {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
                 <input type="hidden" name="campo" value="{{ campo }}">
             </form>
 
-            <nav class="insumo-category-list" aria-label="Filtrar insumos por categoría">
-                <a class="insumo-category-link{% if not categoria_seleccionada %} selected{% endif %}"
-                   href="{% url 'gestion_insumos' %}?estado={{ estado }}&amp;campo={{ campo }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">
-                    <span class="insumo-category-icon"><i class="fa-solid fa-border-all"></i></span>
-                    <span class="insumo-category-name">Todas las categorías</span>
-                    <i class="fa-solid fa-chevron-right insumo-category-arrow"></i>
-                </a>
+            <div class="insumo-category-list" aria-label="Categorías registradas">
                 {% for categoria in categorias %}
-                    <a class="insumo-category-link{% if categoria_seleccionada.pk == categoria.pk %} selected{% endif %}"
-                       href="?categoria={{ categoria.pk }}&amp;estado={{ estado }}&amp;campo={{ campo }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}">
+                    <div class="insumo-category-link">
                         <span class="insumo-category-icon"><i class="fa-solid fa-tag"></i></span>
                         <span class="insumo-category-name">{{ categoria.nombre }}</span>
-                        <span class="insumo-category-count">{{ categoria.total_insumos }}</span>
-                    </a>
+                        <span class="insumo-category-count{% if not categoria.total_insumos %} is-empty{% endif %}"
+                              aria-label="{{ categoria.total_insumos }} insumos">
+                            {{ categoria.total_insumos }}
+                        </span>
+                        <details class="insumo-row-actions insumo-category-actions">
+                            <summary aria-label="Opciones para {{ categoria.nombre }}"
+                                     title="Opciones">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </summary>
+                            <div class="insumo-row-menu">
+                                <a class="insumo-menu-action"
+                                   href="{% url 'gestion_insumos' %}?editar_categoria={{ categoria.pk }}">
+                                    <i class="fa-regular fa-pen-to-square"></i> Editar categoría
+                                </a>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="accion" value="eliminar_categoria">
+                                    <input type="hidden" name="categoria_id" value="{{ categoria.pk }}">
+                                    <button class="insumo-menu-action danger" type="submit"
+                                            onclick="return confirm('¿Eliminar la categoría {{ categoria.nombre|escapejs }}?')">
+                                        <i class="fa-regular fa-trash-can"></i> Eliminar categoría
+                                    </button>
+                                </form>
+                            </div>
+                        </details>
+                    </div>
                 {% empty %}
                     <p class="insumo-sidebar-empty">No encontramos categorías.</p>
                 {% endfor %}
-            </nav>
-
-            <details class="insumo-disclosure"{% if categoria_form.errors and not categoria_form.instance.pk %} open{% endif %}>
-                <summary><i class="fa-solid fa-plus"></i> Nueva categoría</summary>
-                <form method="post" class="insumo-editor-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="accion" value="crear_categoria">
-                    {% for field in categoria_form %}
-                        <div class="insumo-field">
-                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                            {{ field }}
-                            {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
-                        </div>
-                    {% endfor %}
-                    <button type="submit" class="insumo-button insumo-button-primary">
-                        Crear categoría
-                    </button>
-                </form>
-            </details>
-
-            {% if categoria_seleccionada %}
-                <details class="insumo-disclosure"{% if editar_categoria_form.errors %} open{% endif %}>
-                    <summary><i class="fa-regular fa-pen-to-square"></i> Editar categoría</summary>
-                    <form method="post" class="insumo-editor-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="accion" value="editar_categoria">
-                        <input type="hidden" name="categoria_id" value="{{ categoria_seleccionada.pk }}">
-                        {% for field in editar_categoria_form %}
-                            <div class="insumo-field">
-                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                {{ field }}
-                                {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
-                            </div>
-                        {% endfor %}
-                        <button type="submit" class="insumo-button insumo-button-primary">
-                            Guardar cambios
-                        </button>
-                    </form>
-                    {% if categoria_seleccionada.total_insumos %}
-                        <p class="insumo-delete-hint">Mueve o desactiva los insumos antes de eliminar esta categoría.</p>
-                    {% else %}
-                        <form method="post" class="insumo-delete-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="accion" value="eliminar_categoria">
-                            <input type="hidden" name="categoria_id" value="{{ categoria_seleccionada.pk }}">
-                            <button type="submit" class="insumo-button insumo-button-danger"
-                                    onclick="return confirm('¿Eliminar esta categoría? Esta acción no se puede deshacer.')">
-                                <i class="fa-regular fa-trash-can"></i> Eliminar categoría
-                            </button>
-                        </form>
-                    {% endif %}
-                </details>
-            {% endif %}
+            </div>
         </aside>
 
         <section class="insumo-main-panel" aria-label="Lista de insumos">
             <div class="insumo-list-heading">
                 <div>
                     <span class="insumo-eyebrow">TU INVENTARIO</span>
-                    <h2>{% if categoria_seleccionada %}{{ categoria_seleccionada.nombre }}{% else %}Todos los insumos{% endif %}</h2>
-                    <p>Busca por nombre, tipo o tamaño y encuentra rápidamente lo que necesitas.</p>
+                    <h2>Insumos</h2>
+                    <p>Busca por nombre, categoría o tamaño y encuentra rápidamente lo que necesitas.</p>
                 </div>
                 <div class="insumo-heading-actions">
-                    <a class="insumo-button insumo-button-filter"
-                       href="{% url 'gestion_proveedores' %}">
-                        <i class="fa-solid fa-truck-field"></i> Proveedores
-                    </a>
                     <details class="insumo-add-disclosure"{% if insumo_form.errors and not insumo_form.instance.pk %} open{% endif %}>
                         <summary class="insumo-button insumo-button-primary">
                             <i class="fa-solid fa-plus"></i> Agregar insumo
@@ -163,14 +130,14 @@
             </div>
 
             <form method="get" class="insumo-filter-bar" role="search">
-                {% if categoria_seleccionada %}
-                    <input type="hidden" name="categoria" value="{{ categoria_seleccionada.pk }}">
+                {% if categoria_busqueda %}
+                    <input type="hidden" name="categoria_q" value="{{ categoria_busqueda }}">
                 {% endif %}
                 <label class="insumo-search-field">
                     <span class="visually-hidden">Buscar por</span>
                     <select name="campo" class="insumo-input" aria-label="Buscar por">
                         <option value="nombre"{% if campo == 'nombre' %} selected{% endif %}>Nombre</option>
-                        <option value="tipo"{% if campo == 'tipo' %} selected{% endif %}>Tipo</option>
+                        <option value="categoria"{% if campo == 'categoria' %} selected{% endif %}>Categoría</option>
                         <option value="tamano"{% if campo == 'tamano' %} selected{% endif %}>Tamaño</option>
                     </select>
                 </label>
@@ -178,7 +145,7 @@
                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                     <span class="visually-hidden">Buscar insumos</span>
                     <input type="search" name="q" value="{{ query }}"
-                           placeholder="{% if campo == 'tipo' %}Buscar por tipo o categoría{% elif campo == 'tamano' %}Buscar por tamaño o unidad{% else %}Buscar por nombre{% endif %}"
+                           placeholder="{% if campo == 'categoria' %}Buscar por categoría{% elif campo == 'tamano' %}Buscar por tamaño o unidad{% else %}Buscar por nombre{% endif %}"
                            aria-label="Término de búsqueda" required>
                 </label>
                 <label class="insumo-status-filter">
@@ -192,8 +159,8 @@
                 <button type="submit" class="insumo-button insumo-button-filter">Buscar</button>
                 {% if query or estado != 'activos' or campo != 'nombre' %}
                     <a class="insumo-clear-filter"
-                       href="{% if categoria_seleccionada %}?categoria={{ categoria_seleccionada.pk }}&amp;estado={{ estado }}{% else %}{% url 'gestion_insumos' %}?estado={{ estado }}{% endif %}">
-                        Limpiar
+                       href="{% url 'gestion_insumos' %}?estado=activos">
+                        Limpiar búsqueda
                     </a>
                 {% endif %}
             </form>
@@ -208,9 +175,7 @@
                     {% for insumo in insumos %}
                         <article class="insumo-row{% if not insumo.activo %} insumo-row-inactive{% endif %}"
                                  data-insumo-row="{{ insumo.pk }}"
-                                 data-categoria-id="{{ insumo.categoria_id }}"
-                                 data-activo="{{ insumo.activo|yesno:'true,false' }}"
-                                 data-campo="{{ campo }}">
+                                 data-activo="{{ insumo.activo|yesno:'true,false' }}">
                             <div class="insumo-row-info">
                                 <h3>
                                     <button class="insumo-row-select" type="button"
@@ -222,7 +187,6 @@
                                 <div class="insumo-row-meta">
                                     <span><i class="fa-solid fa-tag"></i> {{ insumo.categoria.nombre }}</span>
                                     <span><i class="fa-solid fa-scale-balanced"></i> {{ insumo.get_unidad_medida_display }}</span>
-                                    <span><i class="fa-solid fa-truck-field"></i> {{ insumo.proveedor_referencia.nombre|default:"Sin proveedor" }}</span>
                                     <span class="insumo-status{% if not insumo.activo %} inactive{% endif %}">
                                         {% if insumo.activo %}Activo{% else %}Desactivado{% endif %}
                                     </span>
@@ -246,13 +210,82 @@
                 <div class="insumo-search-prompt">
                     <span class="insumo-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
                     <h3>Encuentra un insumo</h3>
-                    <p>Elige si quieres buscar por nombre, tipo o tamaño, escribe lo que buscas y aquí aparecerán los resultados.</p>
+                    <p>Elige si quieres buscar por nombre, categoría o tamaño, escribe lo que buscas y aquí aparecerán los resultados.</p>
                 </div>
             {% endif %}
 
         </section>
     </div>
 </div>
+
+<dialog class="insumo-dialog insumo-category-dialog" id="crearCategoriaDialog"
+        aria-labelledby="crearCategoriaTitle"
+        {% if categoria_modal == 'crear' %}data-open="true"{% endif %}>
+    <div class="insumo-dialog-header">
+        <div>
+            <span class="insumo-eyebrow">ORGANIZACIÓN</span>
+            <h2 id="crearCategoriaTitle">Crear categoría</h2>
+        </div>
+        <button class="insumo-dialog-close" type="button" data-close-category-dialog
+                aria-label="Cerrar formulario">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <form method="post" class="insumo-category-form">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="crear_categoria">
+        {% for field in categoria_form %}
+            <div class="insumo-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+            </div>
+        {% endfor %}
+        <div class="insumo-dialog-actions">
+            <button class="insumo-button insumo-button-filter" type="button"
+                    data-close-category-dialog>Cancelar</button>
+            <button class="insumo-button insumo-button-primary" type="submit">
+                <i class="fa-regular fa-floppy-disk"></i> Guardar categoría
+            </button>
+        </div>
+    </form>
+</dialog>
+
+{% if categoria_edicion and editar_categoria_form %}
+    <dialog class="insumo-dialog insumo-category-dialog" id="editarCategoriaDialog"
+            aria-labelledby="editarCategoriaTitle"
+            {% if categoria_modal == 'editar' %}data-open="true"{% endif %}>
+        <div class="insumo-dialog-header">
+            <div>
+                <span class="insumo-eyebrow">ORGANIZACIÓN</span>
+                <h2 id="editarCategoriaTitle">Editar categoría</h2>
+            </div>
+            <button class="insumo-dialog-close" type="button" data-close-category-dialog
+                    aria-label="Cerrar formulario">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form method="post" class="insumo-category-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="editar_categoria">
+            <input type="hidden" name="categoria_id" value="{{ categoria_edicion.pk }}">
+            {% for field in editar_categoria_form %}
+                <div class="insumo-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+            {% endfor %}
+            <div class="insumo-dialog-actions">
+                <button class="insumo-button insumo-button-filter" type="button"
+                        data-close-category-dialog>Cancelar</button>
+                <button class="insumo-button insumo-button-primary" type="submit">
+                    <i class="fa-regular fa-floppy-disk"></i> Guardar cambios
+                </button>
+            </div>
+        </form>
+    </dialog>
+{% endif %}
 
 <dialog class="insumo-dialog" id="insumoDialog" aria-labelledby="insumoDialogTitle">
     <div class="insumo-dialog-header">
@@ -273,7 +306,6 @@
             <div class="insumo-dialog-meta">
                 <span class="insumo-dialog-category"></span>
                 <span class="insumo-dialog-unit"></span>
-                <span class="insumo-dialog-provider"></span>
                 <span class="insumo-dialog-status"></span>
             </div>
         </div>
@@ -288,22 +320,14 @@
         </div>
     </form>
     <div class="insumo-dialog-actions insumo-dialog-view-actions">
+        <label class="insumo-dialog-availability">
+            <span>Disponible</span>
+            <input class="insumo-availability-toggle" type="checkbox" role="switch"
+                   aria-label="Disponibilidad del insumo">
+        </label>
         <button type="button" class="insumo-button insumo-button-primary insumo-dialog-update">
             <i class="fa-regular fa-pen-to-square"></i> Actualizar
         </button>
-        <button type="button" class="insumo-button insumo-button-danger insumo-dialog-delete">
-            <i class="fa-regular fa-trash-can"></i> Eliminar
-        </button>
-    </div>
-</dialog>
-<dialog class="insumo-delete-dialog" id="insumoDeleteDialog" aria-labelledby="insumoDeleteTitle">
-    <div class="insumo-delete-dialog-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-    <h2 id="insumoDeleteTitle">¿Eliminar este insumo?</h2>
-    <p>Se eliminará <strong class="insumo-delete-name"></strong> si no tiene movimientos, compras ni recetas asociadas.</p>
-    <p class="insumo-delete-warning">Si tiene historial relacionado, el sistema bloqueará la eliminación para proteger los datos.</p>
-    <div class="insumo-dialog-actions">
-        <button type="button" class="insumo-button insumo-button-filter insumo-delete-cancel">Cancelar</button>
-        <button type="button" class="insumo-button insumo-button-danger insumo-delete-confirm">Confirmar eliminación</button>
     </div>
 </dialog>
 <form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>

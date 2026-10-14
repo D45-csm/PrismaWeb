@@ -872,6 +872,30 @@
     padding: 0 8px 14px;
 }
 
+.insumo-category-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.insumo-icon-button {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid #e5d9f2;
+    border-radius: 11px;
+    background: var(--admin-primary-light);
+    color: var(--admin-primary-dark);
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.insumo-icon-button:hover {
+    transform: translateY(-1px);
+    background: #e6daf3;
+}
+
 .insumo-sidebar-heading h2,
 .insumo-list-heading h2 {
     margin: 4px 0 0;
@@ -899,6 +923,10 @@
     color: var(--admin-primary-dark);
     font-size: 0.76rem;
     font-weight: 750;
+}
+
+.insumo-category-count.is-empty {
+    opacity: 0.42;
 }
 
 .insumo-category-list {
@@ -934,21 +962,12 @@
     background: #faf9fc;
     color: var(--admin-text);
     text-decoration: none;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .insumo-category-link:hover {
-    transform: translateX(3px);
     border-color: #e7ddf3;
     background: #f6f1fb;
-    color: var(--admin-primary-dark);
-}
-
-.insumo-category-link.selected {
-    border-color: #e5d9f2;
-    background: var(--admin-primary-light);
-    color: var(--admin-primary-dark);
-    font-weight: 700;
 }
 
 .insumo-category-icon {
@@ -970,9 +989,17 @@
     white-space: nowrap;
 }
 
-.insumo-category-arrow {
-    color: var(--admin-muted);
-    font-size: 0.72rem;
+.insumo-category-actions {
+    flex: 0 0 38px;
+    margin-left: auto;
+}
+
+.insumo-category-actions .insumo-row-menu {
+    width: min(210px, calc(100vw - 48px));
+}
+
+.insumo-category-actions .insumo-menu-action {
+    text-decoration: none;
 }
 
 .insumo-sidebar-empty {
@@ -981,36 +1008,12 @@
     font-size: 0.9rem;
 }
 
-.insumo-disclosure {
-    border-top: 1px solid var(--admin-border);
-}
-
-.insumo-disclosure > summary {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 15px 8px 11px;
-    color: var(--admin-primary-dark);
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 700;
-    list-style: none;
-}
-
-.insumo-disclosure > summary::-webkit-details-marker,
 .insumo-add-disclosure > summary::-webkit-details-marker,
 .insumo-row-actions > summary::-webkit-details-marker,
 .insumo-edit-disclosure > summary::-webkit-details-marker {
     display: none;
 }
 
-.insumo-editor-form {
-    display: grid;
-    gap: 12px;
-    padding: 8px;
-}
-
-.insumo-editor-form h3,
 .insumo-add-form h3 {
     margin: 0 0 2px;
     color: var(--admin-text);
@@ -1116,17 +1119,6 @@
     background: #ffe5e7;
 }
 
-.insumo-delete-form {
-    padding: 0 8px 10px;
-}
-
-.insumo-delete-hint {
-    margin: 0;
-    padding: 0 8px 12px;
-    color: var(--admin-muted);
-    font-size: 0.78rem;
-}
-
 .insumo-main-panel {
     min-height: 440px;
     padding: clamp(20px, 3vw, 32px);
@@ -1141,30 +1133,14 @@
     margin-bottom: 22px;
 }
 
-.insumo-heading-actions,
-.provider-actions {
+.insumo-heading-actions {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 9px;
 }
 
-.provider-actions form {
-    margin: 0;
-}
-
-.provider-workspace {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
-    align-items: start;
-    gap: 20px;
-}
-
-.provider-workspace .insumo-main-panel {
-    min-height: 0;
-}
-
-.provider-form {
+.insumo-category-form {
     display: grid;
     gap: 14px;
 }
@@ -1201,58 +1177,6 @@
 .insumo-availability-toggle:focus-visible {
     outline: 3px solid rgba(118, 82, 163, 0.25);
     outline-offset: 2px;
-}
-
-.insumo-delete-dialog {
-    width: min(430px, calc(100vw - 32px));
-    max-width: none;
-    padding: 28px;
-    border: 1px solid var(--admin-border);
-    border-radius: 20px;
-    background: #fff;
-    box-shadow: 0 24px 80px rgba(35, 24, 51, 0.28);
-    color: var(--admin-text);
-    text-align: center;
-}
-
-.insumo-delete-dialog::backdrop {
-    background: rgba(31, 24, 41, 0.55);
-    backdrop-filter: blur(3px);
-}
-
-.insumo-delete-dialog-icon {
-    display: grid;
-    width: 48px;
-    height: 48px;
-    place-items: center;
-    margin: 0 auto 14px;
-    border-radius: 15px;
-    background: #fff1f1;
-    color: #ae3040;
-    font-size: 1.2rem;
-}
-
-.insumo-delete-dialog h2 {
-    margin: 0 0 10px;
-    font-size: 1.2rem;
-}
-
-.insumo-delete-dialog p {
-    margin: 0 0 12px;
-    color: var(--admin-muted);
-    font-size: 0.9rem;
-}
-
-.insumo-delete-dialog .insumo-delete-warning {
-    padding: 10px;
-    border-radius: 10px;
-    background: #fff8e9;
-    color: #805b16;
-    font-size: 0.8rem;
-}
-
-.insumo-delete-dialog .insumo-dialog-actions {
-    justify-content: center;
 }
 
 .insumo-list-heading h2 {
@@ -1790,10 +1714,6 @@
         width: 100%;
     }
 
-    .provider-workspace {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
     .insumo-filter-bar {
         flex-wrap: wrap;
     }
@@ -2055,6 +1975,17 @@
     align-items: center;
     gap: 10px;
     margin-top: 24px;
+}
+
+.insumo-dialog-availability {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    gap: 10px;
+    margin-right: auto;
+    color: var(--admin-text);
+    font-size: 0.84rem;
+    font-weight: 700;
 }
 
 .insumo-dialog-actions .insumo-button-danger {

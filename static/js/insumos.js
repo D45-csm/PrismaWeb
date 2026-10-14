@@ -2,7 +2,6 @@
     const dialog = document.querySelector('#insumoDialog');
     if (!dialog) return;
 
-    const deleteDialog = document.querySelector('#insumoDeleteDialog');
     const details = dialog.querySelector('.insumo-dialog-details');
     const editForm = dialog.querySelector('.insumo-dialog-edit');
     const fields = dialog.querySelector('.insumo-dialog-fields');
@@ -37,12 +36,12 @@
             item.descripcion || 'Aún no tiene descripción.';
         dialog.querySelector('.insumo-dialog-category').textContent = `Categoría: ${item.categoria}`;
         dialog.querySelector('.insumo-dialog-unit').textContent = `Unidad: ${item.unidad_medida_display}`;
-        dialog.querySelector('.insumo-dialog-provider').textContent =
-            `Proveedor: ${item.proveedor_referencia || 'Sin proveedor'}`;
-
         const status = dialog.querySelector('.insumo-dialog-status');
         status.textContent = item.activo ? 'Activo' : 'Desactivado';
         status.classList.toggle('inactive', !item.activo);
+        const availability = dialog.querySelector('.insumo-dialog-availability input');
+        availability.checked = item.activo;
+        availability.setAttribute('aria-checked', String(item.activo));
 
         const image = dialog.querySelector('.insumo-dialog-image img');
         const placeholder = dialog.querySelector('.insumo-dialog-image span');
@@ -87,21 +86,6 @@
             unit.append(option);
         });
         fields.append(makeField('Unidad de medida', `${prefix}-unidad_medida`, unit));
-
-        const provider = document.createElement('select');
-        item.proveedores.forEach((providerItem) => {
-            const option = document.createElement('option');
-            option.value = providerItem.id;
-            option.textContent = providerItem.nombre;
-            option.selected =
-                String(providerItem.id) === String(item.proveedor_referencia_id);
-            provider.append(option);
-        });
-        fields.append(makeField(
-            'Proveedor de referencia',
-            `${prefix}-proveedor_referencia`,
-            provider,
-        ));
 
         const availability = document.createElement('input');
         availability.type = 'checkbox';
@@ -160,6 +144,20 @@
         });
     });
 
+    document.querySelectorAll('[data-open-category-dialog]').forEach((button) => {
+        button.addEventListener('click', () => {
+            document.getElementById(button.dataset.openCategoryDialog)?.showModal();
+        });
+    });
+    document.querySelectorAll('[data-close-category-dialog]').forEach((button) => {
+        button.addEventListener('click', () => {
+            button.closest('dialog')?.close();
+        });
+    });
+    document.querySelectorAll('.insumo-category-dialog[data-open="true"]').forEach((modal) => {
+        modal.showModal();
+    });
+
     dialog.querySelector('.insumo-dialog-close').addEventListener('click', () => dialog.close());
     dialog.querySelector('.insumo-dialog-cancel').addEventListener('click', () => {
         editForm.hidden = true;
@@ -176,42 +174,39 @@
         setMessage('');
     });
 
-    dialog.querySelector('.insumo-dialog-delete').addEventListener('click', () => {
-        deleteDialog.querySelector('.insumo-delete-name').textContent = currentItem.nombre;
-        deleteDialog.showModal();
-    });
-    deleteDialog.querySelector('.insumo-delete-cancel').addEventListener('click', () => {
-        deleteDialog.close();
-    });
-    deleteDialog.querySelector('.insumo-delete-confirm').addEventListener('click', async (event) => {
-        const confirmButton = event.currentTarget;
-        confirmButton.disabled = true;
-        setMessage('Verificando historial y eliminando…');
-        const data = new FormData();
-        data.set('accion', 'eliminar_insumo');
+    dialog.querySelector('.insumo-dialog-availability input')
+        .addEventListener('change', async (event) => {
+            const toggle = event.currentTarget;
+            toggle.disabled = true;
+            setMessage('Actualizando disponibilidad…');
+            const data = new FormData();
+            data.set('accion', 'cambiar_disponibilidad');
+            data.set('activo', String(toggle.checked));
 
-        try {
-            const response = await fetch(currentUrl, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: data,
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'No se pudo eliminar el insumo.');
-
-            deleteDialog.close();
-            setMessage(result.message);
-            window.setTimeout(() => window.location.reload(), 700);
-        } catch (error) {
-            deleteDialog.close();
-            setMessage(error.message || 'No se pudo eliminar el insumo.', true);
-        } finally {
-            confirmButton.disabled = false;
-        }
-    });
+            try {
+                const response = await fetch(currentUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: data,
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'No se pudo actualizar la disponibilidad.');
+                }
+                renderDetails({...currentItem, ...result});
+                updateRow(result);
+                setMessage(result.message);
+            } catch (error) {
+                toggle.checked = currentItem.activo;
+                toggle.setAttribute('aria-checked', String(currentItem.activo));
+                setMessage(error.message || 'No se pudo actualizar la disponibilidad.', true);
+            } finally {
+                toggle.disabled = false;
+            }
+        });
 
     editForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -266,13 +261,6 @@
                 unitIcon,
                 document.createTextNode(` ${item.unidad_medida_display}`),
             );
-            const providerLabel = row.querySelector('.insumo-row-meta > span:nth-child(3)');
-            const providerIcon = providerLabel.querySelector('i');
-            providerLabel.replaceChildren(
-                providerIcon,
-                document.createTextNode(` ${item.proveedor_referencia || 'Sin proveedor'}`),
-            );
-            if (item.categoria_id) row.dataset.categoriaId = item.categoria_id;
         }
         if (typeof item.activo === 'boolean') {
             const wasActive = row.dataset.activo === 'true';
@@ -299,19 +287,17 @@
 
         const dashboard = document.querySelector('.insumo-dashboard');
         const filterState = dashboard.dataset.estado;
-        const categoryFilter = dashboard.dataset.categoriaSeleccionada;
         const queryFilter = dashboard.dataset.query.trim().toLocaleLowerCase();
         const searchField = dashboard.dataset.campo;
         const filterText = {
             nombre: row.querySelector('.insumo-row-select')?.textContent || '',
-            tipo: row.querySelector('.insumo-row-meta > span:first-child')?.textContent || '',
+            categoria: row.querySelector('.insumo-row-meta > span:first-child')?.textContent || '',
             tamano: row.querySelector('.insumo-row-meta > span:nth-child(2)')?.textContent || '',
         }[searchField];
         const rowText = filterText.toLocaleLowerCase();
         row.hidden =
             (filterState === 'activos' && row.dataset.activo !== 'true') ||
             (filterState === 'inactivos' && row.dataset.activo !== 'false') ||
-            (categoryFilter && row.dataset.categoriaId !== categoryFilter) ||
             (queryFilter && !rowText.includes(queryFilter));
         const visibleRows = [...document.querySelectorAll('[data-insumo-row]')]
             .filter((candidate) => !candidate.hidden).length;

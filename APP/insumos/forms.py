@@ -1,8 +1,6 @@
 from django import forms
-from django.db.models import Q
 
 from .models import CategoriaInsumo, Insumo
-from APP.proveedores.models import Proveedor
 
 
 class CategoriaInsumoForm(forms.ModelForm):
@@ -32,24 +30,12 @@ class CategoriaInsumoForm(forms.ModelForm):
 
 
 class InsumoForm(forms.ModelForm):
-    proveedor_referencia = forms.ModelChoiceField(
-        queryset=Proveedor.objects.none(),
-        label='Proveedor de referencia',
-        empty_label='Selecciona un proveedor',
-        widget=forms.Select(attrs={'class': 'insumo-input'}),
-        error_messages={
-            'required': 'Selecciona el proveedor de referencia.',
-            'invalid_choice': 'Selecciona un proveedor activo válido.',
-        },
-    )
-
     class Meta:
         model = Insumo
         fields = [
             'nombre',
             'descripcion',
             'categoria',
-            'proveedor_referencia',
             'unidad_medida',
             'imagen',
             'activo',
@@ -82,10 +68,5 @@ class InsumoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        providers = Proveedor.objects.filter(activo=True)
-        if self.instance.pk and self.instance.proveedor_referencia_id:
-            providers = Proveedor.objects.filter(
-                Q(activo=True)
-                | Q(pk=self.instance.proveedor_referencia_id),
-            )
-        self.fields['proveedor_referencia'].queryset = providers.order_by('nombre')
+        if not self.instance.pk and not self.is_bound:
+            self.fields['activo'].initial = True

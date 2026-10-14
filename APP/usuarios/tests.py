@@ -4,7 +4,6 @@ from django.conf import settings
 from django.urls import reverse
 
 from APP.insumos.models import CategoriaInsumo, Insumo
-from APP.proveedores.models import Proveedor
 
 from .models import Usuario
 
@@ -232,7 +231,7 @@ class GestionCategoriasInsumosTests(TestCase):
         )
         self.assertRedirects(response, reverse('perfil'))
 
-    def test_admin_crea_categoria_y_solo_ve_sus_insumos(self):
+    def test_admin_crea_categoria_y_busca_insumos_sin_filtrar_por_categoria(self):
         response = self.client.post(
             reverse('gestion_categorias_insumos'),
             {
@@ -241,29 +240,26 @@ class GestionCategoriasInsumosTests(TestCase):
                 'descripcion': 'Bebidas y preparaciones frías',
             },
         )
-        categoria = CategoriaInsumo.objects.get(nombre='Bebidas frías')
         self.assertRedirects(
             response,
-            f'{reverse("gestion_categorias_insumos")}?categoria={categoria.pk}',
+            reverse('gestion_categorias_insumos'),
         )
+        categoria = CategoriaInsumo.objects.get(nombre='Bebidas frías')
 
         response = self.client.post(
-            f'{reverse("gestion_categorias_insumos")}?categoria={categoria.pk}',
+            reverse('gestion_categorias_insumos'),
             {
                 'accion': 'crear_insumo',
                 'nombre': 'Leche',
                 'descripcion': 'Leche para bebidas',
                 'categoria': categoria.pk,
-                'proveedor_referencia': Proveedor.objects.create(
-                    nombre='Proveedor de leche',
-                ).pk,
                 'unidad_medida': 'ml',
                 'activo': 'on',
             },
         )
         self.assertRedirects(
             response,
-            f'{reverse("gestion_categorias_insumos")}?categoria={categoria.pk}',
+            f'{reverse("gestion_categorias_insumos")}?q=Leche&campo=nombre',
         )
 
         otra_categoria = CategoriaInsumo.objects.create(nombre='Limpieza')
@@ -275,9 +271,9 @@ class GestionCategoriasInsumosTests(TestCase):
 
         response = self.client.get(
             reverse('gestion_categorias_insumos'),
-            {'categoria': categoria.pk},
+            {'estado': 'todos'},
         )
         self.assertEqual(
             list(response.context['insumos'].values_list('nombre', flat=True)),
-            ['Leche'],
+            ['Detergente', 'Leche'],
         )

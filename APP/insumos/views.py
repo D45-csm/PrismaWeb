@@ -1,15 +1,12 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from APP.compra_insumos.models import DetalleCompraInsumo
-from APP.inventario.models import Movimiento
-from APP.proveedores.models import Proveedor
-from APP.recetas.models import RecetaInsumo
 from .forms import CategoriaInsumoForm, InsumoForm
 from .models import CategoriaInsumo, Insumo
 
@@ -29,7 +26,7 @@ def _get_posted_object(model, value):
 @require_http_methods(['GET', 'POST'])
 def detalle_insumo(request, pk):
     insumo = get_object_or_404(
-        Insumo.objects.select_related('categoria', 'proveedor_referencia'),
+        Insumo.objects.select_related('categoria'),
         pk=pk,
     )
 
@@ -40,18 +37,6 @@ def detalle_insumo(request, pk):
             'descripcion': insumo.descripcion or '',
             'categoria': insumo.categoria.nombre,
             'categoria_id': insumo.categoria_id,
-            'proveedor_referencia': (
-                insumo.proveedor_referencia.nombre
-                if insumo.proveedor_referencia_id else ''
-            ),
-            'proveedor_referencia_id': insumo.proveedor_referencia_id,
-            'proveedores': list(
-                Proveedor.objects.filter(
-                    Q(activo=True) | Q(pk=insumo.proveedor_referencia_id),
-                )
-                .order_by('nombre')
-                .values('id', 'nombre')
-            ),
             'categorias': list(
                 CategoriaInsumo.objects.order_by('nombre').values('id', 'nombre')
             ),
@@ -89,72 +74,50 @@ def detalle_insumo(request, pk):
             'unidad_medida': insumo.unidad_medida,
             'unidad_medida_display': insumo.get_unidad_medida_display(),
             'activo': insumo.activo,
-            'proveedor_referencia': insumo.proveedor_referencia.nombre,
-            'proveedor_referencia_id': insumo.proveedor_referencia_id,
             'imagen': insumo.imagen.url if insumo.imagen else '',
             'message': 'Insumo actualizado correctamente.',
         })
 
-    if accion == 'eliminar_insumo':
-        if (
-            Movimiento.objects.filter(insumo=insumo).exists()
-            or DetalleCompraInsumo.objects.filter(insumo=insumo).exists()
-            or RecetaInsumo.objects.filter(insumo=insumo).exists()
-        ):
+    if accion == 'cambiar_disponibilidad':
+        valor = request.POST.get('activo')
+        if valor not in ('true', 'false'):
             return JsonResponse(
-                {
-                    'error': (
-                        'No se puede eliminar este insumo porque tiene movimientos, '
-                        'compras o recetas asociadas. Puedes desactivarlo para '
-                        'conservar su historial.'
-                    ),
-                    'blocked_by_history': True,
-                },
-                status=409,
+                {'error': 'Selecciona si el insumo está disponible.'},
+                status=400,
             )
-        with transaction.atomic():
-            insumo.delete()
-        return JsonResponse({
-            'id': pk,
-            'deleted': True,
-            'message': 'Insumo eliminado correctamente.',
-        })
-
-    if accion in ('cambiar_disponibilidad', 'restaurar_insumo'):
-        insumo.activo = accion == 'restaurar_insumo'
-        if accion == 'cambiar_disponibilidad':
-            valor = request.POST.get('activo')
-            if valor not in ('true', 'false'):
-                return JsonResponse(
-                    {'error': 'Selecciona si el insumo está disponible.'},
-                    status=400,
-                )
-            insumo.activo = valor == 'true'
+        insumo.activo = valor == 'true'
         insumo.save(update_fields=['activo'])
         return JsonResponse({
             'id': insumo.pk,
             'activo': insumo.activo,
             'message': (
-                'Insumo restaurado correctamente.'
-                if insumo.activo else
-                'Insumo desactivado. Su historial se conservó.'
+                'Insumo activado correctamente.'
+                if insumo.activo else 'Insumo desactivado correctamente.'
             ),
         })
 
     return JsonResponse({'error': 'La acción solicitada no es válida.'}, status=400)
 
 
-def _render_gestion(request, categoria_form=None, insumo_form=None):
+def _render_gestion(
+    request,
+    categoria_form=None,
+    editar_categoria_form=None,
+    insumo_form=None,
+    categoria_modal='',
+):
     categorias = CategoriaInsumo.objects.annotate(
         total_insumos=Count('insumo'),
     ).order_by('nombre')
     total_categorias = categorias.count()
     categoria_id = (
-        request.POST.get('categoria')
-        or request.POST.get('categoria_id')
-        or request.GET.get('categoria')
+        request.POST.get('categoria_id')
+        if request.method == 'POST'
+        else request.GET.get('editar_categoria')
     )
-    categoria_seleccionada = categorias.filter(pk=categoria_id).first() if categoria_id else None
+    categoria_edicion = None
+    if str(categoria_id or '').isdecimal():
+        categoria_edicion = categorias.filter(pk=int(categoria_id)).first()
     categoria_busqueda = request.GET.get('categoria_q', '').strip()[:100]
     categorias_visibles = (
         categorias.filter(nombre__icontains=categoria_busqueda)
@@ -162,13 +125,10 @@ def _render_gestion(request, categoria_form=None, insumo_form=None):
     )
     query = request.GET.get('q', '').strip()[:100]
     campo = request.GET.get('campo', 'nombre')
-    if campo not in ('nombre', 'tipo', 'tamano'):
+    if campo not in ('nombre', 'categoria', 'tamano'):
         campo = 'nombre'
     estado = request.GET.get('estado', 'activos')
-    insumos = Insumo.objects.select_related(
-        'categoria',
-        'proveedor_referencia',
-    )
+    insumos = Insumo.objects.select_related('categoria')
 
     if estado == 'activos':
         insumos = insumos.filter(activo=True)
@@ -177,10 +137,8 @@ def _render_gestion(request, categoria_form=None, insumo_form=None):
     else:
         estado = 'todos'
 
-    if categoria_seleccionada:
-        insumos = insumos.filter(categoria=categoria_seleccionada)
     if query:
-        if campo == 'tipo':
+        if campo == 'categoria':
             insumos = insumos.filter(categoria__nombre__icontains=query)
         elif campo == 'tamano':
             unidades_coincidentes = [
@@ -196,41 +154,25 @@ def _render_gestion(request, categoria_form=None, insumo_form=None):
     return render(request, 'insumos/gestion_categorias.html', {
         'categorias': categorias_visibles,
         'total_categorias': total_categorias,
-        'categoria_seleccionada': categoria_seleccionada,
+        'categoria_edicion': categoria_edicion,
         'categoria_busqueda': categoria_busqueda,
-        'categoria_form': (
-            categoria_form
-            if categoria_form and not categoria_form.instance.pk
-            else CategoriaInsumoForm()
-        ),
-        'editar_categoria_form': (
-            categoria_form
-            if (
-                categoria_form
-                and categoria_seleccionada
-                and categoria_form.instance.pk == categoria_seleccionada.pk
+        'categoria_form': categoria_form or CategoriaInsumoForm(),
+        'editar_categoria_form': editar_categoria_form or (
+            CategoriaInsumoForm(
+                instance=categoria_edicion,
+                prefix=f'categoria-{categoria_edicion.pk}',
             )
-            else (
-                CategoriaInsumoForm(
-                    instance=categoria_seleccionada,
-                    prefix=f'categoria-{categoria_seleccionada.pk}',
-                )
-                if categoria_seleccionada else None
-            )
+            if categoria_edicion else None
         ),
-        'insumo_form': insumo_form or InsumoForm(
-            initial=(
-                {'categoria': categoria_seleccionada.pk}
-                if categoria_seleccionada else None
-            ),
+        'categoria_modal': categoria_modal or (
+            'editar' if categoria_edicion else ''
         ),
+        'insumo_form': insumo_form or InsumoForm(),
         'insumos': insumos,
         'query': query,
         'campo': campo,
         'estado': estado,
-        'mostrar_resultados': bool(
-            query or categoria_seleccionada or estado != 'activos'
-        ),
+        'mostrar_resultados': bool(query or estado != 'activos'),
         'total_insumos': Insumo.objects.filter(activo=True).count(),
     })
 
@@ -244,10 +186,14 @@ def gestion_categorias(request):
         if accion == 'crear_categoria':
             form = CategoriaInsumoForm(request.POST)
             if form.is_valid():
-                categoria = form.save()
+                form.save()
                 messages.success(request, 'Categoría creada correctamente.')
-                return redirect(f'{request.path}?categoria={categoria.pk}')
-            return _render_gestion(request, categoria_form=form)
+                return redirect(request.path)
+            return _render_gestion(
+                request,
+                categoria_form=form,
+                categoria_modal='crear',
+            )
 
         if accion == 'editar_categoria':
             categoria = _get_posted_object(
@@ -262,8 +208,12 @@ def gestion_categorias(request):
             if form.is_valid():
                 form.save()
                 messages.success(request, 'Categoría actualizada correctamente.')
-                return redirect(f'{request.path}?categoria={categoria.pk}')
-            return _render_gestion(request, categoria_form=form)
+                return redirect(request.path)
+            return _render_gestion(
+                request,
+                editar_categoria_form=form,
+                categoria_modal='editar',
+            )
 
         if accion == 'eliminar_categoria':
             categoria = _get_posted_object(
@@ -274,7 +224,7 @@ def gestion_categorias(request):
                 messages.error(
                     request,
                     'No puedes eliminar una categoría que todavía tiene insumos. '
-                    'Mueve o elimina sus insumos primero.',
+                    'Reasigna o desactiva sus insumos primero.',
                 )
                 return redirect(request.path)
             categoria.delete()
@@ -285,8 +235,9 @@ def gestion_categorias(request):
             form = InsumoForm(request.POST, request.FILES)
             if form.is_valid():
                 insumo = form.save()
-                messages.success(request, 'Insumo agregado a la categoría.')
-                return redirect(f'{request.path}?categoria={insumo.categoria_id}')
+                messages.success(request, 'Insumo agregado correctamente.')
+                query = urlencode({'q': insumo.nombre, 'campo': 'nombre'})
+                return redirect(f'{request.path}?{query}')
             return _render_gestion(request, insumo_form=form)
 
         if accion == 'editar_insumo':
@@ -301,25 +252,10 @@ def gestion_categorias(request):
                 prefix=f'insumo-{insumo.pk}',
             )
             if form.is_valid():
-                insumo = form.save()
+                form.save()
                 messages.success(request, 'Insumo actualizado correctamente.')
-                return redirect(f'{request.path}?categoria={insumo.categoria_id}')
+                return redirect(request.path)
             return _render_gestion(request, insumo_form=form)
-
-        if accion in ('eliminar_insumo', 'restaurar_insumo'):
-            insumo = _get_posted_object(
-                Insumo,
-                request.POST.get('insumo_id'),
-            )
-            insumo.activo = accion == 'restaurar_insumo'
-            insumo.save(update_fields=['activo'])
-            messages.success(
-                request,
-                'Insumo restaurado correctamente.'
-                if insumo.activo else
-                'Insumo desactivado. Su historial se conservó.',
-            )
-            return redirect(f'{request.path}?categoria={insumo.categoria_id}')
 
         messages.error(request, 'No se reconoció la acción solicitada.')
 
