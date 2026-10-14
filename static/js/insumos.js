@@ -1,4 +1,31 @@
 (() => {
+    const categoryDialog = document.querySelector('#categoryDialog');
+    if (categoryDialog) {
+        const createForm = categoryDialog.querySelector('#categoryCreateForm');
+        const editForm = categoryDialog.querySelector('[data-category-edit-form]');
+        const openCategoryDialog = (mode) => {
+            if (!categoryDialog.open) categoryDialog.showModal();
+            if (createForm) createForm.hidden = mode !== 'crear';
+            if (editForm) editForm.hidden = mode !== 'editar';
+        };
+
+        document.querySelectorAll('[data-open-category-dialog="crear"]').forEach((button) => {
+            button.addEventListener('click', () => openCategoryDialog('crear'));
+        });
+        document.querySelectorAll('[data-open-category-dialog="editar"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('editar_categoria', button.dataset.categoryId);
+                window.location.assign(url);
+            });
+        });
+        categoryDialog.querySelectorAll('.insumo-dialog-close, [data-close-category-dialog]')
+            .forEach((button) => button.addEventListener('click', () => categoryDialog.close()));
+        if (categoryDialog.dataset.open) {
+            openCategoryDialog(categoryDialog.dataset.open);
+        }
+    }
+
     const dialog = document.querySelector('#insumoDialog');
     if (!dialog) return;
 
@@ -40,6 +67,8 @@
         const status = dialog.querySelector('.insumo-dialog-status');
         status.textContent = item.activo ? 'Activo' : 'Desactivado';
         status.classList.toggle('inactive', !item.activo);
+        const availability = dialog.querySelector('.insumo-dialog-availability');
+        availability.checked = item.activo;
 
         const image = dialog.querySelector('.insumo-dialog-image img');
         const placeholder = dialog.querySelector('.insumo-dialog-image span');
@@ -48,12 +77,6 @@
         image.src = item.imagen || '';
         image.alt = item.imagen ? `Imagen de ${item.nombre}` : '';
 
-        const deleteButton = dialog.querySelector('.insumo-dialog-delete');
-        deleteButton.innerHTML = item.activo
-            ? '<i class="fa-regular fa-trash-can"></i> Eliminar'
-            : '<i class="fa-solid fa-rotate-left"></i> Restaurar';
-        deleteButton.classList.toggle('insumo-button-danger', item.activo);
-        deleteButton.classList.toggle('insumo-button-filter', !item.activo);
     };
 
     const buildEditForm = (item) => {
@@ -188,17 +211,14 @@
         }
     });
 
-    dialog.querySelector('.insumo-dialog-delete').addEventListener('click', async (event) => {
-        const deleteButton = event.currentTarget;
-        const action = currentItem.activo ? 'eliminar_insumo' : 'restaurar_insumo';
-        if (currentItem.activo && !window.confirm('¿Eliminar este insumo del inventario? Su historial se conservará.')) {
-            return;
-        }
-
+    dialog.querySelector('.insumo-dialog-availability').addEventListener('change', async (event) => {
+        const availability = event.currentTarget;
+        const previousValue = currentItem.activo;
         const data = new FormData();
-        data.set('accion', action);
-        setMessage(currentItem.activo ? 'Eliminando…' : 'Restaurando…');
-        deleteButton.disabled = true;
+        data.set('accion', 'cambiar_disponibilidad');
+        data.set('activo', String(availability.checked));
+        availability.disabled = true;
+        setMessage(availability.checked ? 'Activando…' : 'Desactivando…');
 
         try {
             const response = await fetch(currentUrl, {
@@ -217,9 +237,10 @@
             updateRow(result);
             setMessage(result.message);
         } catch (error) {
-            setMessage(error.message || 'No se pudo completar la acción.', true);
+            availability.checked = previousValue;
+            setMessage(error.message || 'No se pudo actualizar la disponibilidad.', true);
         } finally {
-            deleteButton.disabled = false;
+            availability.disabled = false;
         }
     });
 
@@ -240,6 +261,8 @@
                 document.createTextNode(` ${item.unidad_medida_display}`),
             );
             if (item.categoria_id) row.dataset.categoriaId = item.categoria_id;
+            row.dataset.categoria = item.categoria;
+            row.dataset.unidad = item.unidad_medida_display;
         }
         if (typeof item.activo === 'boolean') {
             row.dataset.activo = String(item.activo);
@@ -267,17 +290,17 @@
 
         const dashboard = document.querySelector('.insumo-dashboard');
         const filterState = dashboard.dataset.estado;
-        const categoryFilter = dashboard.dataset.categoriaSeleccionada;
         const queryFilter = dashboard.dataset.query.trim().toLocaleLowerCase();
-        const rowText = [
-            row.querySelector('.insumo-row-select')?.textContent || '',
-            row.querySelector('.insumo-row-info > p')?.textContent || '',
-        ].join(' ').toLocaleLowerCase();
+        const searchField = dashboard.dataset.campo;
+        const rowText = searchField === 'categoria'
+            ? row.dataset.categoria || ''
+            : searchField === 'tamano'
+                ? row.dataset.unidad || ''
+                : row.querySelector('.insumo-row-select')?.textContent || '';
         row.hidden =
             (filterState === 'activos' && row.dataset.activo !== 'true') ||
             (filterState === 'inactivos' && row.dataset.activo !== 'false') ||
-            (categoryFilter && row.dataset.categoriaId !== categoryFilter) ||
-            (queryFilter && !rowText.includes(queryFilter));
+            (queryFilter && !rowText.toLocaleLowerCase().includes(queryFilter));
         const visibleRows = [...document.querySelectorAll('[data-insumo-row]')]
             .filter((candidate) => !candidate.hidden).length;
         const resultsLabel = document.querySelector('.insumo-results-label span');
