@@ -7,8 +7,10 @@
 <div class="admin-dashboard insumo-dashboard" data-insumos-count="{{ total_insumos }}"
      data-estado="{{ estado }}" data-query="{{ query }}"
      data-campo="{{ campo }}">
-    <a class="btn-back" href="{% url 'perfil' %}">
-        <i class="fa-solid fa-arrow-left"></i> Volver al panel
+    <a class="insumo-back-link" href="{% url 'perfil' %}">
+        <span class="insumo-back-icon"><i class="fa-solid fa-arrow-left"></i></span>
+        <span>Volver al panel</span>
+        <i class="fa-solid fa-arrow-up-right-from-square insumo-back-indicator" aria-hidden="true"></i>
     </a>
 
     <section class="insumo-page-heading">
@@ -77,8 +79,9 @@
                                         {% csrf_token %}
                                         <input type="hidden" name="accion" value="eliminar_categoria">
                                         <input type="hidden" name="categoria_id" value="{{ categoria.pk }}">
-                                        <button type="submit"
-                                                onclick="return confirm('¿Eliminar esta categoría? Esta acción no se puede deshacer.')">
+                                        <button type="button" data-confirm-category-delete
+                                                data-category-id="{{ categoria.pk }}"
+                                                data-category-name="{{ categoria.nombre }}">
                                             <i class="fa-regular fa-trash-can"></i> Eliminar
                                         </button>
                                     </form>
@@ -259,6 +262,30 @@
             </div>
         </form>
     {% endif %}
+</dialog>
+<dialog class="insumo-category-dialog insumo-delete-dialog" id="deleteCategoryDialog"
+        aria-labelledby="deleteCategoryTitle">
+    <form method="post" id="deleteCategoryForm" class="insumo-editor-form">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="eliminar_categoria">
+        <input type="hidden" name="categoria_id" id="deleteCategoryId">
+        <div class="insumo-category-dialog-header">
+            <span class="insumo-delete-icon"><i class="fa-regular fa-trash-can"></i></span>
+            <button type="button" class="insumo-dialog-close" data-close-delete-dialog
+                    aria-label="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <h2 id="deleteCategoryTitle">¿Eliminar categoría?</h2>
+        <p>Vas a eliminar <strong id="deleteCategoryName"></strong>. Esta acción no se puede deshacer.</p>
+        <div class="insumo-dialog-actions">
+            <button type="button" class="insumo-button insumo-button-filter"
+                    data-close-delete-dialog>Cancelar</button>
+            <button type="submit" class="insumo-button insumo-button-danger">
+                <i class="fa-regular fa-trash-can"></i> Sí, eliminar
+            </button>
+        </div>
+    </form>
 </dialog>
 
 <dialog class="insumo-dialog" id="insumoDialog" aria-labelledby="insumoDialogTitle">

@@ -211,6 +211,15 @@ class GestionInsumosTests(TestCase):
         self.assertFalse(CategoriaInsumo.objects.filter(pk=categoria.pk).exists())
         self.assertRedirects(response, self.url)
 
+    def test_eliminar_categoria_usa_confirmacion_visual_no_alerta_nativa(self):
+        CategoriaInsumo.objects.create(nombre='Categoría vacía')
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, 'id="deleteCategoryDialog"')
+        self.assertContains(response, 'data-confirm-category-delete')
+        self.assertNotContains(response, 'onclick="return confirm(')
+
     def test_categoria_con_insumos_no_se_puede_eliminar(self):
         response = self.client.post(
             self.url,

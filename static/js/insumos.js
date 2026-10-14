@@ -1,4 +1,20 @@
 (() => {
+    const deleteDialog = document.querySelector('#deleteCategoryDialog');
+    if (deleteDialog) {
+        const categoryId = deleteDialog.querySelector('#deleteCategoryId');
+        const categoryName = deleteDialog.querySelector('#deleteCategoryName');
+        document.querySelectorAll('[data-confirm-category-delete]').forEach((button) => {
+            button.addEventListener('click', () => {
+                categoryId.value = button.dataset.categoryId;
+                categoryName.textContent = button.dataset.categoryName;
+                deleteDialog.showModal();
+            });
+        });
+        deleteDialog.querySelectorAll('[data-close-delete-dialog]').forEach((button) => {
+            button.addEventListener('click', () => deleteDialog.close());
+        });
+    }
+
     const categoryDialog = document.querySelector('#categoryDialog');
     if (categoryDialog) {
         const createForm = categoryDialog.querySelector('#categoryCreateForm');
@@ -76,7 +92,6 @@
         placeholder.hidden = Boolean(item.imagen);
         image.src = item.imagen || '';
         image.alt = item.imagen ? `Imagen de ${item.nombre}` : '';
-
     };
 
     const buildEditForm = (item) => {
