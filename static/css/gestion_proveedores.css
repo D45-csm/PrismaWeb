@@ -1,0 +1,252 @@
+/* Layout General */
+.crud-container {
+    max-width: 1300px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.crud-layout {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+
+/* Tarjetas (Cards) */
+.card-section {
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    padding: 1.5rem;
+}
+
+.card-header {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.card-header h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.25rem;
+    color: #0f172a;
+}
+
+.card-header p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+/* Estilos de Formularios */
+.form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.4rem;
+}
+
+.required-mark { color: #e11d48; }
+
+.form-input, .form-textarea {
+    width: 100%;
+    padding: 0.65rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background-color: #f8fafc;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-textarea { resize: vertical; min-height: 80px; }
+
+.checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #334155;
+    cursor: pointer;
+}
+
+/* Botones de Formulario */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.btn {
+    padding: 0.6rem 1.25rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.btn-submit { background-color: #2563eb; color: #fff; }
+.btn-submit:hover { background-color: #1d4ed8; }
+.btn-cancel { background-color: #f1f5f9; color: #475569; }
+.btn-cancel:hover { background-color: #e2e8f0; }
+
+/* Estilos de la Tabla */
+.table-wrapper { overflow-x: auto; }
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.custom-table th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.custom-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: top;
+}
+
+.col-name { font-weight: 600; color: #0f172a; }
+.empty-text { color: #94a3b8; font-style: italic; }
+.no-records { text-align: center; padding: 2rem !important; color: #64748b; }
+
+/* Etiquetas de estado (Badges) */
+.badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.badge-active { background-color: #dcfce7; color: #15803d; }
+.badge-inactive { background-color: #fee2e2; color: #b91c1c; }
+
+/* Botones de acción en tabla */
+.table-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+.table-actions form { margin: 0; }
+.btn-action {
+    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn-edit { background-color: #eff6ff; color: #1d4ed8; }
+.btn-edit:hover { background-color: #dbeafe; }
+.btn-delete { background-color: #fef2f2; color: #dc2626; }
+.btn-delete:hover { background-color: #fee2e2; }
+
+/* Alertas */
+.messages-wrapper { margin-bottom: 1.5rem; }
+.alert {
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+.alert-success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.field-error { display: block; color: #dc2626; font-size: 0.75rem; margin-top: 0.3rem; }
+
+/* Responsividad para móviles */
+@media (max-width: 900px) {
+    .crud-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* --- ESTILO PARA EL BOTÓN VOLVER --- */
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+
+/* --- SCROLL PARA LA TABLA --- */
+.table-wrapper {
+    max-height: 420px; /* Altura aproximada equivalente a 8 filas */
+    overflow-y: auto;  /* Muestra la barra de scroll vertical solo si es necesario */
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+/* --- CABECERA FIJA (STICKY HEADER) --- */
+.custom-table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8fafc; /* Ajusta este color con el fondo real de tu tabla */
+    z-index: 2;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* Sombra sutil para separar el header del contenido */
+}
+
+/* Opcional: Estilo personalizado para la barra de scroll */
+.table-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
