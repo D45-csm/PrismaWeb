@@ -171,7 +171,11 @@ def gestion_categorias(request):
             form = CategoriaInsumoForm(request.POST)
             if form.is_valid():
                 categoria = form.save()
-                messages.success(request, 'Categoría creada correctamente.')
+                messages.success(
+                    request,
+                    'Categoría creada correctamente.',
+                    extra_tags='insumos',
+                )
                 return redirect(f'{request.path}?categoria={categoria.pk}')
             return _render_gestion(request, categoria_form=form)
 
@@ -187,7 +191,11 @@ def gestion_categorias(request):
             )
             if form.is_valid():
                 form.save()
-                messages.success(request, 'Categoría actualizada correctamente.')
+                messages.success(
+                    request,
+                    'Categoría actualizada correctamente.',
+                    extra_tags='insumos',
+                )
                 return redirect(f'{request.path}?categoria={categoria.pk}')
             return _render_gestion(request, categoria_form=form)
 
@@ -201,17 +209,26 @@ def gestion_categorias(request):
                     request,
                     'No puedes eliminar una categoría que todavía tiene insumos. '
                     'Mueve o elimina sus insumos primero.',
+                    extra_tags='insumos',
                 )
                 return redirect(request.path)
             categoria.delete()
-            messages.success(request, 'Categoría eliminada correctamente.')
+            messages.success(
+                request,
+                'Categoría eliminada correctamente.',
+                extra_tags='insumos',
+            )
             return redirect(request.path)
 
         if accion == 'crear_insumo':
             form = InsumoForm(request.POST, request.FILES)
             if form.is_valid():
                 insumo = form.save()
-                messages.success(request, 'Insumo agregado a la categoría.')
+                messages.success(
+                    request,
+                    'Insumo agregado a la categoría.',
+                    extra_tags='insumos',
+                )
                 return redirect(f'{request.path}?categoria={insumo.categoria_id}')
             return _render_gestion(request, insumo_form=form)
 
@@ -228,7 +245,11 @@ def gestion_categorias(request):
             )
             if form.is_valid():
                 insumo = form.save()
-                messages.success(request, 'Insumo actualizado correctamente.')
+                messages.success(
+                    request,
+                    'Insumo actualizado correctamente.',
+                    extra_tags='insumos',
+                )
                 return redirect(f'{request.path}?categoria={insumo.categoria_id}')
             return _render_gestion(request, insumo_form=form)
 
@@ -244,9 +265,14 @@ def gestion_categorias(request):
                 'Insumo restaurado correctamente.'
                 if insumo.activo else
                 'Insumo desactivado. Su historial se conservó.',
+                extra_tags='insumos',
             )
             return redirect(f'{request.path}?categoria={insumo.categoria_id}')
 
-        messages.error(request, 'No se reconoció la acción solicitada.')
+        messages.error(
+            request,
+            'No se reconoció la acción solicitada.',
+            extra_tags='insumos',
+        )
 
     return _render_gestion(request)
