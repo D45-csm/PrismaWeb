@@ -21,6 +21,7 @@ class Insumo(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     unidad_medida= models.CharField(max_length=20, choices=unidad_medida_choices)
     categoria = models.ForeignKey(CategoriaInsumo, on_delete=models.CASCADE)
+    imagen = models.ImageField(upload_to='insumos/', blank=True, null=True)
     activo = models.BooleanField(default=True)
 
     def __str__(self):

@@ -75,9 +75,9 @@
             </div>
 
             <div class="stat-info">
-                <p>Insumos por agotarse</p>
-                <h3>{{ insumos_bajos|default:"0" }}</h3>
-                <span>Requieren reposición</span>
+                <p>Insumos activos</p>
+                <h3>{{ total_insumos|default:"0" }}</h3>
+                <span>Insumos registrados</span>
             </div>
         </div>
 
@@ -166,6 +166,17 @@
                 <i class="fa-solid fa-arrow-right action-arrow"></i>
             </a>
 
+            <a href="{% url 'gestion_insumos' %}" class="quick-action">
+                <div class="quick-icon blue-icon">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div class="quick-info">
+                    <h3>Gestión de insumos</h3>
+                    <p>Administra, filtra y organiza los insumos de tu inventario.</p>
+                </div>
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
         </div>
     </section>
 
@@ -188,7 +199,7 @@
                         <th>Cliente</th>
                         <th>Fecha</th>
                         <th>Hora</th>
-                        <th>Personas</th>
+                        <th>Postre / cantidad</th>
                         <th>Estado</th>
                     </tr>
                 </thead>
@@ -197,9 +208,9 @@
                     {% for reserva in reservas_recientes %}
                     <tr>
                         <td>{{ reserva.nombre_cliente }}</td>
-                        <td>{{ reserva.fecha|date:"d/m/Y" }}</td>
-                        <td>{{ reserva.hora|time:"h:i A" }}</td>
-                        <td>{{ reserva.numero_personas }}</td>
+                        <td>{{ reserva.fecha_reserva|date:"d/m/Y" }}</td>
+                        <td>{{ reserva.hora|time:"h:i A"|default:"Por acordar" }}</td>
+                        <td>{{ reserva.postre|default:"—" }} × {{ reserva.cantidad }}</td>
                         <td>
                             <span class="status-badge status-pending">
                                 {{ reserva.estado|default:"Pendiente" }}
@@ -226,8 +237,8 @@
 
         <div class="section-heading">
             <div>
-                <h2>Inventario por revisar</h2>
-                <p>Insumos que necesitan atención o reposición.</p>
+                <h2>Insumos registrados</h2>
+                <p>Resumen de los insumos activos por categoría.</p>
             </div>
         </div>
 
@@ -237,21 +248,21 @@
                 <thead>
                     <tr>
                         <th>Insumo</th>
-                        <th>Cantidad disponible</th>
-                        <th>Stock mínimo</th>
+                        <th>Categoría</th>
+                        <th>Unidad de medida</th>
                         <th>Estado</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    {% for insumo in inventario_bajo %}
+                    {% for insumo in insumos_recientes %}
                     <tr>
                         <td>{{ insumo.nombre }}</td>
-                        <td>{{ insumo.cantidad }}</td>
-                        <td>{{ insumo.stock_minimo }}</td>
+                        <td>{{ insumo.categoria.nombre }}</td>
+                        <td>{{ insumo.get_unidad_medida_display }}</td>
                         <td>
-                            <span class="status-badge status-low">
-                                Stock bajo
+                        <span class="status-badge status-active">
+                            Activo
                             </span>
                         </td>
                     </tr>
@@ -295,10 +306,10 @@
                 <tbody>
                     {% for compra in compras_recientes %}
                     <tr>
-                        <td>{{ compra.proveedor }}</td>
-                        <td>{{ compra.fecha|date:"d/m/Y" }}</td>
+                        <td>{{ compra.compra.proveedor }}</td>
+                        <td>{{ compra.compra.fecha|date:"d/m/Y" }}</td>
                         <td>{{ compra.insumo }}</td>
-                        <td>${{ compra.total }}</td>
+                        <td>${{ compra.subtotal }}</td>
                     </tr>
                     {% empty %}
                     <tr>
