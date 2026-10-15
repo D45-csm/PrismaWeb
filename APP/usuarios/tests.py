@@ -32,6 +32,26 @@ class AccesoUsuarioTests(TestCase):
 
         self.assertRedirects(response, reverse('base_cliente'))
 
+    def test_mensajes_de_autenticacion_se_muestran_en_su_destino(self):
+        self.client.force_login(self.administrador)
+        response = self.client.post(reverse('logout'), follow=True)
+
+        self.assertContains(response, 'Has cerrado sesión correctamente.')
+
+        response = self.client.post(
+            reverse('admin_login'),
+            {
+                'username': self.administrador.email,
+                'password': 'Clave-segura-2026!',
+            },
+            follow=True,
+        )
+        self.assertContains(response, 'Acceso administrativo concedido.')
+
+        response = self.client.get(reverse('gestion_insumos'))
+        self.assertNotContains(response, 'Has cerrado sesión correctamente.')
+        self.assertNotContains(response, 'Acceso administrativo concedido.')
+
     def test_portada_se_renderiza_a_traves_de_django(self):
         response = self.client.get(reverse('base_cliente'))
 

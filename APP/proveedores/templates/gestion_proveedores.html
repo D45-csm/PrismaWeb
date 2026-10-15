@@ -1,0 +1,165 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title %}Gestión de Proveedores{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/gestion_proveedores.css' %}?v=1">
+
+<div class="crud-container">
+
+    <!-- ENCABEZADO CON TÍTULO H2 Y BOTÓN -->
+    <header class="page-header">
+        <div class="header-text">
+            <h2 class="main-title">Gestión de Proveedores</h2>
+            <p class="subtitle">Administra los proveedores y sus datos de contacto en PRISMA.</p>
+        </div>
+        <a class="btn btn-secondary" href="{% url 'perfil' %}">Volver al Perfil</a>
+    </header>
+    
+    <!-- Notificaciones del Sistema -->
+    {% if messages %}
+        <div class="messages-wrapper" id="mensajes-sistema">
+            {% for message in messages %}
+                {% if 'crud' in message.extra_tags %}
+                    <div class="alert alert-{{ message.level_tag }}">
+                        <span>{{ message }}</span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="crud-layout">
+        
+        <!-- SECCIÓN IZQUIERDA: FORMULARIO -->
+        <section class="card-section form-card">
+            <div class="card-header">
+                {% if modo_edicion %}
+                    <h2>Editar Proveedor</h2>
+                    <p>Actualizando información de: <strong>{{ proveedor_actual.nombre }}</strong></p>
+                {% else %}
+                    <h2>Registrar Proveedor</h2>
+                    <p>Ingresa los datos para dar de alta un nuevo proveedor en PRISMA.</p>
+                {% endif %}
+            </div>
+
+            <form method="POST" novalidate class="custom-form">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-error">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="form-fields">
+                    <div class="form-group">
+                        <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }} <span class="required-mark">*</span></label>
+                        {{ form.nombre }}
+                        {% if form.nombre.errors %}<span class="field-error">{{ form.nombre.errors.0 }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.telefono.id_for_label }}">{{ form.telefono.label }}</label>
+                        {{ form.telefono }}
+                        {% if form.telefono.errors %}<span class="field-error">{{ form.telefono.errors.0 }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.direccion.id_for_label }}">{{ form.direccion.label }}</label>
+                        {{ form.direccion }}
+                        {% if form.direccion.errors %}<span class="field-error">{{ form.direccion.errors.0 }}</span>{% endif %}
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label" for="{{ form.activo.id_for_label }}">
+                            {{ form.activo }}
+                            <span>Proveedor Activo</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    {% if modo_edicion %}
+                        <a href="{% url 'gestion_proveedores' %}" class="btn btn-cancel">Cancelar</a>
+                        <button type="submit" class="btn btn-submit">Actualizar</button>
+                    {% else %}
+                        <button type="reset" class="btn btn-cancel">Limpiar</button>
+                        <button type="submit" class="btn btn-submit">Guardar</button>
+                    {% endif %}
+                </div>
+            </form>
+        </section>
+
+        <!-- SECCIÓN DERECHA: TABLA DE REGISTROS -->
+        <section class="card-section table-card">
+            <div class="card-header">
+                <h2>Directorio de Proveedores</h2>
+                <p>Total registrados: <strong>{{ proveedores.count }}</strong></p>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Contacto</th>
+                            <th>Dirección</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prov in proveedores %}
+                            <tr>
+                                <td class="col-name">{{ prov.nombre }}</td>
+                                <td class="col-contact">
+                                    {% if prov.telefono %}<div>📞 {{ prov.telefono }}</div>{% endif %}
+                                    {% if prov.email %}<div>✉️ {{ prov.email }}</div>{% endif %}
+                                    {% if not prov.telefono and not prov.email %}
+                                        <span class="empty-text">Sin datos</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ prov.direccion|default:"---"|truncatechars:35 }}</td>
+                                <td>
+                                    {% if prov.activo %}
+                                        <span class="badge badge-active">Activo</span>
+                                    {% else %}
+                                        <span class="badge badge-inactive">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="table-actions">
+                                        <!-- Enlace para cargar datos en el formulario -->
+                                        <a href="{% url 'editar_proveedor' prov.id %}" class="btn-action btn-edit">Editar</a>
+
+                                        <!-- Formulario POST para eliminación segura -->
+                                        <form method="POST" action="{% url 'eliminar_proveedor' prov.id %}" onsubmit="return confirm('¿Confirmas la eliminación definitiva del proveedor {{ prov.nombre }}?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-action btn-delete">Eliminar</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="no-records">No hay proveedores registrados en el sistema.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+</div>
+{% endblock %}

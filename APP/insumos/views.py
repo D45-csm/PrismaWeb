@@ -225,7 +225,11 @@ def gestion_categorias(request):
                 )
                 return redirect(request.path)
             categoria.delete()
-            messages.success(request, 'Categoría eliminada correctamente.')
+            messages.success(
+                request,
+                'Categoría eliminada correctamente.',
+                extra_tags='insumos',
+            )
             return redirect(request.path)
 
         if accion == 'crear_insumo':
