@@ -1,0 +1,42 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Recuperar contraseña - Prisma{% endblock %}
+{% block body_attrs %} class="auth-page"{% endblock %}
+
+{% block content %}
+    <div class="auth-container">
+        <div class="auth-image">
+            <div class="auth-image-overlay"></div>
+            <div class="auth-image-text">
+                <h2>Recupera tu acceso</h2>
+                <p>Protegemos tu cuenta con un enlace personal</p>
+            </div>
+        </div>
+        <div class="auth-form-container">
+            <div class="auth-logo">
+                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo">
+            </div>
+            <h2>Recuperar contraseña</h2>
+            <p class="auth-subtitle">Te enviaremos un enlace seguro al correo registrado.</p>
+            {% if email_console %}
+                <p class="auth-alert" role="status">
+                    El correo está en modo de desarrollo: el enlace se mostrará en la consola del servidor.
+                    Para enviarlo al buzón, configura las credenciales SMTP.
+                </p>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ form.email.id_for_label }}">Correo electrónico</label>
+                    {{ form.email }}
+                    {% for error in form.email.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                </div>
+                <button type="submit" class="btn-primary btn-full">Enviar enlace</button>
+            </form>
+            <div class="auth-switch">
+                <p><a href="{% url 'login' %}">Volver al inicio de sesión</a></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}

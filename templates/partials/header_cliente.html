@@ -1,0 +1,32 @@
+{% load static %}
+<header id="header">
+    <div class="container">
+        <a class="logo" href="{% url 'base_cliente' %}" aria-label="Prisma, inicio">
+            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
+        </a>
+
+        <button class="mobile-menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false"
+                onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <nav class="nav-menu" id="navMenu" aria-label="Navegación principal">
+            <ul>
+                <li><a class="{% if active == 'inicio' %}active{% endif %}" href="{% url 'base_cliente' %}">Inicio</a></li>
+                <li><a class="{% if active == 'productos' %}active{% endif %}" href="{% url 'productos' %}">Productos</a></li>
+                <li><a class="{% if active == 'reservas' %}active{% endif %}" href="{% url 'reservas' %}">Reserva</a></li>
+                <li><a class="{% if active == 'contactos' %}active{% endif %}" href="{% url 'contactos' %}">Contacto</a></li>
+            </ul>
+        </nav>
+
+        <div class="header-actions">
+            <a href="{% url 'login' %}" class="btn-login" aria-label="Iniciar sesión">
+                <i class="fas fa-user"></i>
+            </a>
+            <a href="{% url 'carrito' %}" class="btn-cart" aria-label="Ver carrito">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count">0</span>
+            </a>
+        </div>
+    </div>
+</header>
