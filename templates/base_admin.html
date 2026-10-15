@@ -14,7 +14,6 @@
 
     <!-- Font Awesome para los iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
     <!-- CSS del panel de administración -->
     <link rel="stylesheet" href="{% static 'css/admin_panel.css' %}">
 
@@ -23,17 +22,29 @@
 
 <body class="admin-body">
 
+<!-- IMPORTAR LIBRERÍA SWEETALERT2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- Encabezado principal -->
     {% include 'partials/header.html' %}
 
+    
+    <!-- BLOQUE DE ALERTAS DE DJANGO (OCULTO PARA SER PROCESADO POR JS) -->
+    {% if messages %}
+        <div id="django-messages" style="display: none;">
+            {% for message in messages %}
+                <div class="django-message" data-tags="{{ message.tags }}" data-text="{{ message }}"></div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
     <!-- Contenido de cada página -->
     <main class="admin-main">
         {% block content %}
         {% endblock %}
     </main>
 
-    <!-- Bootstrap JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
 
     {% block extra_js %}{% endblock %}
 

@@ -1,0 +1,52 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Vinculación del CSS con control de caché -->
+<link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}">
+
+<!-- IMPORTAR LIBRERÍA SWEETALERT2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<main class="gestion-container">
+
+    <!-- BOTÓN DE NAVEGACIÓN (ÚNICAMENTE ADMINISTRACIÓN) -->
+    <div class="acciones-navegacion">
+        <a href="{% url 'perfil' %}" class="btn-nav">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Administración</span>
+        </a>
+    </div>
+
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb">
+        Administración / <strong>Gestión de Productos</strong>
+    </div>
+
+    <!-- ENCABEZADO Y BOTÓN CREAR -->
+    <div class="header-acciones">
+        <div>
+            <h1>Gestión de Productos</h1>
+            <p class="subtitulo">Administra los productos de tu catálogo, edítalos o cambia su visibilidad</p>
+        </div>
+
+        <a href="{% url 'crear_producto' %}" class="boton-crear">
+            <span class="icono-mas">+</span> Crear Producto
+        </a>
+    </div>
+
+    <!-- LISTA / GRID DE PRODUCTOS -->
+     {% include 'productos/lista_productos.html' %}
+
+</main>
+
+<script src="{% static 'js/gestion_productos.js' %}"></script>
+
+
+{% endblock %}
