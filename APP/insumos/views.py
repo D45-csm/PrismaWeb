@@ -1,6 +1,8 @@
-from django.db.models import Count, Q
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Count
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -73,39 +75,55 @@ def detalle_insumo(request, pk):
             'message': 'Insumo actualizado correctamente.',
         })
 
-    if accion in ('eliminar_insumo', 'restaurar_insumo'):
-        insumo.activo = accion == 'restaurar_insumo'
+    if accion == 'cambiar_disponibilidad':
+        valor = request.POST.get('activo')
+        if valor not in ('true', 'false'):
+            return JsonResponse(
+                {'error': 'Selecciona si el insumo está disponible.'},
+                status=400,
+            )
+        insumo.activo = valor == 'true'
         insumo.save(update_fields=['activo'])
         return JsonResponse({
             'id': insumo.pk,
             'activo': insumo.activo,
             'message': (
-                'Insumo restaurado correctamente.'
-                if insumo.activo else
-                'Insumo eliminado del inventario. Su historial se conservó.'
+                'Insumo activado correctamente.'
+                if insumo.activo else 'Insumo desactivado correctamente.'
             ),
         })
 
     return JsonResponse({'error': 'La acción solicitada no es válida.'}, status=400)
 
 
-def _render_gestion(request, categoria_form=None, insumo_form=None):
+def _render_gestion(
+    request,
+    categoria_form=None,
+    editar_categoria_form=None,
+    insumo_form=None,
+    categoria_modal='',
+):
     categorias = CategoriaInsumo.objects.annotate(
         total_insumos=Count('insumo'),
     ).order_by('nombre')
     total_categorias = categorias.count()
     categoria_id = (
-        request.POST.get('categoria')
-        or request.POST.get('categoria_id')
-        or request.GET.get('categoria')
+        request.POST.get('categoria_id')
+        if request.method == 'POST'
+        else request.GET.get('editar_categoria')
     )
-    categoria_seleccionada = categorias.filter(pk=categoria_id).first() if categoria_id else None
+    categoria_seleccionada = None
+    if str(categoria_id or '').isdecimal():
+        categoria_seleccionada = categorias.filter(pk=int(categoria_id)).first()
     categoria_busqueda = request.GET.get('categoria_q', '').strip()[:100]
     categorias_visibles = (
         categorias.filter(nombre__icontains=categoria_busqueda)
         if categoria_busqueda else categorias
     )
     query = request.GET.get('q', '').strip()[:100]
+    campo = request.GET.get('campo', 'nombre')
+    if campo not in ('nombre', 'categoria', 'tamano'):
+        campo = 'nombre'
     estado = request.GET.get('estado', 'activos')
     insumos = Insumo.objects.select_related('categoria')
 
@@ -116,47 +134,42 @@ def _render_gestion(request, categoria_form=None, insumo_form=None):
     else:
         estado = 'todos'
 
-    if categoria_seleccionada:
-        insumos = insumos.filter(categoria=categoria_seleccionada)
     if query:
-        insumos = insumos.filter(
-            Q(nombre__icontains=query) | Q(descripcion__icontains=query),
-        )
+        if campo == 'categoria':
+            insumos = insumos.filter(categoria__nombre__icontains=query)
+        elif campo == 'tamano':
+            unidades = [
+                value
+                for value, label in Insumo.unidad_medida_choices
+                if query.casefold() in value.casefold()
+                or query.casefold() in label.casefold()
+            ]
+            insumos = insumos.filter(unidad_medida__in=unidades)
+        else:
+            insumos = insumos.filter(nombre__icontains=query)
     insumos = insumos.order_by('nombre')
     return render(request, 'insumos/gestion_categorias.html', {
         'categorias': categorias_visibles,
         'total_categorias': total_categorias,
         'categoria_seleccionada': categoria_seleccionada,
         'categoria_busqueda': categoria_busqueda,
-        'categoria_form': (
-            categoria_form
-            if categoria_form and not categoria_form.instance.pk
-            else CategoriaInsumoForm()
-        ),
-        'editar_categoria_form': (
-            categoria_form
-            if (
-                categoria_form
-                and categoria_seleccionada
-                and categoria_form.instance.pk == categoria_seleccionada.pk
+        'categoria_form': categoria_form or CategoriaInsumoForm(),
+        'editar_categoria_form': editar_categoria_form or (
+            CategoriaInsumoForm(
+                instance=categoria_seleccionada,
+                prefix=f'categoria-{categoria_seleccionada.pk}',
             )
-            else (
-                CategoriaInsumoForm(
-                    instance=categoria_seleccionada,
-                    prefix=f'categoria-{categoria_seleccionada.pk}',
-                )
-                if categoria_seleccionada else None
-            )
+            if categoria_seleccionada else None
         ),
-        'insumo_form': insumo_form or InsumoForm(
-            initial=(
-                {'categoria': categoria_seleccionada.pk}
-                if categoria_seleccionada else None
-            ),
+        'categoria_modal': categoria_modal or (
+            'editar' if categoria_seleccionada else ''
         ),
+        'insumo_form': insumo_form or InsumoForm(),
         'insumos': insumos,
         'query': query,
+        'campo': campo,
         'estado': estado,
+        'mostrar_resultados': bool(query or estado != 'activos'),
         'total_insumos': Insumo.objects.filter(activo=True).count(),
     })
 
@@ -170,14 +183,14 @@ def gestion_categorias(request):
         if accion == 'crear_categoria':
             form = CategoriaInsumoForm(request.POST)
             if form.is_valid():
-                categoria = form.save()
-                messages.success(
-                    request,
-                    'Categoría creada correctamente.',
-                    extra_tags='insumos',
-                )
-                return redirect(f'{request.path}?categoria={categoria.pk}')
-            return _render_gestion(request, categoria_form=form)
+                form.save()
+                messages.success(request, 'Categoría creada correctamente.')
+                return redirect(request.path)
+            return _render_gestion(
+                request,
+                categoria_form=form,
+                categoria_modal='crear',
+            )
 
         if accion == 'editar_categoria':
             categoria = _get_posted_object(
@@ -191,13 +204,13 @@ def gestion_categorias(request):
             )
             if form.is_valid():
                 form.save()
-                messages.success(
-                    request,
-                    'Categoría actualizada correctamente.',
-                    extra_tags='insumos',
-                )
-                return redirect(f'{request.path}?categoria={categoria.pk}')
-            return _render_gestion(request, categoria_form=form)
+                messages.success(request, 'Categoría actualizada correctamente.')
+                return redirect(request.path)
+            return _render_gestion(
+                request,
+                editar_categoria_form=form,
+                categoria_modal='editar',
+            )
 
         if accion == 'eliminar_categoria':
             categoria = _get_posted_object(
@@ -208,8 +221,7 @@ def gestion_categorias(request):
                 messages.error(
                     request,
                     'No puedes eliminar una categoría que todavía tiene insumos. '
-                    'Mueve o elimina sus insumos primero.',
-                    extra_tags='insumos',
+                    'Reasigna o desactiva sus insumos primero.',
                 )
                 return redirect(request.path)
             categoria.delete()
@@ -224,12 +236,9 @@ def gestion_categorias(request):
             form = InsumoForm(request.POST, request.FILES)
             if form.is_valid():
                 insumo = form.save()
-                messages.success(
-                    request,
-                    'Insumo agregado a la categoría.',
-                    extra_tags='insumos',
-                )
-                return redirect(f'{request.path}?categoria={insumo.categoria_id}')
+                messages.success(request, 'Insumo agregado correctamente.')
+                query = urlencode({'q': insumo.nombre, 'campo': 'nombre'})
+                return redirect(f'{request.path}?{query}')
             return _render_gestion(request, insumo_form=form)
 
         if accion == 'editar_insumo':
@@ -244,35 +253,11 @@ def gestion_categorias(request):
                 prefix=f'insumo-{insumo.pk}',
             )
             if form.is_valid():
-                insumo = form.save()
-                messages.success(
-                    request,
-                    'Insumo actualizado correctamente.',
-                    extra_tags='insumos',
-                )
-                return redirect(f'{request.path}?categoria={insumo.categoria_id}')
+                form.save()
+                messages.success(request, 'Insumo actualizado correctamente.')
+                return redirect(request.path)
             return _render_gestion(request, insumo_form=form)
 
-        if accion in ('eliminar_insumo', 'restaurar_insumo'):
-            insumo = _get_posted_object(
-                Insumo,
-                request.POST.get('insumo_id'),
-            )
-            insumo.activo = accion == 'restaurar_insumo'
-            insumo.save(update_fields=['activo'])
-            messages.success(
-                request,
-                'Insumo restaurado correctamente.'
-                if insumo.activo else
-                'Insumo desactivado. Su historial se conservó.',
-                extra_tags='insumos',
-            )
-            return redirect(f'{request.path}?categoria={insumo.categoria_id}')
-
-        messages.error(
-            request,
-            'No se reconoció la acción solicitada.',
-            extra_tags='insumos',
-        )
+        messages.error(request, 'No se reconoció la acción solicitada.')
 
     return _render_gestion(request)

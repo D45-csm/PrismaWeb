@@ -21,6 +21,11 @@
     --admin-shadow: 0 5px 25px rgba(54, 35, 80, 0.06);
 }
 
+.insumo-search-field {
+    width: 160px;
+    flex: 0 0 160px;
+}
+
 /* ==========================================
    FONDO GENERAL
    ========================================== */
@@ -867,11 +872,148 @@
     font-weight: 750;
 }
 
+.insumo-category-count.is-zero {
+    opacity: 0.42;
+}
+
+.insumo-category-empty {
+    opacity: 0.68;
+}
+
+.insumo-category-menu {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.insumo-category-menu > summary {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border-radius: 9px;
+    color: var(--admin-muted);
+    cursor: pointer;
+    list-style: none;
+}
+
+.insumo-category-menu > summary::-webkit-details-marker {
+    display: none;
+}
+
+.insumo-category-menu[open] > summary,
+.insumo-category-menu > summary:hover {
+    background: #fff;
+    color: var(--admin-primary-dark);
+}
+
+.insumo-category-menu-items {
+    position: absolute;
+    z-index: 6;
+    top: calc(100% + 5px);
+    right: 0;
+    display: grid;
+    min-width: 145px;
+    padding: 6px;
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgba(54, 35, 80, 0.16);
+}
+
+.insumo-category-menu-items form {
+    margin: 0;
+}
+
+.insumo-category-menu-items button,
+.insumo-category-menu-disabled {
+    display: flex;
+    width: 100%;
+    min-height: 36px;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: 0.82rem;
+    text-align: left;
+}
+
+.insumo-category-menu-items button {
+    cursor: pointer;
+}
+
+.insumo-category-menu-items button:hover {
+    background: #f6f1fb;
+    color: var(--admin-primary-dark);
+}
+
+.insumo-category-menu-items form button:hover {
+    background: #fff1f1;
+    color: #ae3040;
+}
+
+.insumo-category-menu-disabled {
+    color: var(--admin-muted);
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.insumo-delete-dialog {
+    width: min(440px, calc(100vw - 32px));
+}
+
+.insumo-delete-dialog .insumo-category-dialog-header {
+    margin-bottom: 12px;
+}
+
+.insumo-delete-dialog h2 {
+    margin: 0 0 8px;
+    color: var(--admin-text);
+    font-size: 1.3rem;
+}
+
+.insumo-delete-dialog p {
+    margin: 0;
+    color: var(--admin-muted);
+    line-height: 1.55;
+}
+
+.insumo-delete-dialog p strong {
+    color: var(--admin-text);
+}
+
+.insumo-delete-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 15px;
+    background: #fff0f0;
+    color: #ae3040;
+    font-size: 1.15rem;
+}
+
+.insumo-delete-dialog .insumo-button-danger {
+    width: auto;
+    background: #ae3040;
+    color: #fff;
+}
+
+.insumo-delete-dialog .insumo-button-danger:hover {
+    background: #912538;
+}
+
+.insumo-category-create {
+    width: 100%;
+    margin-top: 10px;
+}
+
 .insumo-category-list {
     display: grid;
     gap: 6px;
-    max-height: min(48vh, 500px);
-    overflow-y: auto;
     padding: 2px 0 14px;
 }
 
@@ -1591,10 +1733,6 @@
         position: static;
     }
 
-    .insumo-category-list {
-        max-height: 220px;
-    }
-
     .insumo-list-heading {
         align-items: flex-start;
         flex-direction: column;
@@ -1606,6 +1744,10 @@
 
     .insumo-search {
         flex-basis: 100%;
+    }
+
+    .insumo-search-field {
+        flex: 1;
     }
 
     .insumo-status-filter {
@@ -1680,6 +1822,53 @@
     margin-left: auto;
 }
 
+.insumo-back-link {
+    display: inline-flex;
+    min-height: 46px;
+    align-items: center;
+    gap: 11px;
+    margin: 0 0 22px;
+    padding: 5px 16px 5px 6px;
+    border: 1px solid rgba(118, 82, 163, 0.16);
+    border-radius: 999px;
+    background: linear-gradient(135deg, #fff 5%, #f7f1fc 100%);
+    box-shadow: 0 5px 16px rgba(70, 47, 99, 0.08);
+    color: var(--admin-primary-dark);
+    font-size: 0.9rem;
+    font-weight: 750;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.insumo-back-link:hover {
+    transform: translateY(-2px);
+    border-color: rgba(118, 82, 163, 0.34);
+    box-shadow: 0 9px 22px rgba(70, 47, 99, 0.15);
+    color: var(--admin-primary-dark);
+}
+
+.insumo-back-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--admin-primary);
+    box-shadow: 0 4px 10px rgba(118, 82, 163, 0.22);
+    color: #fff;
+    transition: transform 0.2s ease;
+}
+
+.insumo-back-link:hover .insumo-back-icon {
+    transform: translateX(-3px);
+}
+
+.insumo-back-indicator {
+    margin-left: 2px;
+    color: #a395b5;
+    font-size: 0.72rem;
+}
+
 .insumo-row-select {
     padding: 0;
     border: 0;
@@ -1711,6 +1900,104 @@
 .insumo-dialog[hidden],
 .insumo-dialog [hidden] {
     display: none !important;
+}
+
+.insumo-category-dialog {
+    width: min(480px, calc(100vw - 32px));
+    max-width: none;
+    max-height: min(88vh, 700px);
+    overflow-y: auto;
+    padding: clamp(20px, 4vw, 30px);
+    border: 1px solid var(--admin-border);
+    border-radius: 20px;
+    background:
+        radial-gradient(circle at top left, rgba(118, 82, 163, 0.08), transparent 45%),
+        var(--admin-white);
+    box-shadow: 0 24px 80px rgba(35, 24, 51, 0.28);
+    color: var(--admin-text);
+}
+
+.insumo-category-dialog::backdrop {
+    background: rgba(31, 24, 41, 0.55);
+    backdrop-filter: blur(3px);
+}
+
+.insumo-category-dialog[open] {
+    animation: insumo-panel-enter 0.2s ease both;
+}
+
+.insumo-category-dialog .insumo-editor-form {
+    padding: 0;
+}
+
+.insumo-category-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.insumo-category-dialog-header h2 {
+    margin: 0;
+    color: var(--admin-text);
+    font-size: 1.25rem;
+}
+
+.insumo-availability-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--admin-text);
+    cursor: pointer;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.insumo-availability-control input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+}
+
+.insumo-switch {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    flex: 0 0 42px;
+    border-radius: 999px;
+    background: #c8c2ce;
+    transition: background 0.18s ease;
+}
+
+.insumo-switch::after {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    content: "";
+    transition: transform 0.18s ease;
+}
+
+.insumo-availability-control input:checked + .insumo-switch {
+    background: #2f9c5b;
+}
+
+.insumo-availability-control input:checked + .insumo-switch::after {
+    transform: translateX(18px);
+}
+
+.insumo-availability-control input:focus-visible + .insumo-switch {
+    outline: 3px solid rgba(118, 82, 163, 0.3);
+    outline-offset: 2px;
 }
 
 .insumo-dialog {

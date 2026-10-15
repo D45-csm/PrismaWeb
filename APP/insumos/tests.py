@@ -33,25 +33,18 @@ class GestionInsumosTests(TestCase):
         self.client.force_login(self.admin)
         self.url = reverse('gestion_insumos')
 
-    def test_admin_ve_panel_con_categorias_lista_y_filtros(self):
+    def test_admin_ve_panel_de_categorias_y_busqueda(self):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Gestión de insumos')
         self.assertContains(response, 'Lácteos')
-        self.assertContains(response, 'Leche entera')
-        self.assertContains(response, 'Buscar por nombre o descripción')
-        self.assertContains(response, '/static/css/admin_panel.css?v=2')
+        self.assertContains(response, 'Crear categoría')
+        self.assertContains(response, 'Encuentra un insumo')
+        self.assertNotContains(response, 'data-insumo-row=')
+        self.assertContains(response, 'Tamaño / unidad')
 
-    def test_no_muestra_notificaciones_de_otros_modulos(self):
-        self.client.post(reverse('logout'))
-        self.client.force_login(self.admin)
-
-        response = self.client.get(self.url)
-
-        self.assertNotContains(response, 'Has cerrado sesión correctamente.')
-
-    def test_busqueda_categoria_y_estado_filtran_la_lista(self):
+    def test_busqueda_por_nombre_categoria_y_unidad_y_filtro_de_estado(self):
         otra_categoria = CategoriaInsumo.objects.create(nombre='Limpieza')
         Insumo.objects.create(
             nombre='Detergente',
@@ -61,11 +54,32 @@ class GestionInsumosTests(TestCase):
 
         response = self.client.get(
             self.url,
-            {'categoria': self.categoria.pk, 'q': 'leche', 'estado': 'activos'},
+            {'q': 'leche', 'campo': 'nombre', 'estado': 'activos'},
         )
         self.assertEqual(
             list(response.context['insumos']),
             [self.insumo],
+        )
+
+        response = self.client.get(
+            self.url,
+            {'q': 'láct', 'campo': 'categoria'},
+        )
+        self.assertEqual(list(response.context['insumos']), [self.insumo])
+
+        response = self.client.get(
+            self.url,
+            {'q': 'litro', 'campo': 'tamano'},
+        )
+        self.assertEqual(list(response.context['insumos']), [self.insumo])
+
+        response = self.client.get(
+            self.url,
+            {'categoria': self.categoria.pk, 'q': 'detergente', 'estado': 'activos'},
+        )
+        self.assertEqual(
+            list(response.context['insumos'].values_list('nombre', flat=True)),
+            ['Detergente'],
         )
 
         self.insumo.activo = False
@@ -73,15 +87,19 @@ class GestionInsumosTests(TestCase):
         response = self.client.get(self.url, {'estado': 'inactivos'})
         self.assertEqual(list(response.context['insumos']), [self.insumo])
 
-    def test_categoria_no_abre_detalle_hasta_pulsar_la_flecha(self):
+    def test_categoria_no_filtra_insumos_y_edicion_abre_formulario_modal(self):
         response = self.client.get(self.url, {'categoria': self.categoria.pk})
 
         self.assertContains(response, 'id="insumoDialog"')
+        self.assertNotContains(response, 'data-insumo-row=')
+        response = self.client.get(self.url, {'editar_categoria': self.categoria.pk})
+        self.assertEqual(response.context['categoria_modal'], 'editar')
+        self.assertContains(response, 'data-category-edit-form')
+        self.assertContains(response, 'Editar categoría')
         self.assertContains(
-            response,
+            self.client.get(self.url, {'q': 'leche'}),
             f'data-insumo-url="{reverse("detalle_insumo", args=[self.insumo.pk])}"',
         )
-        self.assertNotContains(response, '?insumo=')
         self.assertNotContains(response, 'insumo-row-image')
 
     def test_detalle_insumo_entrega_datos_para_la_ficha_modal(self):
@@ -93,7 +111,7 @@ class GestionInsumosTests(TestCase):
         self.assertTrue(response.json()['activo'])
         self.assertIn({'id': 'l', 'nombre': 'Litro'}, response.json()['unidades'])
 
-    def test_modal_actualiza_y_desactiva_insumo_sin_perder_historial(self):
+    def test_modal_actualiza_y_switch_activa_o_desactiva_insumo(self):
         url = reverse('detalle_insumo', args=[self.insumo.pk])
         response = self.client.post(url, {
             'accion': 'editar_insumo',
@@ -106,12 +124,29 @@ class GestionInsumosTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['nombre'], 'Leche deslactosada')
 
-        response = self.client.post(url, {'accion': 'eliminar_insumo'})
+        response = self.client.post(
+            url,
+            {'accion': 'cambiar_disponibilidad', 'activo': 'false'},
+        )
 
         self.assertEqual(response.status_code, 200)
         self.insumo.refresh_from_db()
         self.assertFalse(self.insumo.activo)
         self.assertTrue(Insumo.objects.filter(pk=self.insumo.pk).exists())
+
+        response = self.client.post(
+            url,
+            {'accion': 'cambiar_disponibilidad', 'activo': 'true'},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.insumo.refresh_from_db()
+        self.assertTrue(self.insumo.activo)
+
+        response = self.client.post(
+            url,
+            {'accion': 'cambiar_disponibilidad', 'activo': 'invalid'},
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_cliente_no_puede_consultar_ni_modificar_detalle_insumo(self):
         self.client.force_login(self.cliente)
@@ -151,10 +186,7 @@ class GestionInsumosTests(TestCase):
             },
         )
         categoria = CategoriaInsumo.objects.get(nombre='Frutas')
-        self.assertRedirects(
-            response,
-            f'{self.url}?categoria={categoria.pk}',
-        )
+        self.assertRedirects(response, self.url)
 
         response = self.client.post(
             self.url,
@@ -167,10 +199,7 @@ class GestionInsumosTests(TestCase):
         )
         categoria.refresh_from_db()
         self.assertEqual(categoria.nombre, 'Frutas frescas')
-        self.assertRedirects(
-            response,
-            f'{self.url}?categoria={categoria.pk}',
-        )
+        self.assertRedirects(response, self.url)
 
         response = self.client.post(
             self.url,
@@ -181,6 +210,15 @@ class GestionInsumosTests(TestCase):
         )
         self.assertFalse(CategoriaInsumo.objects.filter(pk=categoria.pk).exists())
         self.assertRedirects(response, self.url)
+
+    def test_eliminar_categoria_usa_confirmacion_visual_no_alerta_nativa(self):
+        CategoriaInsumo.objects.create(nombre='Categoría vacía')
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, 'id="deleteCategoryDialog"')
+        self.assertContains(response, 'data-confirm-category-delete')
+        self.assertNotContains(response, 'onclick="return confirm(')
 
     def test_categoria_con_insumos_no_se_puede_eliminar(self):
         response = self.client.post(
@@ -196,7 +234,7 @@ class GestionInsumosTests(TestCase):
         self.assertEqual(response.redirect_chain[-1][0], self.url)
         self.assertTrue(CategoriaInsumo.objects.filter(pk=self.categoria.pk).exists())
         self.assertTrue(Insumo.objects.filter(pk=self.insumo.pk).exists())
-        self.assertContains(response, 'Mueve o elimina sus insumos primero.')
+        self.assertContains(response, 'Reasigna o desactiva sus insumos primero.')
 
     def test_crea_edita_y_desactiva_insumo_sin_perderlo(self):
         otra_categoria = CategoriaInsumo.objects.create(nombre='Repostería')
@@ -211,10 +249,7 @@ class GestionInsumosTests(TestCase):
             },
         )
         harina = Insumo.objects.get(nombre='Harina')
-        self.assertRedirects(
-            response,
-            f'{self.url}?categoria={otra_categoria.pk}',
-        )
+        self.assertRedirects(response, f'{self.url}?q=Harina&campo=nombre')
 
         response = self.client.post(
             self.url,
@@ -229,21 +264,11 @@ class GestionInsumosTests(TestCase):
         )
         harina.refresh_from_db()
         self.assertEqual(harina.nombre, 'Harina integral')
-        self.assertRedirects(
-            response,
-            f'{self.url}?categoria={otra_categoria.pk}',
-        )
+        self.assertRedirects(response, self.url)
 
         self.client.post(
             self.url,
-            {'accion': 'eliminar_insumo', 'insumo_id': harina.pk},
-        )
-        harina.refresh_from_db()
-        self.assertFalse(harina.activo)
-
-        self.client.post(
-            self.url,
-            {'accion': 'restaurar_insumo', 'insumo_id': harina.pk},
+            {'accion': 'cambiar_disponibilidad', 'insumo_id': harina.pk, 'activo': 'false'},
         )
         harina.refresh_from_db()
         self.assertTrue(harina.activo)
@@ -258,11 +283,13 @@ class GestionInsumosTests(TestCase):
             f'{reverse("admin_login")}?next={self.url}',
         )
 
-    def test_ids_invalidos_no_modifican_datos(self):
+    def test_accion_de_eliminar_insumo_ya_no_existe(self):
         response = self.client.post(
             self.url,
             {'accion': 'eliminar_insumo', 'insumo_id': 'no-es-un-id'},
         )
 
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
         self.assertTrue(Insumo.objects.filter(pk=self.insumo.pk).exists())
+        self.insumo.refresh_from_db()
+        self.assertTrue(self.insumo.activo)

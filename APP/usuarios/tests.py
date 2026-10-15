@@ -251,7 +251,7 @@ class GestionCategoriasInsumosTests(TestCase):
         )
         self.assertRedirects(response, reverse('perfil'))
 
-    def test_admin_crea_categoria_y_solo_ve_sus_insumos(self):
+    def test_admin_crea_categoria_y_busca_insumos_sin_filtrar_por_categoria(self):
         response = self.client.post(
             reverse('gestion_categorias_insumos'),
             {
@@ -261,10 +261,7 @@ class GestionCategoriasInsumosTests(TestCase):
             },
         )
         categoria = CategoriaInsumo.objects.get(nombre='Bebidas frías')
-        self.assertRedirects(
-            response,
-            f'{reverse("gestion_categorias_insumos")}?categoria={categoria.pk}',
-        )
+        self.assertRedirects(response, reverse('gestion_categorias_insumos'))
 
         response = self.client.post(
             f'{reverse("gestion_categorias_insumos")}?categoria={categoria.pk}',
@@ -278,7 +275,7 @@ class GestionCategoriasInsumosTests(TestCase):
         )
         self.assertRedirects(
             response,
-            f'{reverse("gestion_categorias_insumos")}?categoria={categoria.pk}',
+            f'{reverse("gestion_categorias_insumos")}?q=Leche&campo=nombre',
         )
 
         otra_categoria = CategoriaInsumo.objects.create(nombre='Limpieza')
@@ -290,9 +287,18 @@ class GestionCategoriasInsumosTests(TestCase):
 
         response = self.client.get(
             reverse('gestion_categorias_insumos'),
-            {'categoria': categoria.pk},
+            {'q': 'Leche', 'campo': 'nombre'},
         )
         self.assertEqual(
             list(response.context['insumos'].values_list('nombre', flat=True)),
             ['Leche'],
+        )
+
+        response = self.client.get(
+            reverse('gestion_categorias_insumos'),
+            {'categoria': categoria.pk, 'q': 'Detergente', 'campo': 'nombre'},
+        )
+        self.assertEqual(
+            list(response.context['insumos'].values_list('nombre', flat=True)),
+            ['Detergente'],
         )
