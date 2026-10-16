@@ -37,7 +37,20 @@ class AccesoUsuarioTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Nuestros Cheesecakes')
+        self.assertContains(
+            response,
+            'js/modulos/cliente/experiencia/script.js',
+        )
         self.assertNotContains(response, '{%')
+
+    def test_barra_de_navegacion_personaliza_usuario_y_logout(self):
+        self.client.force_login(self.cliente)
+
+        response = self.client.get(reverse('base_cliente'))
+
+        self.assertContains(response, 'Hola, cliente')
+        self.assertContains(response, 'action="/usuarios/logout/"')
+        self.assertContains(response, 'csrfmiddlewaretoken')
 
     def test_recordarme_extiende_la_sesion_y_sin_marcar_usa_sesion_del_navegador(self):
         response = self.client.post(
