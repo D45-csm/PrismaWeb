@@ -1,0 +1,72 @@
+{% extends 'base_admin.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} | Prisma{% endblock %}
+
+{% block content %}
+<section class="container py-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h2 mb-1">{{ titulo }}</h1>
+            <p class="text-muted mb-0">Consulta y administra los proveedores de Prisma.</p>
+        </div>
+        <a class="btn btn-primary" href="{% url 'proveedores_crear' %}">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            Crear proveedor
+        </a>
+    </div>
+
+    <div class="table-responsive bg-white rounded shadow-sm p-3">
+        <table id="proveedoresTable" class="table table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Dirección</th>
+                    <th scope="col">Teléfono</th>
+                    <th scope="col">Correo</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for proveedor in proveedores %}
+                <tr>
+                    <td>{{ proveedor.nombre }}</td>
+                    <td>{{ proveedor.direccion|default:'—' }}</td>
+                    <td>{{ proveedor.telefono|default:'—' }}</td>
+                    <td>{{ proveedor.email|default:'—' }}</td>
+                    <td>
+                        {% if proveedor.activo %}
+                            <span class="badge text-bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-sm btn-outline-primary"
+                               href="{% url 'proveedores_editar' proveedor.pk %}">
+                                Editar
+                            </a>
+                            <a class="btn btn-sm btn-outline-danger"
+                               href="{% url 'proveedores_eliminar' proveedor.pk %}">
+                                Eliminar
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.4/css/dataTables.dataTables.min.css">
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js" defer></script>
+    <script src="{% static 'js/modulos/proveedores/listado.js' %}" defer></script>
+{% endblock %}
