@@ -76,7 +76,7 @@ class InsumoForm(forms.ModelForm):
                 'class': 'form-select insumo-input js-select2',
             }),
             'unidad_medida': forms.Select(attrs={
-                'class': 'form-select insumo-input',
+                'class': 'form-select insumo-input js-select2',
             }),
             'imagen': forms.ClearableFileInput(attrs={
                 'accept': 'image/*',
