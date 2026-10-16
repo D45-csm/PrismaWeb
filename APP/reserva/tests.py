@@ -54,6 +54,8 @@ class ReservaSubmissionTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'type="date"')
+        self.assertContains(response, 'id="postre" class="js-select2"')
+        self.assertContains(response, 'js/modulos/ux/selectores.js')
 
     @override_settings(EMAIL_HOST_USER='', EMAIL_HOST_PASSWORD='')
     def test_missing_email_credentials_are_reported_without_losing_reserva(self):
