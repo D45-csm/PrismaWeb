@@ -154,6 +154,17 @@ class AccesoUsuarioTests(TestCase):
         )
         self.assertFalse(response_admin.context['form'].is_valid())
 
+    def test_logout_debe_ser_post_y_redirige_al_inicio(self):
+        self.client.force_login(self.cliente)
+
+        response = self.client.get(reverse('logout'))
+        self.assertEqual(response.status_code, 405)
+
+        response = self.client.post(reverse('logout'), follow=True)
+        self.assertRedirects(response, reverse('base_cliente'))
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.assertContains(response, 'Has cerrado sesión correctamente.')
+
     def test_cliente_sin_staff_no_puede_abrir_panel_ni_categorias(self):
         self.client.force_login(self.cliente)
 
