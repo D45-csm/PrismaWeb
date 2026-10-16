@@ -55,6 +55,9 @@ class ProveedorCrudTests(TestCase):
         self.assertContains(response, 'id="proveedoresTable"')
         self.assertContains(response, 'dataTables.min.js')
         self.assertContains(response, 'js/modulos/proveedores/listado.js')
+        self.assertContains(response, 'id="proveedorDeleteForm"')
+        self.assertContains(response, 'data-delete-url="/proveedores/1/eliminar/"')
+        self.assertContains(response, 'csrfmiddlewaretoken')
 
     def test_lista_vacia_no_inyecta_una_fila_invalida_en_datatables(self):
         self.client.force_login(self.administrador)
