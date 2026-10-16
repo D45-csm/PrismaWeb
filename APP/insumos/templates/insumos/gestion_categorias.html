@@ -130,7 +130,7 @@
                 </label>
                 <label class="insumo-search-field">
                     <span class="visually-hidden">Buscar por</span>
-                    <select name="campo" class="insumo-input">
+                    <select name="campo" class="insumo-input js-select2">
                         <option value="nombre"{% if campo == 'nombre' %} selected{% endif %}>Nombre</option>
                         <option value="categoria"{% if campo == 'categoria' %} selected{% endif %}>Categoría</option>
                         <option value="tamano"{% if campo == 'tamano' %} selected{% endif %}>Tamaño / unidad</option>
@@ -138,7 +138,7 @@
                 </label>
                 <label class="insumo-status-filter">
                     <span class="visually-hidden">Estado de los insumos</span>
-                    <select name="estado" class="insumo-input">
+                    <select name="estado" class="insumo-input js-select2">
                         <option value="activos"{% if estado == 'activos' %} selected{% endif %}>Activos</option>
                         <option value="inactivos"{% if estado == 'inactivos' %} selected{% endif %}>Desactivados</option>
                         <option value="todos"{% if estado == 'todos' %} selected{% endif %}>Todos</option>
@@ -302,12 +302,6 @@
 <form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>
 {% endblock %}
 
-{% block extra_css %}
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-{% endblock %}
-
 {% block scripts %}
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="{% static 'js/modulos/insumos/gestion.js' %}" defer></script>
 {% endblock %}
