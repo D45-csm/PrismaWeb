@@ -46,7 +46,7 @@ class ReservaForm(forms.ModelForm):
         error_messages={
             'invalid_choice': 'Selecciona uno de los postres disponibles.',
         },
-        widget=forms.Select(attrs={'id': 'postre'}),
+        widget=forms.Select(attrs={'id': 'postre', 'class': 'js-select2'}),
     )
     detalles = forms.CharField(
         required=False,
