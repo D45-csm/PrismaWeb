@@ -1,0 +1,31 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}{{ titulo }} | Prisma{% endblock %}
+
+{% block content %}
+<section class="container py-4">
+    <div class="mb-4">
+        <a href="{% url 'proveedores_lista' %}" class="text-decoration-none">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            Volver a proveedores
+        </a>
+        <h1 class="h2 mt-3">{{ titulo }}</h1>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <p>¿Confirmas que deseas eliminar al proveedor <strong>{{ object.nombre }}</strong>?</p>
+            <form method="post" data-confirm-post
+                  data-confirm-title="¿Eliminar proveedor?"
+                  data-confirm-text="Se eliminará {{ object.nombre }}. Esta acción no se puede deshacer."
+                  data-confirm-button="Sí, eliminar">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Eliminar proveedor</button>
+                <a href="{% url 'proveedores_lista' %}" class="btn btn-outline-secondary">
+                    Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
