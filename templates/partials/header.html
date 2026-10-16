@@ -27,12 +27,12 @@
           </a>
         </li>
 
-        {% if user.is_authenticated %}
+        {% if request.user.is_authenticated %}
 
         <!-- Usuario autenticado -->
         <li class="nav-item">
           <p class="nav-user">
-            Bienvenido, {{ user.username }}
+            Bienvenido, {{ request.user.username }}
           </p>
         </li>
         <!-- Cerrar sesión -->
