@@ -1,7 +1,7 @@
 from smtplib import SMTPException
 
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import login
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
@@ -14,7 +14,6 @@ from django.db.models import F, Sum
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
@@ -34,6 +33,56 @@ def es_administrador(user):
 
 def redireccion_post_login(user):
     return 'perfil' if es_administrador(user) else 'base_cliente'
+
+
+class ClienteLoginView(auth_views.LoginView):
+    authentication_form = LoginForm
+    template_name = 'usuarios/login.html'
+    redirect_authenticated_user = True
+
+    def get_success_url(self):
+        return self.get_redirect_url() or reverse(
+            redireccion_post_login(self.request.user),
+        )
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        if self.request.POST.get('remember_me') == 'on':
+            self.request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+        else:
+            self.request.session.set_expiry(0)
+        messages.success(self.request, 'Inicio de sesión exitoso.')
+        return response
+
+
+class AdminLoginView(auth_views.LoginView):
+    authentication_form = AdminLoginForm
+    template_name = 'usuarios/login.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if es_administrador(request.user):
+            return redirect('perfil')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return self.get_redirect_url() or reverse('perfil')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['admin_login'] = True
+        return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Acceso administrativo concedido.')
+        return response
+
+
+class PrismaLogoutView(auth_views.LogoutView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        messages.success(request, 'Has cerrado sesión correctamente.')
+        return response
 
 
 @login_required(login_url='admin_login')
@@ -110,44 +159,6 @@ def verificar_correo_view(request, uidb64, token):
     return redirect('base_cliente')
 
 
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect(redireccion_post_login(request.user))
-
-    if request.method == 'POST':
-        form = LoginForm(request=request, data=request.POST)
-        if form.is_valid():
-            login(request, form.get_user())
-            if request.POST.get('remember_me') == 'on':
-                request.session.set_expiry(settings.SESSION_COOKIE_AGE)
-            else:
-                request.session.set_expiry(0)
-            messages.success(request, 'Inicio de sesión exitoso.')
-            return redirect('base_cliente')
-    else:
-        form = LoginForm()
-    return render(request, 'usuarios/login.html', {'form': form})
-
-
-def admin_login_view(request):
-    if es_administrador(request.user):
-        return redirect('perfil')
-
-    if request.method == 'POST':
-        form = AdminLoginForm(request=request, data=request.POST)
-        if form.is_valid():
-            login(request, form.get_user())
-            messages.success(request, 'Acceso administrativo concedido.')
-            return redirect('perfil')
-    else:
-        form = AdminLoginForm()
-    return render(
-        request,
-        'usuarios/login.html',
-        {'form': form, 'admin_login': True},
-    )
-
-
 def recuperar_view(request):
     return render(request, 'usuarios/recuperar.html')
 
@@ -170,13 +181,6 @@ class ClientePasswordResetDoneView(auth_views.PasswordResetDoneView):
             == 'django.core.mail.backends.console.EmailBackend'
         )
         return context
-
-
-@require_POST
-def logout_view(request):
-    logout(request)
-    messages.success(request, 'Has cerrado sesión correctamente.')
-    return redirect('base_cliente')
 
 
 @login_required(login_url='admin_login')
