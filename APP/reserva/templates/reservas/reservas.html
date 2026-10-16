@@ -82,7 +82,7 @@
                         <label for="nombre">Nombre completo</label>
                         <div class="input-wrap">
                             <i class="fas fa-user"></i>
-                            <input type="text" id="nombre" name="nombre" maxlength="100" placeholder="Tu nombre" required>
+                            {{ reserva_form.nombre_cliente }}
                         </div>
                     </div>
 
@@ -91,7 +91,7 @@
                             <label for="telefono">Teléfono</label>
                             <div class="input-wrap">
                                 <i class="fas fa-phone"></i>
-                                <input type="tel" id="telefono" name="telefono" maxlength="30" placeholder="300 123 4567" required>
+                                {{ reserva_form.telefono }}
                             </div>
                         </div>
 
@@ -99,7 +99,7 @@
                             <label for="fecha">Fecha de entrega</label>
                             <div class="input-wrap">
                                 <i class="fas fa-calendar-alt"></i>
-                                <input type="date" id="fecha" name="fecha" required>
+                                {{ reserva_form.fecha_reserva }}
                             </div>
                         </div>
                     </div>
@@ -109,13 +109,7 @@
                             <label for="postre">Postre deseado</label>
                             <div class="input-wrap">
                                 <i class="fas fa-ice-cream"></i>
-                                <select id="postre" name="postre" required>
-                                    <option value="" disabled selected>Selecciona un postre</option>
-                                    <option value="Manzana Verde Cheesecake" data-precio="25000">Manzana Verde Cheesecake</option>
-                                    <option value="Café Chocolate" data-precio="28000">Café Chocolate</option>
-                                    <option value="Fresa Chocolate" data-precio="32000">Fresa Chocolate</option>
-                                    <option value="Postre Personalizado" data-precio="0">Postre Personalizado (a cotizar)</option>
-                                </select>
+                                {{ reserva_form.postre }}
                             </div>
                         </div>
 
@@ -123,7 +117,7 @@
                             <label for="cantidad">Cantidad de postres</label>
                             <div class="input-wrap qty-wrap">
                                 <button type="button" class="qty-btn-reserva" id="qtyMenos" aria-label="Restar">−</button>
-                                <input type="number" id="cantidad" name="cantidad" min="1" max="50" value="1" required>
+                                {{ reserva_form.cantidad }}
                                 <button type="button" class="qty-btn-reserva" id="qtyMas" aria-label="Sumar">+</button>
                             </div>
                         </div>
@@ -136,7 +130,7 @@
 
                     <div class="form-group-icon detalles-group">
                         <label for="detalles"><i class="fas fa-pen-to-square"></i> ¿Cómo quieres tu reserva? <small>(opcional)</small></label>
-                        <textarea id="detalles" name="detalles" rows="4" maxlength="500" placeholder="Cuéntanos la ocasión, mensaje en el postre, sabores, alergias u hora preferida de entrega…"></textarea>
+                        {{ reserva_form.detalles }}
                         <div class="pz-chips" id="detallesChips"></div>
                         <div class="pz-counter"><span id="detallesCount">0</span>/500</div>
                     </div>
