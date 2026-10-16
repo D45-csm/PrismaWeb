@@ -1,0 +1,58 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}{{ titulo }} | Prisma{% endblock %}
+
+{% block content %}
+<section class="container py-4">
+    <div class="mb-4">
+        <a href="{% url 'proveedores_lista' %}" class="text-decoration-none">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            Volver a proveedores
+        </a>
+        <h1 class="h2 mt-3">{{ titulo }}</h1>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    {% if field.name == 'activo' %}
+                        <div class="form-check mb-3">
+                            {{ field }}
+                            <label class="form-check-label" for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                            </label>
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">{{ error }}</div>
+                {% endfor %}
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <a href="{% url 'proveedores_lista' %}" class="btn btn-outline-secondary">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
