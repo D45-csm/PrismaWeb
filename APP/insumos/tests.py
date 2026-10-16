@@ -43,6 +43,8 @@ class GestionInsumosTests(TestCase):
         self.assertContains(response, 'Encuentra un insumo')
         self.assertNotContains(response, 'data-insumo-row=')
         self.assertContains(response, 'Tamaño / unidad')
+        self.assertContains(response, 'js-select2')
+        self.assertContains(response, 'js/modulos/insumos/gestion.js')
 
     def test_busqueda_por_nombre_categoria_y_unidad_y_filtro_de_estado(self):
         otra_categoria = CategoriaInsumo.objects.create(nombre='Limpieza')
@@ -211,14 +213,15 @@ class GestionInsumosTests(TestCase):
         self.assertFalse(CategoriaInsumo.objects.filter(pk=categoria.pk).exists())
         self.assertRedirects(response, self.url)
 
-    def test_eliminar_categoria_usa_confirmacion_visual_no_alerta_nativa(self):
+    def test_eliminar_categoria_usa_sweetalert_y_formulario_post_con_csrf(self):
         CategoriaInsumo.objects.create(nombre='Categoría vacía')
 
         response = self.client.get(self.url)
 
-        self.assertContains(response, 'id="deleteCategoryDialog"')
-        self.assertContains(response, 'data-confirm-category-delete')
-        self.assertNotContains(response, 'onclick="return confirm(')
+        self.assertContains(response, 'data-confirm-post')
+        self.assertContains(response, 'name="csrfmiddlewaretoken"')
+        self.assertContains(response, 'js/modulos/ux/alertas.js')
+        self.assertNotContains(response, 'deleteCategoryDialog')
 
     def test_categoria_con_insumos_no_se_puede_eliminar(self):
         response = self.client.post(
