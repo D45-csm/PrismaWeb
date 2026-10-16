@@ -25,14 +25,6 @@
         </div>
     </section>
 
-    {% if messages %}
-        <div class="insumo-messages">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}" role="status">{{ message }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
     <div class="insumo-workspace">
         <aside class="insumo-sidebar">
             <div class="insumo-sidebar-heading">
@@ -75,13 +67,14 @@
                                         <i class="fa-regular fa-trash-can"></i> Eliminar
                                     </span>
                                 {% else %}
-                                    <form method="post">
+                                    <form method="post" data-confirm-post
+                                          data-confirm-title="¿Eliminar categoría?"
+                                          data-confirm-text="Vas a eliminar {{ categoria.nombre }}. Esta acción no se puede deshacer."
+                                          data-confirm-button="Sí, eliminar">
                                         {% csrf_token %}
                                         <input type="hidden" name="accion" value="eliminar_categoria">
                                         <input type="hidden" name="categoria_id" value="{{ categoria.pk }}">
-                                        <button type="button" data-confirm-category-delete
-                                                data-category-id="{{ categoria.pk }}"
-                                                data-category-name="{{ categoria.nombre }}">
+                                        <button type="submit">
                                             <i class="fa-regular fa-trash-can"></i> Eliminar
                                         </button>
                                     </form>
@@ -263,31 +256,6 @@
         </form>
     {% endif %}
 </dialog>
-<dialog class="insumo-category-dialog insumo-delete-dialog" id="deleteCategoryDialog"
-        aria-labelledby="deleteCategoryTitle">
-    <form method="post" id="deleteCategoryForm" class="insumo-editor-form">
-        {% csrf_token %}
-        <input type="hidden" name="accion" value="eliminar_categoria">
-        <input type="hidden" name="categoria_id" id="deleteCategoryId">
-        <div class="insumo-category-dialog-header">
-            <span class="insumo-delete-icon"><i class="fa-regular fa-trash-can"></i></span>
-            <button type="button" class="insumo-dialog-close" data-close-delete-dialog
-                    aria-label="Cerrar">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-        <h2 id="deleteCategoryTitle">¿Eliminar categoría?</h2>
-        <p>Vas a eliminar <strong id="deleteCategoryName"></strong>. Esta acción no se puede deshacer.</p>
-        <div class="insumo-dialog-actions">
-            <button type="button" class="insumo-button insumo-button-filter"
-                    data-close-delete-dialog>Cancelar</button>
-            <button type="submit" class="insumo-button insumo-button-danger">
-                <i class="fa-regular fa-trash-can"></i> Sí, eliminar
-            </button>
-        </div>
-    </form>
-</dialog>
-
 <dialog class="insumo-dialog" id="insumoDialog" aria-labelledby="insumoDialogTitle">
     <div class="insumo-dialog-header">
         <span class="insumo-eyebrow">FICHA DE INVENTARIO</span>
@@ -334,7 +302,12 @@
 <form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>
 {% endblock %}
 
-{% block extra_js %}
-    {{ block.super }}
-    <script src="{% static 'js/insumos.js' %}" defer></script>
+{% block extra_css %}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{% static 'js/modulos/insumos/gestion.js' %}" defer></script>
 {% endblock %}
