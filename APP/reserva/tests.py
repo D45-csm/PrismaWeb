@@ -49,6 +49,12 @@ class ReservaSubmissionTests(TestCase):
         self.assertEqual(Reserva.objects.count(), 0)
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_formulario_renderiza_un_calendario_html5(self):
+        response = self.client.get(reverse('reservas'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'type="date"')
+
     @override_settings(EMAIL_HOST_USER='', EMAIL_HOST_PASSWORD='')
     def test_missing_email_credentials_are_reported_without_losing_reserva(self):
         response = self.client.post(reverse('reservas'), self.valid_data())
