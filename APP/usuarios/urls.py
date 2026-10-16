@@ -5,9 +5,9 @@ from django.contrib.auth import views as auth_views
 from .forms import ClientePasswordResetForm
 
 urlpatterns = [
-    path('login/', views.login_view, name='login'),
-    path('admin-login/', views.admin_login_view, name='admin_login'),
-    path('logout/', views.logout_view, name='logout'),
+    path('login/', views.ClienteLoginView.as_view(), name='login'),
+    path('admin-login/', views.AdminLoginView.as_view(), name='admin_login'),
+    path('logout/', views.PrismaLogoutView.as_view(), name='logout'),
     path('registro/', views.registro_view, name='registro'),
     path(
         'verificar/<uidb64>/<token>/',
