@@ -34,8 +34,17 @@
 
     <!-- Bootstrap JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <div id="django-messages" hidden aria-hidden="true">
+        {% for message in messages %}
+            <span data-tags="{{ message.tags }}">{{ message }}</span>
+        {% endfor %}
+    </div>
 
     {% block extra_js %}{% endblock %}
+    {% block scripts %}{% endblock %}
+    <script src="{% static 'js/modulos/ux/alertas.js' %}" defer></script>
 
 </body>
 
