@@ -21,12 +21,6 @@
             <h2>Crear cuenta de cliente</h2>
             <p class="auth-subtitle">El registro de clientes no concede acceso administrativo.</p>
 
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}" role="status">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-
             <form method="post">
                 {% csrf_token %}
                 {% if form.non_field_errors %}
