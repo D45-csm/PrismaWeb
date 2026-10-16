@@ -44,6 +44,9 @@ class GestionInsumosTests(TestCase):
         self.assertNotContains(response, 'data-insumo-row=')
         self.assertContains(response, 'Tamaño / unidad')
         self.assertContains(response, 'js-select2')
+        self.assertContains(response, 'name="campo" class="insumo-input js-select2"')
+        self.assertContains(response, 'name="estado" class="insumo-input js-select2"')
+        self.assertContains(response, 'form-select insumo-input js-select2')
         self.assertContains(response, 'js/modulos/insumos/gestion.js')
 
     def test_busqueda_por_nombre_categoria_y_unidad_y_filtro_de_estado(self):
