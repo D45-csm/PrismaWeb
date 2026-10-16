@@ -123,7 +123,7 @@
         initializeSelect2(category, dialog);
 
         const unit = document.createElement('select');
-        unit.className = 'form-select';
+        unit.className = 'form-select js-select2';
         item.unidades.forEach((unitItem) => {
             const option = document.createElement('option');
             option.value = unitItem.id;
@@ -132,6 +132,7 @@
             unit.append(option);
         });
         fields.append(makeField('Unidad de medida', `${prefix}-unidad_medida`, unit));
+        initializeSelect2(unit, dialog);
 
         const image = document.createElement('input');
         image.type = 'file';
