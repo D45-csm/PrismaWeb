@@ -1,9 +1,7 @@
 {% if messages %}
-    <div class="prisma-messages" aria-live="polite">
+    <div id="django-messages" hidden>
         {% for message in messages %}
-            <div class="alert alert-{{ message.level_tag }} prisma-message" role="status">
-                {{ message }}
-            </div>
+            <div class="django-message" data-tags="{{ message.tags }}" data-text="{{ message }}"></div>
         {% endfor %}
     </div>
 {% endif %}
