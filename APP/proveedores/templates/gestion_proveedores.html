@@ -17,19 +17,6 @@
         <a class="btn btn-secondary" href="{% url 'perfil' %}">Volver al Perfil</a>
     </header>
     
-    <!-- Notificaciones del Sistema -->
-    {% if messages %}
-        <div class="messages-wrapper" id="mensajes-sistema">
-            {% for message in messages %}
-                {% if 'crud' in message.extra_tags %}
-                    <div class="alert alert-{{ message.level_tag }}">
-                        <span>{{ message }}</span>
-                    </div>
-                {% endif %}
-            {% endfor %}
-        </div>
-    {% endif %}
-
     <div class="crud-layout">
         
         <!-- SECCIÓN IZQUIERDA: FORMULARIO -->
@@ -48,7 +35,7 @@
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
-                    <div class="alert alert-error">
+                    <div class="alert alert-danger">
                         {% for error in form.non_field_errors %}
                             <p>{{ error }}</p>
                         {% endfor %}
@@ -143,7 +130,9 @@
                                         <a href="{% url 'editar_proveedor' prov.id %}" class="btn-action btn-edit">Editar</a>
 
                                         <!-- Formulario POST para eliminación segura -->
-                                        <form method="POST" action="{% url 'eliminar_proveedor' prov.id %}" onsubmit="return confirm('¿Confirmas la eliminación definitiva del proveedor {{ prov.nombre }}?');">
+                                        <form method="POST" action="{% url 'eliminar_proveedor' prov.id %}"
+                                              class="form-eliminar-proveedor"
+                                              data-provider-name="{{ prov.nombre }}">
                                             {% csrf_token %}
                                             <button type="submit" class="btn-action btn-delete">Eliminar</button>
                                         </form>
