@@ -123,6 +123,14 @@ class GestionInsumosTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['nombre'], 'Leche deslactosada')
+        self.assertEqual(
+            response.json()['message'],
+            'Insumo actualizado correctamente.',
+        )
+
+        page = self.client.get(self.url)
+        self.assertContains(page, 'js/admin_messages.js')
+        self.assertContains(page, 'js/insumos.js')
 
         response = self.client.post(
             url,
