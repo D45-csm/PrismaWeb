@@ -228,7 +228,6 @@ def gestion_categorias(request):
             messages.success(
                 request,
                 'Categoría eliminada correctamente.',
-                extra_tags='insumos',
             )
             return redirect(request.path)
 
