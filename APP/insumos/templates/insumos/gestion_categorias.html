@@ -290,6 +290,27 @@
     </form>
 </dialog>
 
+<dialog class="insumo-category-dialog insumo-delete-dialog" id="deleteInsumoDialog"
+        aria-labelledby="deleteInsumoTitle">
+    <div class="insumo-category-dialog-header">
+        <span class="insumo-delete-icon"><i class="fa-regular fa-trash-can"></i></span>
+        <button type="button" class="insumo-dialog-close" data-close-insumo-delete
+                aria-label="Cerrar">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <h2 id="deleteInsumoTitle">¿Eliminar insumo?</h2>
+    <p>Vas a eliminar <strong id="deleteInsumoName"></strong>. Esta acción no se puede deshacer.</p>
+    <div class="insumo-dialog-actions">
+        <button type="button" class="insumo-button insumo-button-filter"
+                data-close-insumo-delete>Cancelar</button>
+        <button type="button" class="insumo-button insumo-button-danger"
+                id="confirmInsumoDelete">
+            <i class="fa-regular fa-trash-can"></i> Sí, eliminar
+        </button>
+    </div>
+</dialog>
+
 <dialog class="insumo-dialog" id="insumoDialog" aria-labelledby="insumoDialogTitle">
     <div class="insumo-dialog-header">
         <span class="insumo-eyebrow">FICHA DE INVENTARIO</span>
@@ -331,6 +352,9 @@
             <span class="insumo-switch" aria-hidden="true"></span>
             <span>Disponible</span>
         </label>
+        <button type="button" class="insumo-button insumo-button-danger insumo-dialog-delete">
+            <i class="fa-regular fa-trash-can"></i> Eliminar
+        </button>
     </div>
 </dialog>
 <form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>
