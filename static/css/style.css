@@ -34,40 +34,6 @@
     --arcoiris: linear-gradient(90deg, var(--rojo), var(--naranja), var(--amarillo), var(--verde), var(--azul), var(--morado), var(--magenta));
 }
 
-.prisma-messages {
-    position: relative;
-    z-index: 1;
-    max-width: 1200px;
-    margin: 16px auto;
-    padding: 0 20px;
-}
-
-.prisma-message {
-    margin-bottom: 10px;
-    padding: 12px 16px;
-    border: 1px solid transparent;
-    border-radius: 12px;
-}
-
-.prisma-message.alert-success {
-    border-color: #a3cfbb;
-    background: #d1e7dd;
-    color: #0f5132;
-}
-
-.prisma-message.alert-error,
-.prisma-message.alert-danger {
-    border-color: #f1aeb5;
-    background: #f8d7da;
-    color: #842029;
-}
-
-.prisma-message.alert-warning {
-    border-color: #ffecb5;
-    background: #fff3cd;
-    color: #664d03;
-}
-
 /* ============================================
    2. RESET Y BASES
    ============================================ */
