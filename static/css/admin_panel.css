@@ -807,11 +807,6 @@
     color: var(--admin-primary);
 }
 
-.insumo-messages .alert {
-    border: 0;
-    border-radius: 12px;
-}
-
 .insumo-workspace {
     display: grid;
     grid-template-columns: minmax(240px, 290px) minmax(0, 1fr);
