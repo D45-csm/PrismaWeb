@@ -31,10 +31,11 @@
     </div>
 
     <!-- FORMULARIO -->
-    <form method="POST" enctype="multipart/form-data" novalidate>
+    <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
 
         <div class="producto-contenido">
+            {{ form.non_field_errors }}
 
             <!-- GALERÍA DE IMÁGENES -->
             <section class="galeria">
@@ -58,7 +59,8 @@
                             <span class="plus">+</span>
                         </label>
 
-                        <input type="hidden" name="eliminar_imagen_2" value="0">
+                        <input type="hidden" name="eliminar_imagen_2" value="{{ form.eliminar_imagen_2.value|default:'0' }}">
+                        {{ form.imagen_2.errors }}
                     </div>
 
                     <!-- IMAGEN 3 -->
@@ -77,7 +79,8 @@
                             <span class="plus">+</span>
                         </label>
 
-                        <input type="hidden" name="eliminar_imagen_3" value="0">
+                        <input type="hidden" name="eliminar_imagen_3" value="{{ form.eliminar_imagen_3.value|default:'0' }}">
+                        {{ form.imagen_3.errors }}
                     </div>
 
                     <!-- IMAGEN 4 -->
@@ -96,7 +99,8 @@
                             <span class="plus">+</span>
                         </label>
 
-                        <input type="hidden" name="eliminar_imagen_4" value="0">
+                        <input type="hidden" name="eliminar_imagen_4" value="{{ form.eliminar_imagen_4.value|default:'0' }}">
+                        {{ form.imagen_4.errors }}
                     </div>
 
                 </div>
@@ -122,7 +126,8 @@
                         {% endif %}
                     </label>
 
-                    <input type="hidden" name="eliminar_imagen_principal" id="eliminarImagenPrincipalInput" value="0">
+                    <input type="hidden" name="eliminar_imagen_principal" id="eliminarImagenPrincipalInput" value="{{ form.eliminar_imagen_principal.value|default:'0' }}">
+                    {{ form.imagen_principal.errors }}
                 </div>
 
             </section>
@@ -133,7 +138,8 @@
                 <!-- NOMBRE -->
                 <div class="campo">
                     <label for="nombre">Nombre del producto</label>
-                    <input type="text" id="nombre" name="nombre" placeholder="Escribe el nombre del producto" value="{% if producto_editar %}{{ producto_editar.nombre }}{% else %}{{ nombre|default:'' }}{% endif %}">
+                    <input type="text" id="nombre" name="nombre" maxlength="100" required placeholder="Escribe el nombre del producto" value="{{ form.nombre.value|default_if_none:'' }}">
+                    {{ form.nombre.errors }}
                 </div>
 
                 <!-- PRECIO -->
@@ -141,27 +147,23 @@
                     <label for="precio">Precio *</label>
                     <div class="precio-input">
                         <span>$</span>
-                        <input type="number" id="precio" name="precio" placeholder="0" step="0.01" min="0.01" value="{% if producto_editar %}{{ producto_editar.precio }}{% else %}{{ precio|default:'' }}{% endif %}">
+                        <input type="number" id="precio" name="precio" required placeholder="0" step="0.01" min="0.01" value="{{ form.precio.value|default_if_none:'' }}">
                     </div>
+                    {{ form.precio.errors }}
                 </div>
 
                 <!-- CATEGORÍA -->
                 <div class="campo">
                     <label for="categoria">Categoría *</label>
-                    <select id="categoria" name="categoria">
-                        <option value="">Selecciona una categoría</option>
-                        {% for categoria in categorias %}
-                            <option value="{{ categoria.id }}" {% if producto_editar and producto_editar.categoria.id == categoria.id %}selected{% elif categoria_id == categoria.id %}selected{% endif %}>
-                                {{ categoria.nombre }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                    {{ form.categoria }}
+                    {{ form.categoria.errors }}
                 </div>
 
                 <!-- DESCRIPCIÓN -->
                 <div class="campo">
                     <label for="descripcion">Descripción *</label>
-                    <textarea id="descripcion" name="descripcion" placeholder="Escribe una descripción del producto">{% if producto_editar %}{{ producto_editar.descripcion }}{% else %}{{ descripcion|default:'' }}{% endif %}</textarea>
+                    <textarea id="descripcion" name="descripcion" required placeholder="Escribe una descripción del producto">{{ form.descripcion.value|default_if_none:'' }}</textarea>
+                    {{ form.descripcion.errors }}
                 </div>
 
                 <!-- BOTONES -->
