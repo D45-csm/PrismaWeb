@@ -37,6 +37,10 @@ class AccesoUsuarioTests(TestCase):
         response = self.client.post(reverse('logout'), follow=True)
 
         self.assertContains(response, 'Has cerrado sesión correctamente.')
+        self.assertContains(response, 'id="django-messages"')
+        self.assertContains(response, 'js/admin_messages.js')
+        self.assertNotContains(response, 'prisma-messages')
+        self.assertNotContains(response, 'class="alert alert-success prisma-message"')
 
         response = self.client.post(
             reverse('admin_login'),
@@ -47,6 +51,8 @@ class AccesoUsuarioTests(TestCase):
             follow=True,
         )
         self.assertContains(response, 'Acceso administrativo concedido.')
+        self.assertContains(response, 'id="django-messages"')
+        self.assertContains(response, 'js/admin_messages.js')
 
         response = self.client.get(reverse('gestion_insumos'))
         self.assertNotContains(response, 'Has cerrado sesión correctamente.')
