@@ -215,10 +215,8 @@
             }
             renderDetails({...currentItem, ...result});
             updateRow(result);
-            editForm.hidden = true;
-            details.hidden = false;
-            dialog.querySelector('.insumo-dialog-view-actions').hidden = false;
-            setMessage(result.message);
+            dialog.close();
+            window.showPrismaMessage(result.message, 'success');
         } catch (error) {
             setMessage(error.message || 'No se pudieron guardar los cambios.', true);
         } finally {
