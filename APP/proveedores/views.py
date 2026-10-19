@@ -14,10 +14,10 @@ def gestion_proveedores(request):
         form = ProveedorForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Proveedor registrado exitosamente en PRISMA.', extra_tags='crud')
+            messages.success(request, 'Proveedor registrado exitosamente en PRISMA.')
             return redirect('gestion_proveedores')
         else:
-            messages.error(request, 'Ocurrió un error al guardar. Verifica los datos.', extra_tags='crud')
+            messages.error(request, 'Ocurrió un error al guardar. Verifica los datos.')
     else:
         form = ProveedorForm()
 
@@ -38,10 +38,10 @@ def editar_proveedor(request, pk):
         form = ProveedorForm(request.POST, instance=proveedor)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Proveedor "{proveedor.nombre}" actualizado correctamente.', extra_tags='crud')
+            messages.success(request, f'Proveedor "{proveedor.nombre}" actualizado correctamente.')
             return redirect('gestion_proveedores')
         else:
-            messages.error(request, 'Por favor corrige los errores del formulario.', extra_tags='crud')
+            messages.error(request, 'Por favor corrige los errores del formulario.')
     else:
         form = ProveedorForm(instance=proveedor)
 
@@ -60,6 +60,6 @@ def eliminar_proveedor(request, pk):
     if request.method == 'POST':
         nombre_proveedor = proveedor.nombre
         proveedor.delete()
-        messages.success(request, f'El proveedor "{nombre_proveedor}" ha sido eliminado del sistema.', extra_tags='crud')
+        messages.success(request, f'El proveedor "{nombre_proveedor}" ha sido eliminado del sistema.')
     
     return redirect('gestion_proveedores')
