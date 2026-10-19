@@ -172,16 +172,6 @@
 .btn-delete { background-color: #fef2f2; color: #dc2626; }
 .btn-delete:hover { background-color: #fee2e2; }
 
-/* Alertas */
-.messages-wrapper { margin-bottom: 1.5rem; }
-.alert {
-    padding: 0.8rem 1rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    margin-bottom: 0.5rem;
-}
-.alert-success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-.alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 .field-error { display: block; color: #dc2626; font-size: 0.75rem; margin-top: 0.3rem; }
 
 /* Responsividad para móviles */
