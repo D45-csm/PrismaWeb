@@ -1,0 +1,32 @@
+<header class="admin-page-heading">
+    <div class="admin-page-heading__copy">
+        <span class="admin-eyebrow">{{ eyebrow }}</span>
+        <h1>{{ title }}</h1>
+        <p>{{ description }}</p>
+    </div>
+    <div class="admin-page-heading__actions">
+        {% if summary_label %}
+            <span class="admin-summary">
+                {% if summary_icon %}<i class="{{ summary_icon }}" aria-hidden="true"></i>{% endif %}
+                {{ summary_value }} {{ summary_label }}
+            </span>
+        {% endif %}
+        {% if summary2_label %}
+            <span class="admin-summary{% if summary2_class %} {{ summary2_class }}{% endif %}">
+                {% if summary2_icon %}<i class="{{ summary2_icon }}" aria-hidden="true"></i>{% endif %}
+                {{ summary2_value }} {{ summary2_label }}
+            </span>
+        {% endif %}
+        {% if back_url %}
+            <a class="admin-button admin-button-secondary" href="{{ back_url }}">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> {{ back_label }}
+            </a>
+        {% endif %}
+        {% if action_url %}
+            <a class="admin-button admin-button-primary" href="{{ action_url }}">
+                {% if action_icon %}<i class="{{ action_icon }}" aria-hidden="true"></i>{% endif %}
+                {{ action_label }}
+            </a>
+        {% endif %}
+    </div>
+</header>
