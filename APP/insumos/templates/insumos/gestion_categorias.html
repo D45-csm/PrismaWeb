@@ -1,32 +1,22 @@
-{% extends 'base_admin.html' %}
+{% extends 'base_crud.html' %}
 {% load static %}
 
 {% block title %}Gestión de insumos | Prisma{% endblock %}
 
-{% block content %}
-<div class="admin-dashboard insumo-dashboard" data-insumos-count="{{ total_insumos }}"
+{% block crud_page_class %}insumo-dashboard{% endblock %}
+
+{% block crud_page_attributes %}data-insumos-count="{{ total_insumos }}"
      data-estado="{{ estado }}" data-query="{{ query }}"
-     data-campo="{{ campo }}">
-    <a class="insumo-back-link" href="{% url 'perfil' %}">
-        <span class="insumo-back-icon"><i class="fa-solid fa-arrow-left"></i></span>
-        <span>Volver al panel</span>
-        <i class="fa-solid fa-arrow-up-right-from-square insumo-back-indicator" aria-hidden="true"></i>
-    </a>
+     data-campo="{{ campo }}"{% endblock %}
 
-    <section class="insumo-page-heading">
-        <div>
-            <span class="dashboard-tag">INVENTARIO PRISMA</span>
-            <h1>Gestión de insumos</h1>
-            <p>Organiza tus categorías y encuentra cada insumo en un solo lugar.</p>
-        </div>
-        <div class="insumo-summary" aria-label="Resumen del inventario">
-            <span><i class="fa-solid fa-layer-group"></i> {{ total_categorias }} categorías</span>
-            <span><i class="fa-solid fa-boxes-stacked"></i> {{ total_insumos }} insumos activos</span>
-        </div>
-    </section>
+{% block crud_header %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='INVENTARIO PRISMA' title='Gestión de insumos' description='Organiza tus categorías y encuentra cada insumo en un solo lugar.' summary_value=total_categorias summary_label='categorías' summary_icon='fa-solid fa-layer-group' summary2_value=total_insumos summary2_label='insumos activos' summary2_icon='fa-solid fa-boxes-stacked' summary2_class='insumo-active-summary' back_url=perfil_url back_label='Volver al panel' %}
+{% endblock %}
 
-    <div class="insumo-workspace">
-        <aside class="insumo-sidebar">
+{% block crud_sidebar_class %}insumo-sidebar{% endblock %}
+
+{% block crud_sidebar %}
             <div class="insumo-sidebar-heading">
                 <div>
                     <span class="insumo-eyebrow">ORGANIZACIÓN</span>
@@ -35,7 +25,8 @@
                 <span class="insumo-count">{{ total_categorias }}</span>
             </div>
 
-            <form method="get" class="insumo-category-search" role="search">
+            <form method="get" action="{% url 'gestion_insumos' %}"
+                  class="insumo-category-search" role="search">
                 <label class="insumo-search">
                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                     <span class="visually-hidden">Buscar categorías</span>
@@ -90,8 +81,9 @@
                     data-open-category-dialog="crear">
                 <i class="fa-solid fa-plus"></i> Crear categoría
             </button>
-        </aside>
+{% endblock %}
 
+{% block crud_main %}
         <section class="insumo-main-panel" aria-label="Lista de insumos">
             <div class="insumo-list-heading">
                 <div>
@@ -121,7 +113,8 @@
                 </details>
             </div>
 
-            <form method="get" class="insumo-filter-bar" role="search">
+            <form method="get" action="{% url 'gestion_insumos' %}"
+                  class="insumo-filter-bar" role="search">
                 <label class="insumo-search">
                     <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                     <span class="visually-hidden">Buscar insumos</span>
@@ -328,5 +321,6 @@
 
 {% block extra_js %}
     {{ block.super }}
+    <script src="{% static 'js/admin_crud.js' %}?v=3" defer></script>
     <script src="{% static 'js/insumos.js' %}" defer></script>
 {% endblock %}
