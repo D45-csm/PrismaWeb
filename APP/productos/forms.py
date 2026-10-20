@@ -34,28 +34,35 @@ class ProductoForm(forms.ModelForm):
         ]
         widgets = {
             'nombre': forms.TextInput(attrs={
+                'class': 'insumo-input',
                 'placeholder': 'Escribe el nombre del producto',
                 'autocomplete': 'off',
             }),
             'descripcion': forms.Textarea(attrs={
+                'class': 'insumo-input',
                 'placeholder': 'Escribe una descripción del producto',
             }),
             'precio': forms.NumberInput(attrs={
+                'class': 'insumo-input',
                 'placeholder': '0',
                 'step': '0.01',
                 'min': '0.01',
             }),
-            'categoria': forms.Select(attrs={'id': 'categoria'}),
-            'imagen_principal': forms.ClearableFileInput(attrs={
+            'categoria': forms.Select(attrs={'id': 'categoria', 'class': 'insumo-input'}),
+            'imagen_principal': forms.FileInput(attrs={
+                'class': 'insumo-input',
                 'accept': 'image/*',
             }),
-            'imagen_2': forms.ClearableFileInput(attrs={
+            'imagen_2': forms.FileInput(attrs={
+                'class': 'insumo-input',
                 'accept': 'image/*',
             }),
-            'imagen_3': forms.ClearableFileInput(attrs={
+            'imagen_3': forms.FileInput(attrs={
+                'class': 'insumo-input',
                 'accept': 'image/*',
             }),
-            'imagen_4': forms.ClearableFileInput(attrs={
+            'imagen_4': forms.FileInput(attrs={
+                'class': 'insumo-input',
                 'accept': 'image/*',
             }),
         }
