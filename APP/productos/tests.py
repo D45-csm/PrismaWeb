@@ -78,6 +78,114 @@ class ProductoSeguridadTests(TestCase):
             precio='10000.00',
         )
 
+    def test_crud_de_productos_usa_plantilla_y_estilos_compartidos(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_productos_crud',
+            password='Clave-segura-123',
+            telefono='3005678123',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+
+        response = self.client.get(reverse('lista_productos'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'insumo-dashboard product-admin-page')
+        self.assertContains(response, 'class="admin-crud-sidebar insumo-sidebar"')
+        self.assertContains(response, 'class="admin-crud-main insumo-main-panel"')
+        self.assertContains(response, 'class="admin-page-heading"')
+        self.assertContains(response, 'Crear producto')
+        self.assertContains(response, 'css/admin_crud.css')
+        self.assertContains(response, 'class="insumo-filter-bar"')
+        self.assertContains(response, 'class="insumo-row insumo-row--record')
+        self.assertContains(response, 'id="crudDetailDialog"')
+        self.assertContains(response, 'id="crudDeleteDialog"')
+        self.assertContains(response, 'data-open-crud-editor')
+        self.assertContains(response, 'class="insumo-list-heading"')
+
+        response = self.client.get(reverse('editar_producto', args=[self.producto.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="productEditorDialog"')
+        self.assertContains(response, 'data-open="editar"')
+        self.assertContains(response, 'name="imagen_principal"')
+        self.assertContains(
+            response,
+            f'action="{reverse("lista_productos")}" class="insumo-filter-bar"',
+        )
+
+    def test_buscar_desde_editor_no_reabre_editor_cuando_no_hay_resultados(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_productos_busqueda',
+            password='Clave-segura-123',
+            telefono='3005678126',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+
+        response = self.client.get(
+            reverse('lista_productos'),
+            {'q': 'sin coincidencias', 'estado': 'activos'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No encontramos productos')
+        self.assertContains(response, 'id="productEditorDialog"')
+        self.assertContains(response, 'data-open=""')
+        self.assertNotContains(response, 'data-open="editar"')
+
+    def test_lista_publica_conserva_sus_estilos_de_productos(self):
+        response = self.client.get(reverse('lista_productos'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'css/gestion_productos.css')
+
+    def test_ficha_y_estado_de_producto_siguen_el_patron_de_insumos(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_productos_dialogos',
+            password='Clave-segura-123',
+            telefono='3005678124',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+
+        detail_url = reverse('detalle_producto', args=[self.producto.pk])
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['nombre'], self.producto.nombre)
+        self.assertEqual(response.json()['meta'][0], self.categoria.nombre)
+
+        response = self.client.post(detail_url, {'activo': 'false'})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()['activo'])
+        self.producto.refresh_from_db()
+        self.assertFalse(self.producto.activo)
+
+    def test_endpoint_de_estado_no_permite_usuarios_anonimos(self):
+        response = self.client.post(
+            reverse('detalle_producto', args=[self.producto.pk]),
+            {'activo': 'false'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.producto.refresh_from_db()
+        self.assertTrue(self.producto.activo)
+
+    def test_busqueda_y_filtro_de_categoria_en_el_listado_de_productos(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_productos_filtros',
+            password='Clave-segura-123',
+            telefono='3005678125',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+
+        response = self.client.get(
+            reverse('lista_productos'),
+            {'q': 'Torta', 'categoria': self.categoria.pk, 'estado': 'activos'},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context['productos']), [self.producto])
+
     def test_visitante_no_puede_abrir_vistas_de_escritura(self):
         rutas = (
             ('crear_producto', []),
