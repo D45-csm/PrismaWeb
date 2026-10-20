@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
+from APP.inventario.models import Movimiento
 from APP.insumos.models import CategoriaInsumo, Insumo
 from APP.usuarios.models import Usuario
 
@@ -118,6 +119,9 @@ class GestionInsumosTests(TestCase):
         self.assertEqual(response.json()['categoria'], 'Lácteos')
         self.assertTrue(response.json()['activo'])
         self.assertIn({'id': 'l', 'nombre': 'Litro'}, response.json()['unidades'])
+        management_response = self.client.get(self.url)
+        self.assertContains(management_response, 'insumo-dialog-delete')
+        self.assertContains(management_response, 'id="deleteInsumoDialog"')
 
     def test_modal_actualiza_y_switch_activa_o_desactiva_insumo(self):
         url = reverse('detalle_insumo', args=[self.insumo.pk])
@@ -180,6 +184,34 @@ class GestionInsumosTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.insumo.refresh_from_db()
         self.assertTrue(self.insumo.activo)
+
+    def test_admin_puede_eliminar_insumo_desde_su_ficha(self):
+        response = self.client.post(
+            reverse('detalle_insumo', args=[self.insumo.pk]),
+            {'accion': 'eliminar_insumo'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['deleted'])
+        self.assertFalse(Insumo.objects.filter(pk=self.insumo.pk).exists())
+
+    def test_no_se_puede_eliminar_insumo_con_movimientos_de_inventario(self):
+        Movimiento.objects.create(
+            origen='AJUSTE',
+            accion='ENTRADA',
+            insumo=self.insumo,
+            cantidad='1.000',
+            unidad_medida='l',
+        )
+
+        response = self.client.post(
+            reverse('detalle_insumo', args=[self.insumo.pk]),
+            {'accion': 'eliminar_insumo'},
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('movimientos de inventario o compras', response.json()['error'])
+        self.assertTrue(Insumo.objects.filter(pk=self.insumo.pk).exists())
 
     def test_busqueda_de_categorias_filtra_el_panel_izquierdo(self):
         CategoriaInsumo.objects.create(nombre='Limpieza')
@@ -299,13 +331,11 @@ class GestionInsumosTests(TestCase):
             f'{reverse("admin_login")}?next={self.url}',
         )
 
-    def test_accion_de_eliminar_insumo_ya_no_existe(self):
+    def test_eliminar_insumo_requiere_un_id_valido(self):
         response = self.client.post(
-            self.url,
-            {'accion': 'eliminar_insumo', 'insumo_id': 'no-es-un-id'},
+            reverse('detalle_insumo', args=[self.insumo.pk + 999]),
+            {'accion': 'eliminar_insumo'},
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 404)
         self.assertTrue(Insumo.objects.filter(pk=self.insumo.pk).exists())
-        self.insumo.refresh_from_db()
-        self.assertTrue(self.insumo.activo)
