@@ -755,63 +755,9 @@
    GESTION DE INSUMOS
    ========================================== */
 
-.insumo-dashboard {
-    width: 100%;
-    max-width: 1540px;
-    padding: clamp(24px, 4vw, 52px) clamp(18px, 4vw, 56px) 64px;
-}
-
-.insumo-page-heading {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-    margin: 12px 0 28px;
-}
-
-.insumo-page-heading h1 {
-    margin: 0 0 8px;
-    color: var(--admin-text);
-    font-size: clamp(1.9rem, 3.2vw, 2.7rem);
-    font-weight: 800;
-    letter-spacing: -0.04em;
-}
-
-.insumo-page-heading p,
 .insumo-list-heading p {
     margin: 0;
     color: var(--admin-muted);
-}
-
-.insumo-summary {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.insumo-summary span {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border: 1px solid var(--admin-border);
-    border-radius: 999px;
-    background: var(--admin-white);
-    color: var(--admin-text);
-    font-size: 0.88rem;
-    font-weight: 650;
-}
-
-.insumo-summary i {
-    color: var(--admin-primary);
-}
-
-.insumo-workspace {
-    display: grid;
-    grid-template-columns: minmax(240px, 290px) minmax(0, 1fr);
-    align-items: start;
-    gap: 24px;
 }
 
 .insumo-sidebar,
@@ -1366,10 +1312,18 @@
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.insumo-row--record {
+    grid-template-columns: 60px minmax(0, 1fr) auto;
+}
+
 .insumo-row:hover {
     transform: translateY(-2px);
     border-color: #ded1ed;
     box-shadow: 0 8px 20px rgba(54, 35, 80, 0.07);
+}
+
+.insumo-row:has(.insumo-row-actions[open]) {
+    z-index: 30;
 }
 
 .insumo-row-inactive {
@@ -1489,6 +1443,7 @@
 
 .insumo-row-actions {
     position: relative;
+    z-index: 31;
 }
 
 .insumo-row-actions > summary {
@@ -1513,7 +1468,7 @@
 
 .insumo-row-menu {
     position: absolute;
-    z-index: 4;
+    z-index: 32;
     top: calc(100% + 7px);
     right: 0;
     display: grid;
@@ -1545,6 +1500,10 @@
     font-weight: 650;
     list-style: none;
     text-align: left;
+}
+
+.insumo-menu-action {
+    text-decoration: none;
 }
 
 .insumo-edit-disclosure > summary:hover,
@@ -1704,26 +1663,9 @@
 }
 
 @media (max-width: 991px) {
-    .insumo-workspace {
-        grid-template-columns: minmax(210px, 0.78fr) minmax(0, 1.7fr);
-        gap: 16px;
-    }
-
-    .insumo-page-heading {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .insumo-summary {
-        justify-content: flex-start;
-    }
 }
 
 @media (max-width: 700px) {
-    .insumo-workspace {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
     .insumo-sidebar {
         position: static;
     }
@@ -1756,6 +1698,10 @@
         padding: 10px;
     }
 
+    .insumo-row--record {
+        grid-template-columns: 48px minmax(0, 1fr) 34px;
+    }
+
     .insumo-product-detail {
         grid-template-columns: minmax(0, 1fr);
     }
@@ -1778,11 +1724,6 @@
 
     .insumo-main-panel {
         padding: 16px 12px;
-    }
-
-    .insumo-summary span {
-        padding: 8px 10px;
-        font-size: 0.78rem;
     }
 
     .insumo-filter-bar {
@@ -1810,60 +1751,6 @@
     }
 }
 
-.insumo-dashboard {
-    box-sizing: border-box;
-    max-width: 1360px;
-    margin-right: auto;
-    margin-left: auto;
-}
-
-.insumo-back-link {
-    display: inline-flex;
-    min-height: 46px;
-    align-items: center;
-    gap: 11px;
-    margin: 0 0 22px;
-    padding: 5px 16px 5px 6px;
-    border: 1px solid rgba(118, 82, 163, 0.16);
-    border-radius: 999px;
-    background: linear-gradient(135deg, #fff 5%, #f7f1fc 100%);
-    box-shadow: 0 5px 16px rgba(70, 47, 99, 0.08);
-    color: var(--admin-primary-dark);
-    font-size: 0.9rem;
-    font-weight: 750;
-    text-decoration: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.insumo-back-link:hover {
-    transform: translateY(-2px);
-    border-color: rgba(118, 82, 163, 0.34);
-    box-shadow: 0 9px 22px rgba(70, 47, 99, 0.15);
-    color: var(--admin-primary-dark);
-}
-
-.insumo-back-icon {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--admin-primary);
-    box-shadow: 0 4px 10px rgba(118, 82, 163, 0.22);
-    color: #fff;
-    transition: transform 0.2s ease;
-}
-
-.insumo-back-link:hover .insumo-back-icon {
-    transform: translateX(-3px);
-}
-
-.insumo-back-indicator {
-    margin-left: 2px;
-    color: #a395b5;
-    font-size: 0.72rem;
-}
-
 .insumo-row-select {
     padding: 0;
     border: 0;
@@ -1884,6 +1771,15 @@
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.insumo-field-checkbox input[type="checkbox"],
+.insumo-checkbox {
+    width: 17px;
+    min-width: 17px;
+    min-height: 17px;
+    margin: 0;
+    accent-color: var(--admin-primary);
 }
 
 .insumo-field-checkbox {
