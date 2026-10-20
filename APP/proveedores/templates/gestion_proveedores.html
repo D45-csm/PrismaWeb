@@ -1,154 +1,172 @@
-{% extends 'base_admin.html' %}
+{% extends 'base_crud.html' %}
 {% load static %}
 
-{% block title %}Gestión de Proveedores{% endblock %}
+{% block title %}Gestión de Proveedores | Prisma{% endblock %}
+{% block crud_page_class %}insumo-dashboard supplier-admin-page{% endblock %}
+{% block crud_page_attributes %}data-active-count="{{ total_proveedores_activos }}" data-active-label="proveedores activos" data-active-state="{{ estado }}"{% endblock %}
 
-{% block content %}
-<link rel="stylesheet" href="{% static 'css/gestion_proveedores.css' %}?v=1">
+{% block crud_header %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='GESTIÓN DE PROVEEDORES' title='Proveedores' description='Administra el directorio y la información de contacto de tus proveedores.' summary_value=total_proveedores summary_label='proveedores' summary_icon='fa-solid fa-truck-fast' summary2_value=total_proveedores_activos summary2_label='proveedores activos' summary2_icon='fa-solid fa-circle-check' summary2_class='supplier-active-summary' back_url=perfil_url back_label='Volver al panel' %}
+{% endblock %}
 
-<div class="crud-container">
-
-    <!-- ENCABEZADO CON TÍTULO H2 Y BOTÓN -->
-    <header class="page-header">
-        <div class="header-text">
-            <h2 class="main-title">Gestión de Proveedores</h2>
-            <p class="subtitle">Administra los proveedores y sus datos de contacto en PRISMA.</p>
+{% block crud_sidebar_class %}insumo-sidebar{% endblock %}
+{% block crud_sidebar %}
+    <div class="insumo-sidebar-heading">
+        <div>
+            <span class="insumo-eyebrow">DIRECTORIO</span>
+            <h2>Proveedores</h2>
         </div>
-        <a class="btn btn-secondary" href="{% url 'perfil' %}">Volver al Perfil</a>
-    </header>
-    
-    <div class="crud-layout">
-        
-        <!-- SECCIÓN IZQUIERDA: FORMULARIO -->
-        <section class="card-section form-card">
-            <div class="card-header">
-                {% if modo_edicion %}
-                    <h2>Editar Proveedor</h2>
-                    <p>Actualizando información de: <strong>{{ proveedor_actual.nombre }}</strong></p>
-                {% else %}
-                    <h2>Registrar Proveedor</h2>
-                    <p>Ingresa los datos para dar de alta un nuevo proveedor en PRISMA.</p>
-                {% endif %}
-            </div>
-
-            <form method="POST" novalidate class="custom-form">
-                {% csrf_token %}
-
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {% for error in form.non_field_errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                <div class="form-fields">
-                    <div class="form-group">
-                        <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }} <span class="required-mark">*</span></label>
-                        {{ form.nombre }}
-                        {% if form.nombre.errors %}<span class="field-error">{{ form.nombre.errors.0 }}</span>{% endif %}
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.telefono.id_for_label }}">{{ form.telefono.label }}</label>
-                        {{ form.telefono }}
-                        {% if form.telefono.errors %}<span class="field-error">{{ form.telefono.errors.0 }}</span>{% endif %}
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
-                        {{ form.email }}
-                        {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.direccion.id_for_label }}">{{ form.direccion.label }}</label>
-                        {{ form.direccion }}
-                        {% if form.direccion.errors %}<span class="field-error">{{ form.direccion.errors.0 }}</span>{% endif %}
-                    </div>
-
-                    <div class="form-group checkbox-group">
-                        <label class="checkbox-label" for="{{ form.activo.id_for_label }}">
-                            {{ form.activo }}
-                            <span>Proveedor Activo</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    {% if modo_edicion %}
-                        <a href="{% url 'gestion_proveedores' %}" class="btn btn-cancel">Cancelar</a>
-                        <button type="submit" class="btn btn-submit">Actualizar</button>
-                    {% else %}
-                        <button type="reset" class="btn btn-cancel">Limpiar</button>
-                        <button type="submit" class="btn btn-submit">Guardar</button>
-                    {% endif %}
-                </div>
-            </form>
-        </section>
-
-        <!-- SECCIÓN DERECHA: TABLA DE REGISTROS -->
-        <section class="card-section table-card">
-            <div class="card-header">
-                <h2>Directorio de Proveedores</h2>
-                <p>Total registrados: <strong>{{ proveedores.count }}</strong></p>
-            </div>
-
-            <div class="table-wrapper">
-                <table class="custom-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Contacto</th>
-                            <th>Dirección</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for prov in proveedores %}
-                            <tr>
-                                <td class="col-name">{{ prov.nombre }}</td>
-                                <td class="col-contact">
-                                    {% if prov.telefono %}<div>📞 {{ prov.telefono }}</div>{% endif %}
-                                    {% if prov.email %}<div>✉️ {{ prov.email }}</div>{% endif %}
-                                    {% if not prov.telefono and not prov.email %}
-                                        <span class="empty-text">Sin datos</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ prov.direccion|default:"---"|truncatechars:35 }}</td>
-                                <td>
-                                    {% if prov.activo %}
-                                        <span class="badge badge-active">Activo</span>
-                                    {% else %}
-                                        <span class="badge badge-inactive">Inactivo</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="table-actions">
-                                        <!-- Enlace para cargar datos en el formulario -->
-                                        <a href="{% url 'editar_proveedor' prov.id %}" class="btn-action btn-edit">Editar</a>
-
-                                        <!-- Formulario POST para eliminación segura -->
-                                        <form method="POST" action="{% url 'eliminar_proveedor' prov.id %}"
-                                              class="form-eliminar-proveedor"
-                                              data-provider-name="{{ prov.nombre }}">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn-action btn-delete">Eliminar</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr>
-                                <td colspan="5" class="no-records">No hay proveedores registrados en el sistema.</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
+        <span class="insumo-count">{{ total_proveedores }}</span>
     </div>
-</div>
+    <div class="insumo-category-list">
+        <a class="insumo-category-link{% if estado == 'activos' %} selected{% endif %}"
+           href="{% url 'gestion_proveedores' %}?estado=activos">
+            <span class="insumo-category-icon"><i class="fa-solid fa-circle-check"></i></span>
+            <span class="insumo-category-name">Activos</span>
+            <span class="insumo-category-count">{{ total_proveedores_activos }}</span>
+        </a>
+        <a class="insumo-category-link{% if estado == 'inactivos' %} selected{% endif %}"
+           href="{% url 'gestion_proveedores' %}?estado=inactivos">
+            <span class="insumo-category-icon"><i class="fa-solid fa-circle-pause"></i></span>
+            <span class="insumo-category-name">Desactivados</span>
+            <span class="insumo-category-count">{{ total_proveedores_inactivos }}</span>
+        </a>
+        <a class="insumo-category-link{% if estado == 'todos' %} selected{% endif %}"
+           href="{% url 'gestion_proveedores' %}?estado=todos">
+            <span class="insumo-category-icon"><i class="fa-solid fa-list"></i></span>
+            <span class="insumo-category-name">Todos</span>
+            <span class="insumo-category-count">{{ total_proveedores }}</span>
+        </a>
+    </div>
+{% endblock %}
+
+{% block crud_main_class %}insumo-main-panel{% endblock %}
+{% block crud_main %}
+    <div class="insumo-list-heading">
+        <div>
+            <span class="insumo-eyebrow">DIRECTORIO PRISMA</span>
+            <h2>Buscar proveedores</h2>
+            <p>Consulta y administra la información de contacto de cada proveedor.</p>
+        </div>
+        <button type="button" class="insumo-button insumo-button-primary"
+                data-open-crud-editor data-create-url="{% url 'gestion_proveedores' %}"
+                data-create-action="crear_proveedor">
+            <i class="fa-solid fa-plus"></i> Crear proveedor
+        </button>
+    </div>
+    <form method="get" action="{% url 'gestion_proveedores' %}" class="insumo-filter-bar" role="search">
+        <label class="insumo-search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <span class="visually-hidden">Buscar proveedores</span>
+            <input type="search" name="q" value="{{ query }}"
+                   placeholder="Nombre, correo, teléfono o dirección">
+        </label>
+        <input type="hidden" name="estado" value="{{ estado }}">
+        <button type="submit" class="insumo-button insumo-button-filter">Buscar</button>
+        {% if query %}
+            <a class="insumo-clear-filter" href="{% url 'gestion_proveedores' %}?estado={{ estado }}">
+                Limpiar
+            </a>
+        {% endif %}
+    </form>
+    <div class="insumo-results-label">
+        <span>{{ proveedores|length }} resultado{{ proveedores|length|pluralize:"s" }}</span>
+        {% if query %}<span class="insumo-query-chip">“{{ query }}”</span>{% endif %}
+    </div>
+    <div class="insumo-list">
+        {% for prov in proveedores %}
+            <article class="insumo-row insumo-row--record{% if not prov.activo %} insumo-row-inactive{% endif %}"
+                     data-crud-record-id="{{ prov.pk }}"
+                     data-active-before-update="{{ prov.activo|yesno:'true,false' }}">
+                <span class="insumo-row-image" aria-hidden="true">
+                    <span><i class="fa-solid fa-truck-fast"></i></span>
+                </span>
+                <div class="insumo-row-info">
+                    <h3>
+                        <button type="button" class="insumo-row-select"
+                                data-crud-detail-url="{% url 'detalle_proveedor' prov.pk %}">
+                            {{ prov.nombre }}
+                        </button>
+                    </h3>
+                    <p>{{ prov.direccion|default:"Sin dirección registrada" }}</p>
+                    <div class="insumo-row-meta">
+                        {% if prov.telefono %}<span><i class="fa-solid fa-phone"></i>{{ prov.telefono }}</span>{% endif %}
+                        {% if prov.email %}<span><i class="fa-regular fa-envelope"></i>{{ prov.email }}</span>{% endif %}
+                        <span class="insumo-status{% if not prov.activo %} inactive{% endif %}">
+                            {% if prov.activo %}Activo{% else %}Desactivado{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <details class="insumo-row-actions">
+                    <summary aria-label="Acciones para {{ prov.nombre }}">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </summary>
+                    <div class="insumo-row-menu">
+                        <a class="insumo-menu-action"
+                           href="{% url 'gestion_proveedores' %}?editar_proveedor={{ prov.pk }}">
+                            <i class="fa-regular fa-pen-to-square"></i> Editar proveedor
+                        </a>
+                        <button type="button" class="insumo-menu-action danger"
+                                data-crud-delete-url="{% url 'eliminar_proveedor' prov.pk %}"
+                                data-crud-delete-name="{{ prov.nombre }}">
+                            <i class="fa-regular fa-trash-can"></i> Eliminar proveedor
+                        </button>
+                    </div>
+                </details>
+            </article>
+        {% empty %}
+            <div class="insumo-empty-state">
+                <span class="insumo-empty-icon"><i class="fa-solid fa-truck-fast"></i></span>
+                <h3>No encontramos proveedores</h3>
+                <p>{% if query %}Prueba con otra búsqueda o limpia los filtros.{% else %}Registra un proveedor para comenzar.{% endif %}</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block crud_after_workspace %}
+    <dialog class="insumo-category-dialog" id="supplierEditorDialog"
+            data-open="{{ modal_open }}" aria-labelledby="supplierEditorTitle">
+        <form method="post" class="insumo-editor-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="{% if modo_edicion %}editar_proveedor{% else %}crear_proveedor{% endif %}">
+            {% if modo_edicion %}<input type="hidden" name="proveedor_id" value="{{ proveedor_actual.pk }}">{% endif %}
+            <div class="insumo-category-dialog-header">
+                <div>
+                    <span class="insumo-eyebrow">{% if modo_edicion %}ACTUALIZAR DIRECTORIO{% else %}NUEVO REGISTRO{% endif %}</span>
+                    <h2 id="supplierEditorTitle">{% if modo_edicion %}Editar proveedor{% else %}Crear proveedor{% endif %}</h2>
+                </div>
+                <button type="button" class="insumo-dialog-close" data-close-crud-dialog aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            {% if form.non_field_errors %}
+                <div class="admin-form-errors" role="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+            {% for field in form %}
+                <div class="insumo-field{% if field.name == 'activo' %} insumo-field-checkbox{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+            {% endfor %}
+            <div class="insumo-dialog-actions">
+                <button type="button" class="insumo-button insumo-button-filter" data-close-crud-dialog>
+                    Cancelar
+                </button>
+                <button type="submit" class="insumo-button insumo-button-primary">
+                    <i class="fa-regular fa-floppy-disk"></i>
+                    {% if modo_edicion %}Guardar cambios{% else %}Crear proveedor{% endif %}
+                </button>
+            </div>
+        </form>
+    </dialog>
+    {% include 'partials/admin_crud_dialogs.html' %}
+    <form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'js/admin_crud.js' %}?v=3" defer></script>
 {% endblock %}
