@@ -1,10 +1,13 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
+from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .forms import ProductoForm
-from .models import Producto, DEFAULT_PRODUCT_IMAGE
+from .models import CategoriaProducto, Producto, DEFAULT_PRODUCT_IMAGE
 
 
 def es_administrador(user):
@@ -32,11 +35,51 @@ def _eliminar_imagenes_reemplazadas(producto, nombres_anteriores):
             producto.imagen_principal.storage.delete(nombre)
 
 # 1. GESTIÓN Y LISTADO DE PRODUCTOS
+def _render_admin_gestion(request, form=None, editor_mode='', producto_editar=None):
+    categorias = CategoriaProducto.objects.annotate(
+        total_productos=Count('producto'),
+    ).order_by('nombre')
+    query = request.GET.get('q', '').strip()[:100]
+    estado = request.GET.get('estado', 'activos')
+    categoria_id = request.GET.get('categoria', '')
+    productos = Producto.objects.select_related('categoria')
+    if estado == 'activos':
+        productos = productos.filter(activo=True)
+    elif estado == 'inactivos':
+        productos = productos.filter(activo=False)
+    else:
+        estado = 'todos'
+
+    if categoria_id.isdecimal() and len(categoria_id) <= 18:
+        productos = productos.filter(categoria_id=int(categoria_id))
+    else:
+        categoria_id = ''
+    if query:
+        productos = productos.filter(
+            Q(nombre__icontains=query)
+            | Q(categoria__nombre__icontains=query)
+            | Q(descripcion__icontains=query)
+        )
+
+    return render(request, 'productos/gestion_productos.html', {
+        'productos': productos.order_by('-id'),
+        'categorias': categorias,
+        'categoria_seleccionada': categoria_id,
+        'query': query,
+        'estado': estado,
+        'total_productos': Producto.objects.count(),
+        'total_productos_activos': Producto.objects.filter(activo=True).count(),
+        'total_productos_inactivos': Producto.objects.filter(activo=False).count(),
+        'form': form or ProductoForm(instance=producto_editar),
+        'producto_editar': producto_editar,
+        'editor_mode': editor_mode,
+    })
+
+
 def gestion_productos(request):
 
     if es_administrador(request.user):
-        productos = Producto.objects.all().order_by('-id')
-        template = 'productos/gestion_productos.html'
+        return _render_admin_gestion(request)
 
     else:
         productos = Producto.objects.filter(activo=True).order_by('-id')
@@ -62,7 +105,9 @@ def crear_producto(request):
         messages.success(request, 'Producto creado correctamente.')
         return redirect('lista_productos')
 
-    return render(request, 'productos/crear_producto.html', {'form': form})
+    if request.method == 'POST':
+        messages.error(request, 'Revisa los campos marcados para corregir el formulario.')
+    return _render_admin_gestion(request, form=form, editor_mode='crear')
 
 
 # 3. EDITAR PRODUCTO
@@ -95,9 +140,45 @@ def editar_producto(request, id):
         messages.success(request, 'Producto actualizado correctamente.')
         return redirect('lista_productos')
 
-    return render(request, 'productos/crear_producto.html', {
-        'producto_editar': producto,
-        'form': form,
+    if request.method == 'POST':
+        messages.error(request, 'Revisa los campos marcados para corregir el formulario.')
+    return _render_admin_gestion(
+        request,
+        form=form,
+        editor_mode='editar',
+        producto_editar=producto,
+    )
+
+
+@login_required(login_url='admin_login')
+@user_passes_test(es_administrador, login_url='admin_login')
+@require_http_methods(['GET', 'POST'])
+def detalle_producto(request, id):
+    producto = get_object_or_404(Producto.objects.select_related('categoria'), pk=id)
+    if request.method == 'POST':
+        activo = request.POST.get('activo')
+        if activo not in ('true', 'false'):
+            return JsonResponse({'error': 'Selecciona el estado del producto.'}, status=400)
+        producto.activo = activo == 'true'
+        producto.save(update_fields=['activo'])
+        return JsonResponse({
+            'id': producto.pk,
+            'activo': producto.activo,
+            'message': (
+                'Producto activado correctamente.'
+                if producto.activo else 'Producto desactivado correctamente.'
+            ),
+        })
+
+    return JsonResponse({
+        'id': producto.pk,
+        'nombre': producto.nombre,
+        'descripcion': producto.descripcion,
+        'meta': [producto.categoria.nombre, f'${producto.precio}'],
+        'imagen': producto.imagen_principal.url if producto.imagen_principal else '',
+        'activo': producto.activo,
+        'edit_url': reverse('editar_producto', args=[producto.pk]),
+        'status_url': reverse('detalle_producto', args=[producto.pk]),
     })
 
 
