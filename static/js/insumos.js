@@ -284,7 +284,7 @@
             badge.textContent = item.activo ? 'Activo' : 'Desactivado';
             badge.classList.toggle('inactive', !item.activo);
 
-            const summary = document.querySelector('.insumo-summary span:nth-child(2)');
+            const summary = document.querySelector('.insumo-active-summary');
             const count = document.querySelector('.insumo-dashboard');
             const wasActive = row.dataset.activeBeforeUpdate === 'true';
             if (wasActive !== item.activo && count) {
