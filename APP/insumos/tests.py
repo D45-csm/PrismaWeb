@@ -142,7 +142,7 @@ class GestionInsumosTests(TestCase):
 
         page = self.client.get(self.url)
         self.assertContains(page, 'js/admin_messages.js')
-        self.assertContains(page, 'js/insumos.js')
+        self.assertContains(page, 'js/insumos.js?v=1')
 
         response = self.client.post(
             url,
