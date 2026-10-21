@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from APP.usuarios.permissions import exigir_permiso
 from .forms import ProveedorForm
 from .models import Proveedor
 
@@ -56,9 +57,11 @@ def _render_gestion(request, form=None, modal_open='', proveedor_actual=None):
 @login_required(login_url='admin_login')
 @user_passes_test(es_administrador, login_url='admin_login')
 def gestion_proveedores(request):
+    exigir_permiso(request, 'proveedores.view_proveedor')
     if request.method == 'POST':
         accion = request.POST.get('accion')
         if accion == 'crear_proveedor':
+            exigir_permiso(request, 'proveedores.add_proveedor')
             form = ProveedorForm(request.POST)
             if form.is_valid():
                 form.save()
@@ -67,6 +70,7 @@ def gestion_proveedores(request):
             return _render_gestion(request, form=form, modal_open='crear')
 
         if accion == 'editar_proveedor':
+            exigir_permiso(request, 'proveedores.change_proveedor')
             proveedor = _get_posted_proveedor(request.POST.get('proveedor_id'))
             form = ProveedorForm(request.POST, instance=proveedor)
             if form.is_valid():
@@ -84,7 +88,6 @@ def gestion_proveedores(request):
             )
 
         messages.error(request, 'No se reconoció la acción solicitada.')
-
     edit_id = request.GET.get('editar_proveedor', '')
     proveedor_actual = None
     if edit_id:
@@ -102,6 +105,7 @@ def gestion_proveedores(request):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_GET
 def detalle_proveedor(request, pk):
+    exigir_permiso(request, 'proveedores.view_proveedor')
     proveedor = get_object_or_404(Proveedor, pk=pk)
     return JsonResponse({
         'id': proveedor.pk,
@@ -122,6 +126,9 @@ def detalle_proveedor(request, pk):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_http_methods(['GET', 'POST'])
 def editar_proveedor(request, pk):
+    exigir_permiso(request, 'proveedores.view_proveedor')
+    if request.method == 'POST':
+        exigir_permiso(request, 'proveedores.change_proveedor')
     proveedor = get_object_or_404(Proveedor, pk=pk)
     if request.method == 'GET':
         return redirect(f'{reverse("gestion_proveedores")}?editar_proveedor={proveedor.pk}')
@@ -142,6 +149,7 @@ def editar_proveedor(request, pk):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_POST
 def cambiar_estado_proveedor(request, pk):
+    exigir_permiso(request, 'proveedores.change_proveedor')
     proveedor = get_object_or_404(Proveedor, pk=pk)
     valor = request.POST.get('activo')
     if valor not in ('true', 'false'):
@@ -165,6 +173,7 @@ def cambiar_estado_proveedor(request, pk):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_POST
 def eliminar_proveedor(request, pk):
+    exigir_permiso(request, 'proveedores.delete_proveedor')
     proveedor = get_object_or_404(Proveedor, pk=pk)
     nombre_proveedor = proveedor.nombre
     proveedor.delete()

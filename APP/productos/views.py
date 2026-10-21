@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
 
+from APP.usuarios.permissions import exigir_permiso
 from .forms import ProductoForm
 from .models import CategoriaProducto, Producto, DEFAULT_PRODUCT_IMAGE
 
@@ -79,6 +80,7 @@ def _render_admin_gestion(request, form=None, editor_mode='', producto_editar=No
 def gestion_productos(request):
 
     if es_administrador(request.user):
+        exigir_permiso(request, 'productos.view_producto')
         return _render_admin_gestion(request)
 
     else:
@@ -95,6 +97,8 @@ def gestion_productos(request):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_http_methods(['GET', 'POST'])
 def crear_producto(request):
+    exigir_permiso(request, 'productos.view_producto')
+    exigir_permiso(request, 'productos.add_producto')
     form = ProductoForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         producto = form.save(commit=False)
@@ -115,6 +119,8 @@ def crear_producto(request):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_http_methods(['GET', 'POST'])
 def editar_producto(request, id):
+    exigir_permiso(request, 'productos.view_producto')
+    exigir_permiso(request, 'productos.change_producto')
     producto = get_object_or_404(Producto, id=id)
     form = ProductoForm(
         request.POST or None,
@@ -154,6 +160,11 @@ def editar_producto(request, id):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_http_methods(['GET', 'POST'])
 def detalle_producto(request, id):
+    exigir_permiso(
+        request,
+        'productos.change_producto' if request.method == 'POST'
+        else 'productos.view_producto',
+    )
     producto = get_object_or_404(Producto.objects.select_related('categoria'), pk=id)
     if request.method == 'POST':
         activo = request.POST.get('activo')
@@ -187,6 +198,7 @@ def detalle_producto(request, id):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_POST
 def eliminar_producto(request, id):
+    exigir_permiso(request, 'productos.delete_producto')
     producto = get_object_or_404(Producto, id=id)
     nombres_imagenes = _nombres_imagenes(producto)
     producto.delete()
