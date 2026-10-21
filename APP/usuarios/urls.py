@@ -49,4 +49,5 @@ urlpatterns = [
     ),
     path('perfil/', views.profile_view, name='perfil'),
     path('Lista_usuarios/', views.lista_usuarios, name='Lista de usuarios'),
+    path('roles/', views.gestion_roles, name='gestion_roles'),
 ]

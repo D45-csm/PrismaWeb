@@ -4,7 +4,7 @@
 {% block title %}Lista de Usuarios - PRISMA{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/lista_usuarios.css' %}">
+<link rel="stylesheet" href="{% static 'css/Lista_usuarios.css' %}">
 
 <div class="prisma-container">
     <!-- Botón para volver al Panel de Administración -->
@@ -19,7 +19,7 @@
     </div>
 
     <h1 class="prisma-title">Lista de usuarios</h1>
-    <p class="prisma-subtitle">Administra y visualiza los usuarios registrados en el sistema.</p>
+    <p class="prisma-subtitle">Consulta los usuarios y asigna un rol a cada cuenta.</p>
 
     <div class="prisma-card">
         <ul class="user-list">
@@ -48,8 +48,32 @@
                                 <span class="user-detail-label">Teléfono</span>
                                 <span class="user-detail-value">{{ usuario.telefono|default:"No registrado" }}</span>
                             </div>
+                            <div class="user-detail-group">
+                                <span class="user-detail-label">Rol actual</span>
+                                <span class="user-detail-value">
+                                    {% for rol in usuario.groups.all %}
+                                        {{ rol.name }}{% if not forloop.last %}, {% endif %}
+                                    {% empty %}
+                                        Sin rol asignado
+                                    {% endfor %}
+                                </span>
+                            </div>
                         </div>
                     </div>
+                    <form method="post" class="user-role-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="usuario_id" value="{{ usuario.pk }}">
+                        <label class="user-role-label" for="rol-{{ usuario.pk }}">Cambiar rol</label>
+                        <select id="rol-{{ usuario.pk }}" name="rol">
+                            <option value="">Sin rol</option>
+                            {% for rol in roles %}
+                                <option value="{{ rol.pk }}"{% if usuario.groups.all|length == 1 and rol in usuario.groups.all %} selected{% endif %}>
+                                    {{ rol.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="user-role-button">Guardar</button>
+                    </form>
                 </li>
             {% empty %}
                 <div class="empty-state">
