@@ -101,6 +101,17 @@
     font-size: 0.85rem;
 }
 
+.user-role-form select:disabled {
+    background-color: #f3f1f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+.user-role-note {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
 .user-role-button {
     min-height: 38px;
     padding: 7px 12px;
@@ -112,6 +123,10 @@
     font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
+}
+
+.user-role-button[hidden] {
+    display: none;
 }
 
 .user-role-button:hover {

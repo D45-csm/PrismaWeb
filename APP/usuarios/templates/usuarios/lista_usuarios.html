@@ -64,7 +64,8 @@
                         {% csrf_token %}
                         <input type="hidden" name="usuario_id" value="{{ usuario.pk }}">
                         <label class="user-role-label" for="rol-{{ usuario.pk }}">Cambiar rol</label>
-                        <select id="rol-{{ usuario.pk }}" name="rol">
+                        <select id="rol-{{ usuario.pk }}" name="rol" data-user-role-select
+                                {% if usuario.pk == usuario_actual_id %}disabled{% endif %}>
                             <option value="">Sin rol</option>
                             {% for rol in roles %}
                                 <option value="{{ rol.pk }}"{% if usuario.groups.all|length == 1 and rol in usuario.groups.all %} selected{% endif %}>
@@ -72,7 +73,13 @@
                                 </option>
                             {% endfor %}
                         </select>
-                        <button type="submit" class="user-role-button">Guardar</button>
+                        {% if usuario.pk == usuario_actual_id %}
+                            <span class="user-role-note">No puedes cambiar tu propio rol</span>
+                        {% else %}
+                            <button type="submit" class="user-role-button" data-user-role-save hidden>
+                                Guardar
+                            </button>
+                        {% endif %}
                     </form>
                 </li>
             {% empty %}
@@ -91,4 +98,8 @@
         </ul>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/lista_usuarios.js' %}?v=1" defer></script>
 {% endblock %}

@@ -49,7 +49,7 @@ def lista_usuarios(request):
         usuario = Usuario.objects.filter(pk=int(usuario_id)).first()
         if usuario is None:
             raise Http404
-        if usuario.pk == request.user.pk and not request.user.is_superuser:
+        if usuario.pk == request.user.pk:
             raise PermissionDenied
         rol_id = request.POST.get('rol', '')
         if rol_id:
@@ -70,6 +70,7 @@ def lista_usuarios(request):
     return render(request, 'usuarios/lista_usuarios.html', {
         'usuarios': usuarios,
         'roles': Group.objects.order_by('name'),
+        'usuario_actual_id': request.user.pk,
     })
 
 
