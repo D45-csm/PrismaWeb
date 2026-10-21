@@ -33,16 +33,12 @@
                            aria-label="Editar rol {{ rol.name }}">
                             <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
                         </a>
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="accion" value="eliminar_rol">
-                            <input type="hidden" name="rol_id" value="{{ rol.pk }}">
-                            <button class="admin-button admin-button-danger" type="submit"
-                                    aria-label="Eliminar rol {{ rol.name }}"
-                                    onclick="return confirm('¿Eliminar el rol {{ rol.name|escapejs }}? Se quitará de los usuarios asignados.');">
-                                <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
-                            </button>
-                        </form>
+                        <button class="admin-button admin-button-danger" type="button"
+                                aria-label="Eliminar rol {{ rol.name }}"
+                                data-role-delete-id="{{ rol.pk }}"
+                                data-role-delete-name="{{ rol.name }}">
+                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                        </button>
                     </div>
                 </article>
             {% empty %}
@@ -50,6 +46,39 @@
             {% endfor %}
         </div>
     </section>
+{% endblock %}
+
+{% block crud_after_workspace %}
+    <dialog class="insumo-category-dialog insumo-delete-dialog" id="roleDeleteDialog"
+            aria-labelledby="roleDeleteTitle">
+        <form method="post" class="insumo-editor-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="eliminar_rol">
+            <input type="hidden" name="rol_id" data-role-delete-id-field>
+            <div class="insumo-category-dialog-header">
+                <span class="insumo-delete-icon"><i class="fa-regular fa-trash-can"></i></span>
+                <button type="button" class="insumo-dialog-close" data-close-role-delete
+                        aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <h2 id="roleDeleteTitle">¿Eliminar rol?</h2>
+            <p>Vas a eliminar <strong data-role-delete-name></strong>. Se quitará de las cuentas que lo tienen asignado
+                y esta acción no se puede deshacer.</p>
+            <div class="insumo-dialog-actions">
+                <button type="button" class="insumo-button insumo-button-filter" data-close-role-delete>
+                    Cancelar
+                </button>
+                <button type="submit" class="insumo-button insumo-button-danger">
+                    <i class="fa-regular fa-trash-can"></i> Sí, eliminar
+                </button>
+            </div>
+        </form>
+    </dialog>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/admin_crud.js' %}?v=4" defer></script>
 {% endblock %}
 
 {% block crud_main %}
