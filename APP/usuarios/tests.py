@@ -1,7 +1,10 @@
+from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.conf import settings
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 from APP.insumos.models import CategoriaInsumo, Insumo
 
@@ -31,6 +34,52 @@ class AccesoUsuarioTests(TestCase):
         )
 
         self.assertRedirects(response, reverse('base_cliente'))
+
+    def test_cliente_puede_ingresar_con_usuario_correo_o_telefono(self):
+        for identificador in (
+            self.cliente.username.upper(),
+            self.cliente.email.upper(),
+            self.cliente.telefono,
+        ):
+            with self.subTest(identificador=identificador):
+                response = self.client.post(
+                    reverse('login'),
+                    {
+                        'username': identificador,
+                        'password': 'Clave-segura-2026!',
+                    },
+                )
+                self.assertRedirects(response, reverse('base_cliente'))
+                self.client.logout()
+
+    def test_cliente_login_rechaza_caracteres_no_validos_y_telefono_ambiguo(self):
+        for identificador in ('cliente\'--', 'cliente con espacios'):
+            with self.subTest(identificador=identificador):
+                response = self.client.post(
+                    reverse('login'),
+                    {
+                        'username': identificador,
+                        'password': 'Clave-segura-2026!',
+                    },
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertFalse(response.context['form'].is_valid())
+
+        Usuario.objects.create_user(
+            username='otro-cliente',
+            email='otro@example.com',
+            telefono=self.cliente.telefono,
+            password='Otra-clave-segura-2026!',
+        )
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': self.cliente.telefono,
+                'password': 'Clave-segura-2026!',
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['form'].is_valid())
 
     def test_mensajes_de_autenticacion_se_muestran_en_su_destino(self):
         self.client.force_login(self.administrador)
@@ -97,6 +146,8 @@ class AccesoUsuarioTests(TestCase):
 
         self.assertContains(response_cliente, 'Recordarme en este dispositivo')
         self.assertContains(response_cliente, '¿Olvidaste tu contraseña?')
+        self.assertContains(response_cliente, 'No necesitas Gmail')
+        self.assertContains(response_cliente, 'data-password-toggle')
         self.assertContains(response_cliente, 'name="username"')
         self.assertContains(response_cliente, 'name="password"')
         self.assertNotContains(response_cliente, 'Google')
@@ -104,55 +155,87 @@ class AccesoUsuarioTests(TestCase):
         self.assertNotContains(response_cliente, 'Próximamente')
         self.assertNotContains(response_admin, 'Recordarme en este dispositivo')
         self.assertNotContains(response_admin, '¿Olvidaste tu contraseña?')
+        self.assertNotContains(response_admin, 'data-password-toggle')
 
-    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-    def test_recuperar_contrasena_envia_enlace_y_permite_cambiarla(self):
+    def test_login_redirige_a_destino_local_y_rechaza_destino_externo(self):
+        response = self.client.post(
+            f'{reverse("login")}?next=%2Fproductos%2F',
+            {
+                'username': self.cliente.email,
+                'password': 'Clave-segura-2026!',
+                'next': '/productos/',
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/productos/')
+
+        self.client.logout()
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': self.cliente.email,
+                'password': 'Clave-segura-2026!',
+                'next': 'https://example.com/',
+            },
+        )
+        self.assertRedirects(response, reverse('base_cliente'))
+
+    def test_recuperacion_envia_correo_si_el_cliente_existe(self):
         response = self.client.post(
             reverse('recuperar'),
             {'email': self.cliente.email},
+            follow=True,
         )
 
-        self.assertRedirects(response, reverse('password_reset_done'))
+        self.assertContains(response, 'Si el correo está registrado')
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, [self.cliente.email])
+        self.assertIn(self.cliente.email, mail.outbox[0].to)
 
-        reset_url = next(
-            line.strip()
-            for line in mail.outbox[0].body.splitlines()
-            if '/usuarios/recuperar/confirmar/' in line
-        )
-        reset_path = '/usuarios/' + reset_url.split('/usuarios/', 1)[1]
-        reset_response = self.client.get(reset_path, follow=True)
-        self.assertEqual(reset_response.status_code, 200)
-        if reset_response.redirect_chain:
-            reset_path = reset_response.redirect_chain[-1][0]
+    def test_recuperacion_no_revela_si_el_correo_no_existe(self):
         response = self.client.post(
-            reset_path,
-            {
-                'new_password1': 'Otra-clave-fuerte-2026!',
-                'new_password2': 'Otra-clave-fuerte-2026!',
-            },
+            reverse('recuperar'),
+            {'email': 'nadie@example.com'},
+            follow=True,
         )
-        self.assertRedirects(response, reverse('password_reset_complete'))
 
-        self.cliente.refresh_from_db()
-        self.assertTrue(self.cliente.check_password('Otra-clave-fuerte-2026!'))
+        self.assertContains(response, 'Si el correo está registrado')
+        self.assertEqual(len(mail.outbox), 0)
 
-    @override_settings(EMAIL_BACKEND='django.core.mail.backends.console.EmailBackend')
-    def test_recuperar_avisa_si_el_correo_esta_en_modo_consola(self):
-        response = self.client.get(reverse('recuperar'))
-
-        self.assertContains(response, 'en la consola del servidor')
-
-    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-    def test_recuperacion_no_envia_enlace_a_cuentas_administrativas(self):
+    def test_recuperacion_no_envia_correo_para_cuentas_administrativas(self):
         response = self.client.post(
             reverse('recuperar'),
             {'email': self.administrador.email},
+            follow=True,
         )
 
-        self.assertRedirects(response, reverse('password_reset_done'))
-        self.assertEqual(mail.outbox, [])
+        self.assertContains(response, 'Si el correo está registrado')
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_cliente_puede_restablecer_su_contrasena_con_el_enlace(self):
+        uid = urlsafe_base64_encode(force_bytes(self.cliente.pk))
+        token = default_token_generator.make_token(self.cliente)
+        url = reverse('recuperar_confirmar', kwargs={'uidb64': uid, 'token': token})
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Crea tu nueva contraseña')
+
+        response = self.client.post(url, {
+            'new_password1': 'Otra-clave-mas-segura-2026!',
+            'new_password2': 'Otra-clave-mas-segura-2026!',
+        })
+        self.assertRedirects(response, reverse('login'))
+
+        self.cliente.refresh_from_db()
+        self.assertTrue(self.cliente.check_password('Otra-clave-mas-segura-2026!'))
+
+    def test_enlace_de_recuperacion_invalido_no_permite_cambiar_la_contrasena(self):
+        uid = urlsafe_base64_encode(force_bytes(self.cliente.pk))
+        url = reverse('recuperar_confirmar', kwargs={'uidb64': uid, 'token': 'token-invalido'})
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Este enlace ya no es válido')
 
     def test_rechaza_contrasena_incorrecta_y_accesos_cruzados(self):
         for url_name, email in (
@@ -191,8 +274,26 @@ class AccesoUsuarioTests(TestCase):
                     f'{reverse("admin_login")}?next={reverse(url_name)}',
                 )
 
-    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
-    def test_registro_exige_confirmar_correo_y_no_concede_staff(self):
+    def test_registro_rechaza_nombre_con_simbolos_y_telefono_no_numerico(self):
+        for username, telefono in (
+            ('cliente raro!', '3111234567'),
+            ('cliente-nuevo', '+57 3111234567'),
+        ):
+            with self.subTest(username=username, telefono=telefono):
+                response = self.client.post(
+                    reverse('registro'),
+                    {
+                        'username': username,
+                        'email': f'{username.replace(" ", "-")}@example.com',
+                        'telefono': telefono,
+                        'password1': 'Fuerte-password-2026!',
+                        'password2': 'Fuerte-password-2026!',
+                    },
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertFalse(response.context['form'].is_valid())
+
+    def test_registro_activa_cuenta_cliente_sin_correo_y_no_concede_staff(self):
         response = self.client.post(
             reverse('registro'),
             {
@@ -204,22 +305,8 @@ class AccesoUsuarioTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse('registro'))
+        self.assertRedirects(response, reverse('base_cliente'))
         usuario = Usuario.objects.get(username='nueva')
-        self.assertFalse(usuario.is_active)
-        self.assertFalse(usuario.is_staff)
-        self.assertEqual(len(mail.outbox), 1)
-
-        verification_path = mail.outbox[0].body.splitlines()[3]
-        invalid_verification_path = verification_path.rsplit('/', 2)[0] + '/invalid/'
-        self.client.get(invalid_verification_path)
-        usuario.refresh_from_db()
-        self.assertFalse(usuario.is_active)
-
-        verification_response = self.client.get(verification_path)
-        self.assertRedirects(verification_response, reverse('base_cliente'))
-
-        usuario.refresh_from_db()
         self.assertTrue(usuario.is_active)
         self.assertFalse(usuario.is_staff)
         self.assertEqual(
