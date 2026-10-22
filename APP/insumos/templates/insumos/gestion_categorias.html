@@ -99,26 +99,10 @@
                     <h2>Buscar insumos</h2>
                     <p>Busca, filtra y mantén actualizada la información de tus insumos.</p>
                 </div>
-                <details class="insumo-add-disclosure"{% if insumo_form.errors and not insumo_form.instance.pk %} open{% endif %}>
-                    <summary class="insumo-button insumo-button-primary">
-                        <i class="fa-solid fa-plus"></i> Agregar insumo
-                    </summary>
-                    <form method="post" enctype="multipart/form-data" class="insumo-add-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="accion" value="crear_insumo">
-                        <h3>Nuevo insumo</h3>
-                        {% for field in insumo_form %}
-                            <div class="insumo-field">
-                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                {{ field }}
-                                {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
-                            </div>
-                        {% endfor %}
-                        <button type="submit" class="insumo-button insumo-button-primary">
-                            Crear y guardar insumo
-                        </button>
-                    </form>
-                </details>
+                <button type="button" class="insumo-button insumo-button-primary"
+                        data-open-insumo-create>
+                    <i class="fa-solid fa-plus"></i> Agregar insumo
+                </button>
             </div>
 
             <form method="get" class="insumo-filter-bar" role="search">
@@ -163,6 +147,7 @@
                              data-categoria-id="{{ insumo.categoria_id }}"
                              data-categoria="{{ insumo.categoria.nombre }}"
                              data-unidad="{{ insumo.get_unidad_medida_display }}"
+                             data-proveedor="{{ insumo.proveedor_referencia.nombre|default:'' }}"
                              data-activo="{{ insumo.activo|yesno:'true,false' }}"
                              data-active-before-update="{{ insumo.activo|yesno:'true,false' }}">
                         <div class="insumo-row-info">
@@ -176,6 +161,7 @@
                             <div class="insumo-row-meta">
                                 <span><i class="fa-solid fa-tag"></i> {{ insumo.categoria.nombre }}</span>
                                 <span><i class="fa-solid fa-scale-balanced"></i> {{ insumo.get_unidad_medida_display }}</span>
+                                <span class="insumo-row-supplier"><i class="fa-solid fa-truck-field"></i> {{ insumo.proveedor_referencia.nombre|default:"Sin proveedor" }}</span>
                                 <span class="insumo-status{% if not insumo.activo %} inactive{% endif %}">
                                     {% if insumo.activo %}Activo{% else %}Desactivado{% endif %}
                                 </span>
@@ -206,6 +192,36 @@
         </section>
     </div>
 </div>
+
+<dialog class="insumo-category-dialog insumo-create-dialog" id="insumoCreateDialog"
+        aria-labelledby="insumoCreateTitle"
+        data-open="{% if insumo_form.errors and not insumo_form.instance.pk %}true{% endif %}">
+    <form method="post" enctype="multipart/form-data" class="insumo-editor-form">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="crear_insumo">
+        <div class="insumo-category-dialog-header">
+            <h2 id="insumoCreateTitle">Nuevo insumo</h2>
+            <button type="button" class="insumo-dialog-close" data-close-insumo-create
+                    aria-label="Cerrar formulario">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        {% for field in insumo_form %}
+            <div class="insumo-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+            </div>
+        {% endfor %}
+        <div class="insumo-dialog-actions">
+            <button type="button" class="insumo-button insumo-button-filter"
+                    data-close-insumo-create>Cancelar</button>
+            <button type="submit" class="insumo-button insumo-button-primary">
+                Crear y guardar insumo
+            </button>
+        </div>
+    </form>
+</dialog>
 
 <dialog class="insumo-category-dialog" id="categoryDialog" aria-labelledby="categoryDialogTitle"
         data-open="{{ categoria_modal }}">
@@ -299,6 +315,7 @@
             <div class="insumo-dialog-meta">
                 <span class="insumo-dialog-category"></span>
                 <span class="insumo-dialog-unit"></span>
+                <span class="insumo-dialog-supplier"></span>
                 <span class="insumo-dialog-status"></span>
             </div>
         </div>
