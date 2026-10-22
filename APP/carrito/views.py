@@ -1,3 +1,4 @@
 from django.shortcuts import render
 
-# Create your views here.
+def carrito_view(request):
+    return render(request, 'carrito/carrito.html')

@@ -1,0 +1,146 @@
+/* Estilos del Panel de Administración PRISMA */
+.prisma-container {
+    padding: 2rem 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Botón / Enlace de retorno al Panel */
+.prisma-header-nav {
+    margin-bottom: 1.25rem;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b46c1;
+    background-color: #f3e8ff;
+    padding: 10px 18px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-back:hover {
+    background-color: #e9d5ff;
+    color: #581c87;
+    transform: translateX(-3px); /* Efecto de desplazamiento suave hacia la izquierda */
+}
+
+
+/* Títulos */
+.prisma-title {
+    color: #1e1b4b;
+    font-weight: 800;
+    font-size: 2.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.prisma-subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+}
+
+/* Tarjeta contenedora de la lista */
+.prisma-card {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid #f0f0f5;
+}
+
+/* Elementos de la lista de usuarios */
+.user-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #ffffff;
+    border: 1px solid #f3f3f8;
+    border-radius: 12px;
+    padding: 16px 20px;
+    transition: all 0.2s ease-in-out;
+}
+
+.user-item:hover {
+    border-color: #e2d9f3;
+    box-shadow: 0 6px 15px rgba(107, 70, 193, 0.05);
+    transform: translateY(-2px);
+}
+
+.user-info-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Ícono contenedor estilo pastel */
+.user-icon-box {
+    width: 46px;
+    height: 46px;
+    background-color: #f3e8ff;
+    color: #7e22ce;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Datos del usuario */
+.user-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.user-detail-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-detail-label {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.user-detail-value {
+    font-size: 0.95rem;
+    color: #1e1b4b;
+    font-weight: 600;
+}
+
+/* Estado vacío */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+}
+
+.empty-state-icon {
+    width: 56px;
+    height: 56px;
+    background-color: #fef3c7;
+    color: #d97706;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem auto;
+}

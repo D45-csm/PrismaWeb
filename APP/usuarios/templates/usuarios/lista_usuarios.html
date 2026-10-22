@@ -1,12 +1,67 @@
-{% extends 'base_admin.html' %}
+{% extends 'base_crud.html' %}
 
-{% block title %}Lista de Usuarios{% endblock %}
+{% block title %}Lista de usuarios | Prisma{% endblock %}
 
-{% block content %}
-    <h2>Lista de Usuarios</h2>
-    <ul>
+{% block crud_page_class %}insumo-dashboard user-admin-page{% endblock %}
+
+{% block crud_header %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='DIRECTORIO PRISMA' title='Lista de usuarios' description='Consulta las cuentas registradas y su información de contacto.' summary_value=total_usuarios summary_label='usuarios' summary_icon='fa-solid fa-users' summary2_value=usuarios_activos summary2_label='usuarios activos' summary2_icon='fa-solid fa-circle-check' summary2_class='user-active-summary' back_url=perfil_url back_label='Volver al panel' %}
+{% endblock %}
+
+{% block crud_sidebar_class %}insumo-sidebar{% endblock %}
+{% block crud_sidebar %}
+    <div class="insumo-sidebar-heading">
+        <div>
+            <span class="insumo-eyebrow">COMUNIDAD</span>
+            <h2>Usuarios</h2>
+        </div>
+        <span class="insumo-count">{{ total_usuarios }}</span>
+    </div>
+    <nav class="insumo-category-list" aria-label="Directorio de usuarios">
+        <div class="insumo-category-link selected">
+            <span class="insumo-category-icon"><i class="fa-solid fa-users"></i></span>
+            <span class="insumo-category-name">Registrados</span>
+            <span class="insumo-category-count">{{ total_usuarios }}</span>
+        </div>
+    </nav>
+{% endblock %}
+
+{% block crud_main_class %}insumo-main-panel{% endblock %}
+{% block crud_main %}
+    <div class="insumo-list-heading">
+        <div>
+            <span class="insumo-eyebrow">DIRECTORIO PRISMA</span>
+            <h2>Usuarios registrados</h2>
+            <p>Visualiza las cuentas y sus datos de contacto.</p>
+        </div>
+    </div>
+    <div class="insumo-results-label">
+        <span>{{ total_usuarios }} usuario{{ total_usuarios|pluralize }}</span>
+    </div>
+    <div class="insumo-list">
         {% for usuario in usuarios %}
-            <li>{{ usuario.username }}</li>
+            <article class="insumo-row insumo-row--record user-admin-row">
+                <span class="insumo-row-image" aria-hidden="true">
+                    <span><i class="fa-solid fa-user"></i></span>
+                </span>
+                <div class="insumo-row-info">
+                    <h3>{{ usuario.username }}</h3>
+                    <p>{{ usuario.email|default:"Sin correo registrado" }}</p>
+                    <div class="insumo-row-meta">
+                        <span><i class="fa-solid fa-phone"></i>{{ usuario.telefono|default:"No registrado" }}</span>
+                        <span class="insumo-status{% if not usuario.is_active %} inactive{% endif %}">
+                            {% if usuario.is_active %}Activo{% else %}Desactivado{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </article>
+        {% empty %}
+            <div class="insumo-empty-state">
+                <span class="insumo-empty-icon"><i class="fa-solid fa-users"></i></span>
+                <h3>No hay usuarios registrados</h3>
+                <p>Cuando se registren nuevos usuarios, aparecerán en esta sección.</p>
+            </div>
         {% endfor %}
-    </ul>
+    </div>
 {% endblock %}
