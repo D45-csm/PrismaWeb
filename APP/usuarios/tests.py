@@ -201,12 +201,19 @@ class AccesoUsuarioTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'insumo-dashboard user-admin-page')
         self.assertContains(response, 'class="admin-page-heading"')
-        self.assertContains(response, 'class="admin-crud-sidebar insumo-sidebar"')
-        self.assertContains(response, 'class="admin-crud-main insumo-main-panel"')
+        self.assertContains(response, 'admin-crud-workspace--single')
+        self.assertContains(response, 'class="admin-crud-main admin-crud-panel"')
         self.assertContains(response, self.cliente.username)
         self.assertContains(response, self.cliente.email)
         self.assertContains(response, 'css/admin_crud.css')
-        self.assertNotContains(response, 'css/lista_usuarios.css')
+        self.assertContains(response, '2 usuarios')
+        self.assertContains(response, '2 usuarios activos')
+        self.assertContains(response, 'Rol actual')
+        self.assertNotContains(response, 'css/Lista_usuarios.css')
+        self.assertEqual(response.content.count(b'css/admin_panel.css'), 1)
+        self.assertEqual(response.content.count(b'css/admin_crud.css'), 1)
+        self.assertNotContains(response, '</article>')
+        self.assertNotContains(response, 'class="empty-state"')
 
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     def test_registro_exige_confirmar_correo_y_no_concede_staff(self):
@@ -368,7 +375,7 @@ class GestionRolesUsuariosTests(TestCase):
         self.assertContains(response, 'disabled')
         self.assertContains(response, 'No puedes cambiar tu propio rol.')
         self.assertContains(response, 'data-user-role-save hidden')
-        self.assertContains(response, 'js/lista_usuarios.js?v=1')
+        self.assertContains(response, 'js/lista_usuarios.js?v=2')
 
         response = self.client.post(
             reverse('Lista de usuarios'),
@@ -570,3 +577,27 @@ class PermisosPorRolTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(list(self.usuario.groups.all()), [self.rol])
+
+    def test_cambiar_rol_requiere_permiso_explicito_de_cambiar_grupos(self):
+        permisos_usuarios = Permission.objects.filter(
+            content_type__app_label='usuarios',
+            content_type__model='usuario',
+            codename__in=['view_usuario', 'change_usuario'],
+        )
+        self.rol.permissions.add(*permisos_usuarios)
+        rol_anterior = Group.objects.create(name='Rol anterior')
+        objetivo = Usuario.objects.create_user(
+            username='objetivo',
+            email='objetivo@example.com',
+            telefono='3001112233',
+            password='Clave-segura-2026!',
+        )
+        objetivo.groups.add(rol_anterior)
+
+        response = self.client.post(
+            reverse('Lista de usuarios'),
+            {'usuario_id': objetivo.pk, 'rol': self.rol.pk},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(list(objetivo.groups.all()), [rol_anterior])
