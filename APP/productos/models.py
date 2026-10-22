@@ -58,5 +58,11 @@ class Producto(models.Model):
 
     activo = models.BooleanField(default=True)
 
+    disponible_temporada = models.BooleanField(
+        default=False,
+        verbose_name='Disponible en temporada',
+        help_text='Actívalo para mostrar este producto en la sección "Temporada" del sitio.',
+    )
+
     def __str__(self):
         return self.nombre
