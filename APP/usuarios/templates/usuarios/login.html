@@ -1,73 +1,90 @@
-<!DOCTYPE html>
+{% extends 'base_prisma.html' %}
 {% load static %}
-<html lang="es">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Prisma</title>
-    <link rel="stylesheet" href="{% static 'css/login.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
+{% block title %}{% if admin_login %}Acceso administrativo{% else %}Iniciar sesión{% endif %} - Prisma{% endblock %}
+{% block body_attrs %} class="auth-page"{% endblock %}
 
-<body class="auth-page">
-    <div class="auth-container">
+{% block content %}
+    <div class="auth-container{% if not admin_login %} customer-auth-container{% endif %}">
         <div class="auth-image">
             <div class="auth-image-overlay"></div>
             <div class="auth-image-text">
-                <h2>Bienvenido a Prisma</h2>
-                <p>Donde Cada Sabor Cuenta Una Historia</p>
+                <h2>{% if admin_login %}Acceso del negocio{% else %}Bienvenido a Prisma{% endif %}</h2>
+                <p>{% if admin_login %}Panel privado para personal autorizado{% else %}Descubre cada sabor de Prisma{% endif %}</p>
             </div>
         </div>
-        <div class="auth-form-container">
-            <div class="auth-logo">
-                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
-            </div>
-            <h2>Iniciar Sesión</h2>
-            <p class="auth-subtitle">Accede a tu cuenta para hacer pedidos</p>
-            <p class="auth-hint" id="authHint" style="display:none;"></p>
 
-            {% if form.non_field_errors %}
-            <div class="auth-alert">
-                {{ form.non_field_errors|striptags }}
+        <div class="auth-form-container{% if not admin_login %} customer-auth-panel{% endif %}">
+            <div class="auth-logo">
+                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo">
             </div>
+            <h2>{% if admin_login %}Ingreso administrativo{% else %}Iniciar sesión{% endif %}</h2>
+            <p class="auth-subtitle">
+                {% if admin_login %}Usa el correo y contraseña de una cuenta autorizada.{% else %}Ingresa con tu correo y contraseña.{% endif %}
+            </p>
+
+            {% if admin_login %}
+                <form method="post" action="">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                        <div class="form-error" role="alert">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label for="{{ form.username.id_for_label }}">Correo electrónico</label>
+                        {{ form.username }}
+                        {% for error in form.username.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.password.id_for_label }}">Contraseña</label>
+                        {{ form.password }}
+                        {% for error in form.password.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-full">Ingresar</button>
+                </form>
+                <div class="auth-switch">
+                    <p><a href="{% url 'login' %}">Ir al acceso de clientes</a></p>
+                </div>
+            {% else %}
+                <form method="post" action="">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                        <div class="form-error" role="alert">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label for="{{ form.username.id_for_label }}">Correo electrónico</label>
+                        {{ form.username }}
+                        {% for error in form.username.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.password.id_for_label }}">Contraseña</label>
+                        {{ form.password }}
+                        {% for error in form.password.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="customer-login-form-options">
+                        <label class="remember-me" for="rememberMe">
+                            <input type="checkbox" id="rememberMe" name="remember_me">
+                            <span>Recordarme en este dispositivo</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-primary btn-full">Iniciar sesión</button>
+                </form>
+                <a href="{% url 'recuperar' %}" class="customer-recovery-link">
+                    <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+                    ¿Olvidaste tu contraseña?
+                </a>
+
+                <div class="auth-switch">
+                    <p>¿No tienes cuenta? <a href="{% url 'registro' %}">Regístrate aquí</a></p>
+                    <p><a href="{% url 'admin_login' %}">Acceso para administración</a></p>
+                </div>
             {% endif %}
 
-            <form meid="loginForm" method="post" action="{% url 'login' %}" novalidate data-backend="django">
-                {% csrf_token %}
-
-                <div class="form-group">
-                    <label for="{{ form.username.id_for_label }}">Usuario</label>
-                    <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
-                        class="{% if form.username.errors %}input-error{% endif %}" placeholder="Tu usuario"
-                        value="{{ form.username.value|default_if_none:'' }}">
-                    {% if form.username.errors %}
-                    <div class="form-error">{{ form.username.errors|striptags }}</div>
-                    {% endif %}
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.password.id_for_label }}">Contraseña</label>
-                    <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
-                        class="{% if form.password.errors %}input-error{% endif %}" placeholder="••••••••">
-                    {% if form.password.errors %}
-                    <div class="form-error">{{ form.password.errors|striptags }}</div>
-                    {% endif %}
-                </div>
-
-                <button type="submit" class="btn-primary btn-full">Ingresar</button>
-            </form>
-
-            <p class="auth-switch">
-                ¿No tienes cuenta? <a href="{% url 'registro' %}">Regístrate aquí</a>
-            </p>
-            <a href="{% url 'base_cliente' %}" class="back-home">
-                <i class="fas fa-arrow-left"></i> Volver al inicio
-            </a>
+            <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
         </div>
     </div>
-
-    <script src="{% static 'script.js' %}"></script>
-</body>
-
-</html>
+{% endblock %}

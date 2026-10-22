@@ -1,0 +1,17 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<div class="admin-crud-page {% block crud_page_class %}{% endblock %}"
+     {% block crud_page_attributes %}{% endblock %}>
+    {% block crud_header %}{% endblock %}
+    <div class="admin-crud-workspace {% block crud_layout_class %}{% endblock %}">
+        <aside class="admin-crud-sidebar {% block crud_sidebar_class %}{% endblock %}">
+            {% block crud_sidebar %}{% endblock %}
+        </aside>
+        <div class="admin-crud-main {% block crud_main_class %}{% endblock %}">
+            {% block crud_main %}{% endblock %}
+        </div>
+    </div>
+    {% block crud_after_workspace %}{% endblock %}
+</div>
+{% endblock %}

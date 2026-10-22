@@ -5,7 +5,6 @@
 {% block content %}
 
 <div class="admin-dashboard">
-
     <!-- ENCABEZADO DEL PANEL -->
     <section class="dashboard-header">
         <div>
@@ -30,54 +29,74 @@
     <section class="dashboard-stats">
 
         <!-- Reservas -->
-        <div class="stat-card stat-purple">
+        <div class="stat-card stat-purple{% if not permisos_modulos.reservas %} dashboard-module-blocked{% endif %}">
             <div class="stat-icon">
                 <i class="fa-regular fa-calendar-check"></i>
             </div>
 
             <div class="stat-info">
                 <p>Reservas de hoy</p>
-                <h3>{{ total_reservas_hoy|default:"0" }}</h3>
-                <span>Reservas registradas</span>
+                {% if permisos_modulos.reservas %}
+                    <h3>{{ total_reservas_hoy|default:"0" }}</h3>
+                    <span>Reservas registradas</span>
+                {% else %}
+                    <h3>Sin acceso</h3>
+                    <span>Tu rol no permite consultar reservas</span>
+                {% endif %}
             </div>
         </div>
 
         <!-- Ventas -->
-        <div class="stat-card stat-pink">
+        <div class="stat-card stat-pink{% if not permisos_modulos.ventas %} dashboard-module-blocked{% endif %}">
             <div class="stat-icon">
                 <i class="fa-solid fa-bag-shopping"></i>
             </div>
 
             <div class="stat-info">
                 <p>Ventas del día</p>
-                <h3>${{ ventas_hoy|default:"0" }}</h3>
-                <span>Ingresos registrados</span>
+                {% if permisos_modulos.ventas %}
+                    <h3>${{ ventas_hoy|default:"0" }}</h3>
+                    <span>Ingresos registrados</span>
+                {% else %}
+                    <h3>Sin acceso</h3>
+                    <span>Tu rol no permite consultar ventas</span>
+                {% endif %}
             </div>
         </div>
 
         <!-- Productos -->
-        <div class="stat-card stat-blue">
+        <div class="stat-card stat-blue{% if not permisos_modulos.productos %} dashboard-module-blocked{% endif %}">
             <div class="stat-icon">
                 <i class="fa-solid fa-boxes-stacked"></i>
             </div>
 
             <div class="stat-info">
                 <p>Productos registrados</p>
-                <h3>{{ total_productos|default:"0" }}</h3>
-                <span>Productos del catálogo</span>
+                {% if permisos_modulos.productos %}
+                    <h3>{{ total_productos|default:"0" }}</h3>
+                    <span>Productos del catálogo</span>
+                {% else %}
+                    <h3>Sin acceso</h3>
+                    <span>Tu rol no permite consultar productos</span>
+                {% endif %}
             </div>
         </div>
 
         <!-- Insumos -->
-        <div class="stat-card stat-orange">
+        <div class="stat-card stat-orange{% if not permisos_modulos.insumos %} dashboard-module-blocked{% endif %}">
             <div class="stat-icon">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
 
             <div class="stat-info">
-                <p>Insumos por agotarse</p>
-                <h3>{{ insumos_bajos|default:"0" }}</h3>
-                <span>Requieren reposición</span>
+                <p>Insumos activos</p>
+                {% if permisos_modulos.insumos %}
+                    <h3>{{ total_insumos|default:"0" }}</h3>
+                    <span>Insumos registrados</span>
+                {% else %}
+                    <h3>Sin acceso</h3>
+                    <span>Tu rol no permite consultar insumos</span>
+                {% endif %}
             </div>
         </div>
 
@@ -97,72 +116,118 @@
         <div class="quick-actions">
 
             <!-- Usuarios-->
-            <a href="{% url 'Lista de usuarios' %}" class="quick-action">
+            <a {% if permisos_modulos.usuarios %}href="{% url 'Lista de usuarios' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+               class="quick-action{% if not permisos_modulos.usuarios %} dashboard-module-blocked{% endif %}">
                 <div class="quick-icon purple-icon">
                     <i class="fa-regular fa-calendar-days"></i>
                 </div>
 
                 <div class="quick-info">
                     <h3>Lista de usuarios</h3>
-                    <p>lista de todos los usuarios que existen en el sistema.</p>
+                    <p>{% if permisos_modulos.usuarios %}Lista de los usuarios registrados en el sistema.{% else %}Tu rol no permite administrar usuarios.{% endif %}</p>
                 </div>
 
                 <i class="fa-solid fa-arrow-right action-arrow"></i>
             </a>
 
+            <a {% if permisos_modulos.roles %}href="{% url 'gestion_roles' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+               class="quick-action{% if not permisos_modulos.roles %} dashboard-module-blocked{% endif %}">
+                <div class="quick-icon blue-icon">
+                    <i class="fa-solid fa-user-shield"></i>
+                </div>
+                <div class="quick-info">
+                    <h3>Roles y permisos</h3>
+                    <p>{% if permisos_modulos.roles %}Crea roles y administra sus permisos de acceso.{% else %}Tu rol no permite administrar roles.{% endif %}</p>
+                </div>
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
+
+            <!-- ´proveedores-->
+            <a {% if permisos_modulos.proveedores %}href="{% url 'gestion_proveedores' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+               class="quick-action{% if not permisos_modulos.proveedores %} dashboard-module-blocked{% endif %}">
+                <div class="quick-icon purple-icon">
+                    <i class="fa-regular fa-calendar-days"></i>
+                </div>
+
+                <div class="quick-info">
+                    <h3>Proveedores</h3>
+                    <p>{% if permisos_modulos.proveedores %}Gestiona el directorio de proveedores.{% else %}Tu rol no permite gestionar proveedores.{% endif %}</p>
+                </div>
+
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
+
             <!-- Reservas -->
-            <a href="#reservas" class="quick-action">
+            <a {% if permisos_modulos.reservas %}href="#reservas"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+               class="quick-action{% if not permisos_modulos.reservas %} dashboard-module-blocked{% endif %}">
                 <div class="quick-icon purple-icon">
                     <i class="fa-regular fa-calendar-days"></i>
                 </div>
 
                 <div class="quick-info">
                     <h3>Reservas</h3>
-                    <p>Consulta y organiza las reservas de los clientes.</p>
+                    <p>{% if permisos_modulos.reservas %}Consulta las reservas de los clientes.{% else %}Tu rol no permite consultar reservas.{% endif %}</p>
                 </div>
 
                 <i class="fa-solid fa-arrow-right action-arrow"></i>
             </a>
 
             <!-- Inventario -->
-            <a href="#inventario" class="quick-action">
+            <a {% if permisos_modulos.inventario %}href="#inventario"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+               class="quick-action{% if not permisos_modulos.inventario %} dashboard-module-blocked{% endif %}">
                 <div class="quick-icon blue-icon">
                     <i class="fa-solid fa-boxes-stacked"></i>
                 </div>
 
                 <div class="quick-info">
                     <h3>Inventario</h3>
-                    <p>Controla las existencias de productos e insumos.</p>
+                    <p>{% if permisos_modulos.inventario %}Consulta los insumos registrados.{% else %}Tu rol no permite consultar inventario.{% endif %}</p>
                 </div>
 
                 <i class="fa-solid fa-arrow-right action-arrow"></i>
             </a>
 
             <!-- Compras -->
-            <a href="#compras" class="quick-action">
+            <a {% if permisos_modulos.compras %}href="#compras"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+               class="quick-action{% if not permisos_modulos.compras %} dashboard-module-blocked{% endif %}">
                 <div class="quick-icon pink-icon">
                     <i class="fa-solid fa-truck"></i>
                 </div>
 
                 <div class="quick-info">
                     <h3>Compras de insumos</h3>
-                    <p>Registra compras y consulta los proveedores.</p>
+                    <p>{% if permisos_modulos.compras %}Consulta las compras de insumos.{% else %}Tu rol no permite consultar compras.{% endif %}</p>
                 </div>
 
                 <i class="fa-solid fa-arrow-right action-arrow"></i>
             </a>
 
             <!-- Productos -->
-            <a href="#productos" class="quick-action">
+            <a {% if permisos_modulos.productos %}href="{% url 'lista_productos' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+               class="quick-action{% if not permisos_modulos.productos %} dashboard-module-blocked{% endif %}">
                 <div class="quick-icon orange-icon">
                     <i class="fa-solid fa-cake-candles"></i>
                 </div>
 
                 <div class="quick-info">
                     <h3>Productos</h3>
-                    <p>Administra los postres y bebidas del catálogo.</p>
+                    <p>{% if permisos_modulos.productos %}Administra el catálogo de productos.{% else %}Tu rol no permite gestionar productos.{% endif %}</p>
                 </div>
 
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
+            <a {% if permisos_modulos.insumos %}href="{% url 'gestion_insumos' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+               class="quick-action{% if not permisos_modulos.insumos %} dashboard-module-blocked{% endif %}">
+                <div class="quick-icon blue-icon">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div class="quick-info">
+                    <h3>Gestión de insumos</h3>
+                    <p>{% if permisos_modulos.insumos %}Administra y organiza los insumos.{% else %}Tu rol no permite gestionar insumos.{% endif %}</p>
+                </div>
                 <i class="fa-solid fa-arrow-right action-arrow"></i>
             </a>
 
@@ -171,7 +236,7 @@
 
 
     <!-- RESERVAS RECIENTES -->
-    <section class="dashboard-section" id="reservas">
+    <section class="dashboard-section{% if not permisos_modulos.reservas %} dashboard-module-blocked{% endif %}" id="reservas">
 
         <div class="section-heading">
             <div>
@@ -180,6 +245,7 @@
             </div>
         </div>
 
+        {% if permisos_modulos.reservas %}
         <div class="dashboard-table-container">
             <table class="dashboard-table">
 
@@ -188,7 +254,7 @@
                         <th>Cliente</th>
                         <th>Fecha</th>
                         <th>Hora</th>
-                        <th>Personas</th>
+                        <th>Postre / cantidad</th>
                         <th>Estado</th>
                     </tr>
                 </thead>
@@ -197,9 +263,9 @@
                     {% for reserva in reservas_recientes %}
                     <tr>
                         <td>{{ reserva.nombre_cliente }}</td>
-                        <td>{{ reserva.fecha|date:"d/m/Y" }}</td>
-                        <td>{{ reserva.hora|time:"h:i A" }}</td>
-                        <td>{{ reserva.numero_personas }}</td>
+                        <td>{{ reserva.fecha_reserva|date:"d/m/Y" }}</td>
+                        <td>{{ reserva.hora|time:"h:i A"|default:"Por acordar" }}</td>
+                        <td>{{ reserva.postre|default:"—" }} × {{ reserva.cantidad }}</td>
                         <td>
                             <span class="status-badge status-pending">
                                 {{ reserva.estado|default:"Pendiente" }}
@@ -218,40 +284,44 @@
 
             </table>
         </div>
+        {% else %}
+            <div class="dashboard-module-locked"><i class="fa-solid fa-lock"></i> Tu rol no tiene permiso para consultar reservas.</div>
+        {% endif %}
     </section>
 
 
     <!-- INVENTARIO -->
-    <section class="dashboard-section" id="inventario">
+    <section class="dashboard-section{% if not permisos_modulos.inventario %} dashboard-module-blocked{% endif %}" id="inventario">
 
         <div class="section-heading">
             <div>
-                <h2>Inventario por revisar</h2>
-                <p>Insumos que necesitan atención o reposición.</p>
+                <h2>Insumos registrados</h2>
+                <p>Resumen de los insumos activos por categoría.</p>
             </div>
         </div>
 
+        {% if permisos_modulos.inventario %}
         <div class="dashboard-table-container">
             <table class="dashboard-table">
 
                 <thead>
                     <tr>
                         <th>Insumo</th>
-                        <th>Cantidad disponible</th>
-                        <th>Stock mínimo</th>
+                        <th>Categoría</th>
+                        <th>Unidad de medida</th>
                         <th>Estado</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    {% for insumo in inventario_bajo %}
+                    {% for insumo in insumos_recientes %}
                     <tr>
                         <td>{{ insumo.nombre }}</td>
-                        <td>{{ insumo.cantidad }}</td>
-                        <td>{{ insumo.stock_minimo }}</td>
+                        <td>{{ insumo.categoria.nombre }}</td>
+                        <td>{{ insumo.get_unidad_medida_display }}</td>
                         <td>
-                            <span class="status-badge status-low">
-                                Stock bajo
+                        <span class="status-badge status-active">
+                            Activo
                             </span>
                         </td>
                     </tr>
@@ -267,11 +337,14 @@
 
             </table>
         </div>
+        {% else %}
+            <div class="dashboard-module-locked"><i class="fa-solid fa-lock"></i> Tu rol no tiene permiso para consultar inventario.</div>
+        {% endif %}
     </section>
 
 
     <!-- COMPRAS RECIENTES -->
-    <section class="dashboard-section" id="compras">
+    <section class="dashboard-section{% if not permisos_modulos.compras %} dashboard-module-blocked{% endif %}" id="compras">
 
         <div class="section-heading">
             <div>
@@ -280,6 +353,7 @@
             </div>
         </div>
 
+        {% if permisos_modulos.compras %}
         <div class="dashboard-table-container">
             <table class="dashboard-table">
 
@@ -295,10 +369,10 @@
                 <tbody>
                     {% for compra in compras_recientes %}
                     <tr>
-                        <td>{{ compra.proveedor }}</td>
-                        <td>{{ compra.fecha|date:"d/m/Y" }}</td>
+                        <td>{{ compra.compra.proveedor }}</td>
+                        <td>{{ compra.compra.fecha|date:"d/m/Y" }}</td>
                         <td>{{ compra.insumo }}</td>
-                        <td>${{ compra.total }}</td>
+                        <td>${{ compra.subtotal }}</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -312,11 +386,14 @@
 
             </table>
         </div>
+        {% else %}
+            <div class="dashboard-module-locked"><i class="fa-solid fa-lock"></i> Tu rol no tiene permiso para consultar compras.</div>
+        {% endif %}
     </section>
 
 
     <!-- PRODUCTOS -->
-    <section class="dashboard-section" id="productos">
+    <section class="dashboard-section{% if not permisos_modulos.productos %} dashboard-module-blocked{% endif %}" id="productos">
 
         <div class="section-heading">
             <div>
@@ -325,6 +402,7 @@
             </div>
         </div>
 
+        {% if permisos_modulos.productos %}
         <div class="dashboard-table-container">
             <table class="dashboard-table">
 
@@ -361,6 +439,9 @@
 
             </table>
         </div>
+        {% else %}
+            <div class="dashboard-module-locked"><i class="fa-solid fa-lock"></i> Tu rol no tiene permiso para consultar productos.</div>
+        {% endif %}
     </section>
 
 </div>

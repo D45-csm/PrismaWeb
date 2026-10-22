@@ -103,6 +103,11 @@ ENV/
 .DS_Store
 *.sqlite3
 media/
+!media/
+media/*
+!media/productos/
+media/productos/*
+!media/productos/imagen_por_defecto.svg
 *.pyc
 *.db
 *.pid
