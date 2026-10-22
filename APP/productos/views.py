@@ -1,10 +1,11 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.text import slugify
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .forms import ProductoForm
-from .models import Producto, DEFAULT_PRODUCT_IMAGE
+from .models import CategoriaProducto, Producto, DEFAULT_PRODUCT_IMAGE
 
 
 def es_administrador(user):
@@ -36,15 +37,80 @@ def gestion_productos(request):
 
     if es_administrador(request.user):
         productos = Producto.objects.all().order_by('-id')
-        template = 'productos/gestion_productos.html'
+        return render(request, 'productos/gestion_productos.html', {
+            'productos': productos
+        })
 
-    else:
-        productos = Producto.objects.filter(activo=True).order_by('-id')
-        template = 'productos/lista_productos.html'
+    # Los clientes ven el catálogo completo (con buscador, filtros y modal).
+    return redirect('productos')
 
-    return render(request, template, {
-        'productos': productos
-    })
+
+def _producto_a_json(producto):
+    """Convierte un Producto a un dict apto para el catálogo en JavaScript."""
+    imagenes = [
+        imagen.url
+        for imagen in (
+            producto.imagen_principal,
+            producto.imagen_2,
+            producto.imagen_3,
+            producto.imagen_4,
+        )
+        if imagen
+    ]
+    if not imagenes:
+        imagenes = ['']
+
+    return {
+        'id': producto.id,
+        'nombre': producto.nombre,
+        'desc': producto.descripcion,
+        'precio': float(producto.precio),
+        'categoria': slugify(producto.categoria.nombre) if producto.categoria_id else 'otros',
+        'img': imagenes[0],
+        'imgs': imagenes,
+    }
+
+
+def _categorias_disponibles(productos_qs):
+    """Categorías (con su slug) presentes en un queryset de productos activos."""
+    nombres = (
+        CategoriaProducto.objects.filter(producto__in=productos_qs)
+        .distinct()
+        .order_by('nombre')
+        .values_list('nombre', flat=True)
+    )
+    return [{'nombre': nombre, 'slug': slugify(nombre)} for nombre in nombres]
+
+
+# 1-B. CATÁLOGO PÚBLICO DE PRODUCTOS (CLIENTES)
+@require_http_methods(['GET'])
+def productos_view(request):
+    productos_qs = (
+        Producto.objects.filter(activo=True)
+        .select_related('categoria')
+        .order_by('-id')
+    )
+    contexto = {
+        'productos': productos_qs,
+        'categorias': _categorias_disponibles(productos_qs),
+        'productos_data': [_producto_a_json(p) for p in productos_qs],
+    }
+    return render(request, 'productos/productos.html', contexto)
+
+
+# 1-C. CATÁLOGO DE TEMPORADA (CLIENTES)
+@require_http_methods(['GET'])
+def temporada_view(request):
+    productos_qs = (
+        Producto.objects.filter(activo=True, disponible_temporada=True)
+        .select_related('categoria')
+        .order_by('-id')
+    )
+    contexto = {
+        'productos': productos_qs,
+        'temporada_data': [_producto_a_json(p) for p in productos_qs],
+    }
+    return render(request, 'productos/temporada.html', contexto)
 
 
 # 2. CREAR PRODUCTO
