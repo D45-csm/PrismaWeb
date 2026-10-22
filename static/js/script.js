@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.body.classList.add('is-ready');
+
+    if (!prefersReducedMotion) {
+        const revealTargets = document.querySelectorAll('.reveal-entry, .section-title, .page-header, .auth-form-container, .auth-image, .product-card, .seasonal-card, .featured-card, .contact-card');
+        revealTargets.forEach((el, index) => {
+            el.style.transitionDelay = `${Math.min(index * 0.06, 0.32)}s`;
+            requestAnimationFrame(() => el.classList.add('is-visible'));
+        });
+    }
 
     // ============================================
     // 0. RUTAS DE DJANGO (definidas en base_prisma.html)
@@ -25,6 +35,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const productos = leerDatosJSON('productos-data');
     const temporada = leerDatosJSON('temporada-data');
+
+    // ============================================
+    // 1-B. REVELADO AL HACER SCROLL
+    // (definido aquí porque el grid de productos/temporada se arma con
+    // JavaScript: hay que poder observar tarjetas nuevas cada vez que se
+    // vuelven a pintar, por ejemplo al buscar o filtrar)
+    // ============================================
+    let observadorRevelado = null;
+    if ('IntersectionObserver' in window && !prefersReducedMotion) {
+        observadorRevelado = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in', 'is-visible');
+                    observadorRevelado.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.18, rootMargin: '0px 0px -40px 0px' });
+    }
+    const observarRevelado = (elementos) => {
+        if (observadorRevelado) {
+            elementos.forEach(el => observadorRevelado.observe(el));
+        } else {
+            elementos.forEach(el => { el.classList.add('animate-in', 'is-visible'); });
+        }
+    };
 
     let carrito = JSON.parse(localStorage.getItem('prismaCarrito')) || [];
     let productoActual = null;
@@ -394,6 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
+        observarRevelado(grid.querySelectorAll('.product-card'));
     };
 
     const renderTemporada = () => {
@@ -412,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
+        observarRevelado(grid.querySelectorAll('.seasonal-card'));
     };
 
     // ============================================
@@ -528,24 +565,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // 7. ANIMACIONES E INICIALIZACIÓN
     // ============================================
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('animate-in');
-            }
-        });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.product-card, .seasonal-card, .featured-card, .contact-card').forEach(el => {
-        observer.observe(el);
-    });
+    // .product-card y .seasonal-card se observan desde renderProductos() y
+    // renderTemporada() (se pintan por JS); aquí solo falta lo que ya está
+    // en el HTML desde el primer render del servidor.
+    observarRevelado(document.querySelectorAll('.featured-card, .contact-card, .section-title, [data-reveal]'));
 
     // Efecto de header al hacer scroll
     const header = document.getElementById('header');
     if (header) {
+        let scrollTicking = false;
         window.addEventListener('scroll', () => {
-            header.classList.toggle('scrolled', window.scrollY > 40);
-        });
+            if (scrollTicking) return;
+            scrollTicking = true;
+            // requestAnimationFrame evita recalcular en cada evento de scroll
+            // (pueden ser decenas por segundo) y lo alinea con el repintado
+            // del navegador: más fluido y más barato en CPU.
+            requestAnimationFrame(() => {
+                header.classList.toggle('scrolled', window.scrollY > 40);
+                scrollTicking = false;
+            });
+        }, { passive: true });
     }
 
     // Inicializar componentes según la página
@@ -659,6 +698,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const nav = document.getElementById('navMenu');
         if (nav) setMenuMovil(!nav.classList.contains('mobile-open'));
     };
+
+    const activarTransicionesDePagina = () => {
+        const links = document.querySelectorAll('a[href]');
+        links.forEach(link => {
+            if (!link.href || link.target === '_blank' || link.protocol === 'mailto:' || link.protocol === 'tel:') return;
+            link.addEventListener('click', (event) => {
+                const url = new URL(link.href, window.location.href);
+                if (url.origin !== window.location.origin) return;
+                if (event.defaultPrevented) return;
+                if (window.location.pathname === url.pathname && window.location.search === url.search) return;
+                document.body.classList.add('is-transitioning');
+            });
+        });
+    };
+    activarTransicionesDePagina();
 
     // Exponer al ámbito global lo que necesitan los onclick del HTML
     window.agregarAlCarrito = agregarAlCarrito;
