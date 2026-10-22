@@ -43,6 +43,7 @@ def redireccion_post_login(user):
 def lista_usuarios(request):
     if request.method == 'POST':
         exigir_permiso(request, 'usuarios.change_usuario')
+        exigir_permiso(request, 'auth.change_group')
         usuario_id = request.POST.get('usuario_id', '')
         if not usuario_id.isdecimal() or len(usuario_id) > 18:
             raise Http404
@@ -71,6 +72,12 @@ def lista_usuarios(request):
         'usuarios': usuarios,
         'roles': Group.objects.order_by('name'),
         'usuario_actual_id': request.user.pk,
+        'total_usuarios': Usuario.objects.count(),
+        'usuarios_activos': Usuario.objects.filter(is_active=True).count(),
+        'puede_cambiar_roles': usuario_puede_acceder(
+            request.user,
+            'auth.change_group',
+        ),
     })
 
 
