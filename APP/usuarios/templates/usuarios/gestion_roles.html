@@ -1,0 +1,124 @@
+{% extends 'base_crud.html' %}
+{% load static %}
+
+{% block title %}Gestión de roles | Prisma{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/roles_admin.css' %}">{% endblock %}
+{% block crud_page_class %}role-admin-page{% endblock %}
+
+{% block crud_header %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='GESTIÓN DE ACCESOS' title='Roles de usuario' description='Crea roles y define los permisos disponibles para cada uno.' summary_value=total_roles summary_label='roles' summary_icon='fa-solid fa-user-shield' back_url=perfil_url back_label='Volver al panel' %}
+{% endblock %}
+
+{% block crud_sidebar %}
+    <section class="admin-crud-panel role-list-panel">
+        <div class="admin-crud-panel__heading">
+            <div>
+                <span class="admin-eyebrow">ROLES REGISTRADOS</span>
+                <h2>Roles del sistema</h2>
+                <p>Elimina un rol para quitarlo de las cuentas que lo tienen asignado.</p>
+            </div>
+            <span class="admin-crud-panel__count">{{ total_roles }}</span>
+        </div>
+        <div class="role-list">
+            {% for rol in roles %}
+                <article class="role-list-item">
+                    <div class="role-list-item__info">
+                        <strong>{{ rol.name }}</strong>
+                        <span>{{ rol.usuarios_asignados }} usuario{{ rol.usuarios_asignados|pluralize:"s" }}</span>
+                    </div>
+                    <div class="role-list-item__actions">
+                        <a class="admin-button admin-button-secondary"
+                           href="{% url 'gestion_roles' %}?editar_rol={{ rol.pk }}"
+                           aria-label="Editar rol {{ rol.name }}">
+                            <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
+                        </a>
+                        <button class="admin-button admin-button-danger" type="button"
+                                aria-label="Eliminar rol {{ rol.name }}"
+                                data-role-delete-id="{{ rol.pk }}"
+                                data-role-delete-name="{{ rol.name }}">
+                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </article>
+            {% empty %}
+                <p class="role-empty">Aún no hay roles. Crea el primero con el formulario.</p>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}
+
+{% block crud_after_workspace %}
+    <dialog class="insumo-category-dialog insumo-delete-dialog" id="roleDeleteDialog"
+            aria-labelledby="roleDeleteTitle">
+        <form method="post" class="insumo-editor-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="eliminar_rol">
+            <input type="hidden" name="rol_id" data-role-delete-id-field>
+            <div class="insumo-category-dialog-header">
+                <span class="insumo-delete-icon"><i class="fa-regular fa-trash-can"></i></span>
+                <button type="button" class="insumo-dialog-close" data-close-role-delete
+                        aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <h2 id="roleDeleteTitle">¿Eliminar rol?</h2>
+            <p>Vas a eliminar <strong data-role-delete-name></strong>. Se quitará de las cuentas que lo tienen asignado
+                y esta acción no se puede deshacer.</p>
+            <div class="insumo-dialog-actions">
+                <button type="button" class="insumo-button insumo-button-filter" data-close-role-delete>
+                    Cancelar
+                </button>
+                <button type="submit" class="insumo-button insumo-button-danger">
+                    <i class="fa-regular fa-trash-can"></i> Sí, eliminar
+                </button>
+            </div>
+        </form>
+    </dialog>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/admin_crud.js' %}?v=4" defer></script>
+{% endblock %}
+
+{% block crud_main %}
+    <section class="admin-crud-panel role-editor-panel">
+        <div class="admin-crud-panel__heading">
+            <div>
+                <span class="admin-eyebrow">{% if modo_edicion %}ACTUALIZAR ROL{% else %}NUEVO REGISTRO{% endif %}</span>
+                <h2>{% if modo_edicion %}Editar rol{% else %}Crear rol{% endif %}</h2>
+                <p>Asigna un nombre y selecciona los permisos que tendrá este rol.</p>
+            </div>
+        </div>
+        <form method="post" class="role-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="{% if modo_edicion %}editar_rol{% else %}crear_rol{% endif %}">
+            {% if modo_edicion %}<input type="hidden" name="rol_id" value="{{ rol_actual.pk }}">{% endif %}
+            {% if form.non_field_errors %}
+                <div class="admin-form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="admin-form-field">
+                <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                {{ form.name }}
+                {% for error in form.name.errors %}<span class="admin-form-error">{{ error }}</span>{% endfor %}
+            </div>
+            <fieldset class="admin-form-field role-permissions">
+                <legend>{{ form.permissions.label }}</legend>
+                <p class="role-permissions-help">Selecciona únicamente los accesos necesarios. Puedes dejarlo vacío.</p>
+                <div class="role-permissions-list">
+                    {{ form.permissions }}
+                </div>
+                {% for error in form.permissions.errors %}<span class="admin-form-error">{{ error }}</span>{% endfor %}
+            </fieldset>
+            <div class="admin-form-actions">
+                {% if modo_edicion %}
+                    <a class="admin-button admin-button-secondary" href="{% url 'gestion_roles' %}">Cancelar</a>
+                {% endif %}
+                <button class="admin-button admin-button-primary" type="submit">
+                    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                    {% if modo_edicion %}Guardar cambios{% else %}Crear rol{% endif %}
+                </button>
+            </div>
+        </form>
+    </section>
+{% endblock %}

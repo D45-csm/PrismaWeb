@@ -1,0 +1,117 @@
+.role-admin-page .role-list-panel,
+.role-admin-page .role-editor-panel {
+    min-width: 0;
+}
+
+.role-list {
+    display: grid;
+    gap: 10px;
+}
+
+.role-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px;
+    border: 1px solid var(--admin-border);
+    border-radius: 13px;
+    background: #fff;
+}
+
+.role-list-item__info {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.role-list-item__info strong {
+    overflow-wrap: anywhere;
+    color: var(--admin-text);
+    font-size: 0.9rem;
+}
+
+.role-list-item__info span,
+.role-empty,
+.role-permissions-help {
+    color: var(--admin-muted);
+    font-size: 0.79rem;
+}
+
+.role-list-item__actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 7px;
+}
+
+.role-list-item__actions form {
+    margin: 0;
+}
+
+.role-list-item__actions .admin-button {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 7px 9px;
+}
+
+.role-form {
+    display: grid;
+    gap: 18px;
+}
+
+.role-permissions {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.role-permissions legend {
+    margin-bottom: 5px;
+    color: var(--admin-text);
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.role-permissions-help {
+    margin: 0 0 10px;
+}
+
+.role-permissions-list {
+    max-height: 380px;
+    overflow: auto;
+    padding: 12px;
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    background: #fbfaff;
+}
+
+.role-permissions-list ul {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.role-permissions-list li label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0;
+    color: var(--admin-text);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.role-permissions-list input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 3px;
+    accent-color: var(--admin-primary);
+}
+
+@media (max-width: 700px) {
+    .role-list-item {
+        align-items: flex-start;
+    }
+}
