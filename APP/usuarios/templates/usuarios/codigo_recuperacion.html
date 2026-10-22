@@ -1,37 +1,79 @@
 {% extends 'base_prisma.html' %}
 {% load static %}
 
-{% block title %}Código de recuperación - Prisma{% endblock %}
+{% block title %}Verificar código - Prisma{% endblock %}
 {% block body_attrs %} class="auth-page"{% endblock %}
 
 {% block content %}
     <div class="auth-container customer-auth-container customer-recovery-container">
+        <div class="auth-image">
+            <div class="auth-image-overlay"></div>
+            <div class="auth-image-text">
+                <h2>Un paso más</h2>
+                <p>Usa el código personal que guardaste al crear tu cuenta.</p>
+            </div>
+        </div>
         <div class="auth-form-container customer-auth-panel">
             <div class="auth-logo">
                 <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
             </div>
-            {% if recovery_code %}
+            {% if codigo %}
                 <h2>Guarda este código</h2>
                 <p class="auth-subtitle">
-                    Es la única vez que mostraremos este código. Guárdalo en un lugar privado; lo necesitarás junto con tu teléfono para recuperar tu cuenta.
+                    Te lo mostramos aquí para que lo copies y lo guardes con seguridad. Siempre puedes generar otro desde esta misma pantalla si lo pierdes.
                 </p>
-                <p class="recovery-code-value" aria-label="Código de recuperación">{{ recovery_code }}</p>
-                <p class="auth-subtitle">Selecciona y copia el código para guardarlo.</p>
+                <div class="recovery-code-card">
+                    <p class="recovery-code-label">Tu código personal</p>
+                    <output id="recovery-code-value" class="recovery-code-value" aria-label="Código de recuperación">{{ codigo }}</output>
+                    <button class="recovery-code-copy" type="button" data-copy-recovery-code>
+                        Copiar código
+                    </button>
+                    <p class="recovery-code-copy-status" data-copy-recovery-code-status aria-live="polite"></p>
+                </div>
+                <p class="auth-alert" role="note">No compartas este código; solo sirve para recuperar la cuenta.</p>
+
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="{{ form.code.id_for_label }}">Confirma tu código</label>
+                        {{ form.code }}
+                        {% for error in form.code.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <button type="submit" class="btn-primary btn-full">
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                        Verificar código
+                    </button>
+                </form>
             {% else %}
-                <h2>Tu código de recuperación</h2>
+                <h2>Ingresa tu código</h2>
                 <p class="auth-subtitle">
-                    El código no se puede consultar después de generarlo. Si lo perdiste, crea uno nuevo; el código anterior dejará de funcionar.
+                    Escribe tu código personal de recuperación de 8 dígitos. No caduca y solo se puede usar una vez.
                 </p>
+
+                <form method="post" action="">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                        <div class="form-error" role="alert">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label for="{{ form.code.id_for_label }}">Código de recuperación</label>
+                        {{ form.code }}
+                        {% for error in form.code.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-full">
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                        Verificar código
+                    </button>
+                </form>
             {% endif %}
-            <form method="post">
-                {% csrf_token %}
-                <button class="btn-primary btn-full" type="submit">
-                    {% if recovery_code %}Generar otro código{% else %}Generar o renovar código{% endif %}
-                </button>
-            </form>
+
             <div class="auth-switch">
-                <p><a href="{% url 'base_cliente' %}">Volver a Prisma</a></p>
+                <p><a href="{% url 'recuperar' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver a recuperar la cuenta</a></p>
+                <p><a href="{% url 'login' %}">Volver al inicio de sesión</a></p>
             </div>
+            {% if codigo %}<script src="{% static 'js/recovery_code.js' %}" defer></script>{% endif %}
         </div>
     </div>
 {% endblock %}
