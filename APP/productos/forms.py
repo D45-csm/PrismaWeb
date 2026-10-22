@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from django import forms
 
-from .models import Producto
+from .models import CategoriaProducto, Producto
 
 
 MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024
@@ -12,6 +12,34 @@ SAFE_IMAGE_EXTENSIONS = {
     'GIF': '.gif',
     'WEBP': '.webp',
 }
+
+
+class CategoriaProductoForm(forms.ModelForm):
+    class Meta:
+        model = CategoriaProducto
+        fields = ['nombre', 'descripcion']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'placeholder': 'Ej. Postres',
+                'class': 'insumo-input',
+                'autocomplete': 'off',
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'insumo-input',
+            }),
+        }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data['nombre'].strip()
+        if not nombre:
+            raise forms.ValidationError('Ingresa el nombre de la categoría.')
+        duplicado = CategoriaProducto.objects.filter(nombre__iexact=nombre)
+        if self.instance.pk:
+            duplicado = duplicado.exclude(pk=self.instance.pk)
+        if duplicado.exists():
+            raise forms.ValidationError('Ya existe una categoría con ese nombre.')
+        return nombre
 
 
 class ProductoForm(forms.ModelForm):
@@ -27,6 +55,7 @@ class ProductoForm(forms.ModelForm):
             'descripcion',
             'precio',
             'categoria',
+            'activo',
             'imagen_principal',
             'imagen_2',
             'imagen_3',

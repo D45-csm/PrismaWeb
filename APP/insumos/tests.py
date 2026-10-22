@@ -44,11 +44,16 @@ class GestionInsumosTests(TestCase):
         self.assertContains(response, 'css/admin_crud.css')
         self.assertContains(response, 'js/admin_crud.js')
         self.assertContains(response, 'class="admin-crud-sidebar insumo-sidebar"')
-        self.assertContains(response, 'admin-crud-main')
+        self.assertContains(response, 'class="admin-crud-main insumo-main-panel"')
         self.assertContains(response, f'action="{self.url}"')
         self.assertContains(response, 'class="insumo-filter-bar"')
+        self.assertContains(response, 'admin-status-filter')
+        self.assertContains(response, 'admin-status-options')
         self.assertContains(response, 'Lácteos')
         self.assertContains(response, 'Crear categoría')
+        self.assertContains(response, 'id="insumoCreateDialog"')
+        self.assertContains(response, 'admin-crud-editor-dialog')
+        self.assertContains(response, 'data-open-insumo-create')
         self.assertContains(response, 'Encuentra un insumo')
         self.assertNotContains(response, 'data-insumo-row=')
         self.assertContains(response, 'Tamaño / unidad')
@@ -258,6 +263,24 @@ class GestionInsumosTests(TestCase):
         )
         self.assertFalse(CategoriaInsumo.objects.filter(pk=categoria.pk).exists())
         self.assertRedirects(response, self.url)
+
+    def test_formulario_de_crear_insumo_abre_dialogo_si_hay_errores(self):
+        response = self.client.post(
+            self.url,
+            {
+                'accion': 'crear_insumo',
+                'nombre': '',
+                'descripcion': '',
+                'categoria': self.categoria.pk,
+                'unidad_medida': 'l',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="insumoCreateDialog"')
+        self.assertContains(response, 'data-open="crear"')
+        self.assertContains(response, 'data-open-insumo-create')
+        self.assertTrue(response.context['insumo_form'].errors)
 
     def test_eliminar_categoria_usa_confirmacion_visual_no_alerta_nativa(self):
         CategoriaInsumo.objects.create(nombre='Categoría vacía')

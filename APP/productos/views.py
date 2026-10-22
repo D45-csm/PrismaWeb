@@ -1,12 +1,12 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
 
-from .forms import ProductoForm
+from .forms import CategoriaProductoForm, ProductoForm
 from .models import CategoriaProducto, Producto, DEFAULT_PRODUCT_IMAGE
 
 
@@ -35,12 +35,33 @@ def _eliminar_imagenes_reemplazadas(producto, nombres_anteriores):
             producto.imagen_principal.storage.delete(nombre)
 
 # 1. GESTIÓN Y LISTADO DE PRODUCTOS
-def _render_admin_gestion(request, form=None, editor_mode='', producto_editar=None):
+def _render_admin_gestion(
+    request,
+    form=None,
+    editor_mode='',
+    producto_editar=None,
+    categoria_form=None,
+    editar_categoria_form=None,
+    categoria_modal='',
+):
     categorias = CategoriaProducto.objects.annotate(
         total_productos=Count('producto'),
     ).order_by('nombre')
+    categoria_editar_id = (
+        request.POST.get('categoria_id')
+        if request.method == 'POST'
+        else request.GET.get('editar_categoria')
+    )
+    categoria_seleccionada = None
+    if (
+        str(categoria_editar_id or '').isdecimal()
+        and len(str(categoria_editar_id)) <= 18
+    ):
+        categoria_seleccionada = categorias.filter(
+            pk=int(categoria_editar_id),
+        ).first()
     query = request.GET.get('q', '').strip()[:100]
-    estado = request.GET.get('estado', 'activos')
+    estado = request.GET.get('estado', 'todos')
     categoria_id = request.GET.get('categoria', '')
     productos = Producto.objects.select_related('categoria')
     if estado == 'activos':
@@ -64,6 +85,17 @@ def _render_admin_gestion(request, form=None, editor_mode='', producto_editar=No
     return render(request, 'productos/gestion_productos.html', {
         'productos': productos.order_by('-id'),
         'categorias': categorias,
+        'categoria_form': categoria_form or CategoriaProductoForm(),
+        'editar_categoria_form': editar_categoria_form or (
+            CategoriaProductoForm(
+                instance=categoria_seleccionada,
+                prefix=f'categoria-{categoria_seleccionada.pk}',
+            )
+            if categoria_seleccionada else None
+        ),
+        'categoria_modal': categoria_modal or (
+            'editar' if categoria_seleccionada else ''
+        ),
         'categoria_seleccionada': categoria_id,
         'query': query,
         'estado': estado,
@@ -74,6 +106,61 @@ def _render_admin_gestion(request, form=None, editor_mode='', producto_editar=No
         'producto_editar': producto_editar,
         'editor_mode': editor_mode,
     })
+
+
+@login_required(login_url='admin_login')
+@user_passes_test(es_administrador, login_url='admin_login')
+@require_POST
+def gestionar_categoria_producto(request):
+    accion = request.POST.get('accion')
+
+    if accion == 'crear_categoria':
+        form = CategoriaProductoForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Categoría creada correctamente.')
+            return redirect('lista_productos')
+        return _render_admin_gestion(
+            request,
+            categoria_form=form,
+            categoria_modal='crear',
+        )
+
+    categoria_id = request.POST.get('categoria_id', '')
+    if not categoria_id.isdecimal() or len(categoria_id) > 18:
+        raise Http404
+    categoria = get_object_or_404(CategoriaProducto, pk=int(categoria_id))
+
+    if accion == 'editar_categoria':
+        form = CategoriaProductoForm(
+            request.POST,
+            instance=categoria,
+            prefix=f'categoria-{categoria.pk}',
+        )
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Categoría actualizada correctamente.')
+            return redirect('lista_productos')
+        return _render_admin_gestion(
+            request,
+            editar_categoria_form=form,
+            categoria_modal='editar',
+        )
+
+    if accion == 'eliminar_categoria':
+        if Producto.objects.filter(categoria=categoria).exists():
+            messages.error(
+                request,
+                'No puedes eliminar una categoría que todavía tiene productos. '
+                'Reasigna sus productos primero.',
+            )
+            return redirect('lista_productos')
+        categoria.delete()
+        messages.success(request, 'Categoría eliminada correctamente.')
+        return redirect('lista_productos')
+
+    messages.error(request, 'No se reconoció la acción solicitada.')
+    return redirect('lista_productos')
 
 
 def gestion_productos(request):
@@ -100,7 +187,6 @@ def crear_producto(request):
         producto = form.save(commit=False)
         if not producto.imagen_principal:
             producto.imagen_principal = DEFAULT_PRODUCT_IMAGE
-        producto.activo = True
         producto.save()
         messages.success(request, 'Producto creado correctamente.')
         return redirect('lista_productos')

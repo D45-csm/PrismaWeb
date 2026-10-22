@@ -80,6 +80,16 @@
         }
     }
 
+    const createDialog = document.querySelector('#insumoCreateDialog');
+    if (createDialog) {
+        document.querySelectorAll('[data-open-insumo-create]').forEach((button) => {
+            button.addEventListener('click', () => createDialog.showModal());
+        });
+        createDialog.querySelectorAll('[data-close-insumo-create]')
+            .forEach((button) => button.addEventListener('click', () => createDialog.close()));
+        if (createDialog.dataset.open) createDialog.showModal();
+    }
+
     const dialog = document.querySelector('#insumoDialog');
     if (!dialog) return;
 

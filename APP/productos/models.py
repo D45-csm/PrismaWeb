@@ -7,7 +7,7 @@ DEFAULT_PRODUCT_IMAGE = 'productos/imagen_por_defecto.svg'
 
 class CategoriaProducto(models.Model):
     nombre = models.CharField(max_length=100)
-    descripcion = models.TextField()
+    descripcion = models.TextField(blank=True)
 
     def __str__(self):
         return self.nombre

@@ -1,70 +1,67 @@
-{% extends 'base_admin.html' %}
-{% load static %}
+{% extends 'base_crud.html' %}
 
-{% block title %}Lista de Usuarios - PRISMA{% endblock %}
+{% block title %}Lista de usuarios | Prisma{% endblock %}
 
-{% block content %}
-<link rel="stylesheet" href="{% static 'css/lista_usuarios.css' %}">
+{% block crud_page_class %}insumo-dashboard user-admin-page{% endblock %}
 
-<div class="prisma-container">
-    <!-- Botón para volver al Panel de Administración -->
-    <div class="prisma-header-nav">
-        <a href="{% url 'perfil' %}" class="btn-back">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            Volver al Panel
-        </a>
+{% block crud_header %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='DIRECTORIO PRISMA' title='Lista de usuarios' description='Consulta las cuentas registradas y su información de contacto.' summary_value=total_usuarios summary_label='usuarios' summary_icon='fa-solid fa-users' summary2_value=usuarios_activos summary2_label='usuarios activos' summary2_icon='fa-solid fa-circle-check' summary2_class='user-active-summary' back_url=perfil_url back_label='Volver al panel' %}
+{% endblock %}
+
+{% block crud_sidebar_class %}insumo-sidebar{% endblock %}
+{% block crud_sidebar %}
+    <div class="insumo-sidebar-heading">
+        <div>
+            <span class="insumo-eyebrow">COMUNIDAD</span>
+            <h2>Usuarios</h2>
+        </div>
+        <span class="insumo-count">{{ total_usuarios }}</span>
     </div>
+    <nav class="insumo-category-list" aria-label="Directorio de usuarios">
+        <div class="insumo-category-link selected">
+            <span class="insumo-category-icon"><i class="fa-solid fa-users"></i></span>
+            <span class="insumo-category-name">Registrados</span>
+            <span class="insumo-category-count">{{ total_usuarios }}</span>
+        </div>
+    </nav>
+{% endblock %}
 
-    <h1 class="prisma-title">Lista de usuarios</h1>
-    <p class="prisma-subtitle">Administra y visualiza los usuarios registrados en el sistema.</p>
-
-    <div class="prisma-card">
-        <ul class="user-list">
-            {% for usuario in usuarios %}
-                <li class="user-item">
-                    <div class="user-info-wrapper">
-                        <div class="user-icon-box">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                        </div>
-                        
-                        <div class="user-details">
-                            <div class="user-detail-group">
-                                <span class="user-detail-label">Usuario</span>
-                                <span class="user-detail-value">{{ usuario.username }}</span>
-                            </div>
-                            
-                            <div class="user-detail-group">
-                                <span class="user-detail-label">Correo</span>
-                                <span class="user-detail-value">{{ usuario.email }}</span>
-                            </div>
-                            
-                            <div class="user-detail-group">
-                                <span class="user-detail-label">Teléfono</span>
-                                <span class="user-detail-value">{{ usuario.telefono|default:"No registrado" }}</span>
-                            </div>
-                        </div>
+{% block crud_main_class %}insumo-main-panel{% endblock %}
+{% block crud_main %}
+    <div class="insumo-list-heading">
+        <div>
+            <span class="insumo-eyebrow">DIRECTORIO PRISMA</span>
+            <h2>Usuarios registrados</h2>
+            <p>Visualiza las cuentas y sus datos de contacto.</p>
+        </div>
+    </div>
+    <div class="insumo-results-label">
+        <span>{{ total_usuarios }} usuario{{ total_usuarios|pluralize }}</span>
+    </div>
+    <div class="insumo-list">
+        {% for usuario in usuarios %}
+            <article class="insumo-row insumo-row--record user-admin-row">
+                <span class="insumo-row-image" aria-hidden="true">
+                    <span><i class="fa-solid fa-user"></i></span>
+                </span>
+                <div class="insumo-row-info">
+                    <h3>{{ usuario.username }}</h3>
+                    <p>{{ usuario.email|default:"Sin correo registrado" }}</p>
+                    <div class="insumo-row-meta">
+                        <span><i class="fa-solid fa-phone"></i>{{ usuario.telefono|default:"No registrado" }}</span>
+                        <span class="insumo-status{% if not usuario.is_active %} inactive{% endif %}">
+                            {% if usuario.is_active %}Activo{% else %}Desactivado{% endif %}
+                        </span>
                     </div>
-                </li>
-            {% empty %}
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                    </div>
-                    <p class="fw-bold mb-1">No hay usuarios registrados</p>
-                    <small>Cuando se registren nuevos usuarios, aparecerán en esta sección.</small>
                 </div>
-            {% endfor %}
-        </ul>
+            </article>
+        {% empty %}
+            <div class="insumo-empty-state">
+                <span class="insumo-empty-icon"><i class="fa-solid fa-users"></i></span>
+                <h3>No hay usuarios registrados</h3>
+                <p>Cuando se registren nuevos usuarios, aparecerán en esta sección.</p>
+            </div>
+        {% endfor %}
     </div>
-</div>
 {% endblock %}
