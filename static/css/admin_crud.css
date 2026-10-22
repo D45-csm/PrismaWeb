@@ -592,6 +592,62 @@
 
 .product-editor-dialog {
     width: min(860px, calc(100vw - 32px));
+    padding: clamp(20px, 4vw, 34px);
+}
+
+.product-editor-dialog .insumo-dialog-header {
+    align-items: flex-start;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--admin-border);
+}
+
+.product-editor-dialog .insumo-dialog-header h2 {
+    margin: 5px 0 0;
+    color: var(--admin-text);
+    font-size: clamp(1.35rem, 3vw, 1.7rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+}
+
+.product-editor-description {
+    margin: 6px 0 0;
+    color: var(--admin-muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.product-editor-form {
+    gap: 18px;
+}
+
+.product-editor-dialog .product-editor-fields {
+    gap: 18px;
+}
+
+.product-editor-dialog .product-editor-fields > .insumo-field {
+    align-content: start;
+    gap: 8px;
+}
+
+.product-editor-dialog .product-editor-fields > .insumo-field > label {
+    color: var(--admin-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.product-editor-dialog .product-editor-fields > .insumo-field > .insumo-input {
+    min-height: 46px;
+    border-radius: 11px;
+    background-color: #fff;
+}
+
+.product-editor-dialog .product-editor-fields > .insumo-field > textarea.insumo-input {
+    min-height: 110px;
+    resize: vertical;
+}
+
+.product-editor-dialog .product-editor-fields > .insumo-field > .insumo-input:hover {
+    border-color: #cbb5e2;
 }
 
 .product-editor-dialog .product-editor-fields {
@@ -607,7 +663,10 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
-    padding-top: 4px;
+    padding: 16px;
+    border: 1px solid var(--admin-border);
+    border-radius: 15px;
+    background: #fcfaff;
 }
 
 .product-editor-images > .insumo-eyebrow {
@@ -616,10 +675,21 @@
 
 .product-image-field {
     min-width: 0;
-    padding: 12px;
+    padding: 14px;
     border: 1px solid var(--admin-border);
-    border-radius: 13px;
-    background: #fbfaff;
+    border-radius: 12px;
+    background: #fff;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.product-image-field:focus-within {
+    border-color: #cbb5e2;
+    box-shadow: 0 0 0 3px rgba(118, 82, 163, 0.09);
+}
+
+.product-image-field > label {
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 .product-image-preview {
@@ -638,15 +708,38 @@
 .product-image-field input[type="file"] {
     display: block;
     width: 100%;
-    min-height: 40px;
+    min-height: 44px;
+    padding: 6px;
+    border: 1px dashed #d8c9e8;
+    border-radius: 9px;
+    background: #fcfaff;
     color: var(--admin-muted);
     font: inherit;
     font-size: 0.78rem;
 }
 
+.product-image-field input[type="file"]::file-selector-button {
+    margin-right: 8px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--admin-primary-light);
+    color: var(--admin-primary-dark);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+}
+
 .product-image-field .insumo-field-checkbox {
     margin-top: 8px;
     font-size: 0.78rem;
+}
+
+.product-editor-dialog .insumo-dialog-actions {
+    justify-content: flex-end;
+    margin-top: 4px;
+    padding-top: 16px;
+    border-top: 1px solid var(--admin-border);
 }
 
 @media (max-width: 1050px) {
@@ -708,6 +801,10 @@
     .product-editor-dialog .product-editor-fields,
     .product-editor-images {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .product-editor-dialog .insumo-dialog-actions .insumo-button {
+        flex: 1 1 100%;
     }
 
     .product-editor-fields > .insumo-field:nth-child(4),

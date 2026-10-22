@@ -40,7 +40,11 @@ def redireccion_post_login(user):
 @user_passes_test(es_administrador, login_url='admin_login')
 def lista_usuarios(request):
     usuarios = Usuario.objects.all()
-    return render(request, 'usuarios/lista_usuarios.html', {'usuarios': usuarios})
+    return render(request, 'usuarios/lista_usuarios.html', {
+        'usuarios': usuarios,
+        'total_usuarios': usuarios.count(),
+        'usuarios_activos': usuarios.filter(is_active=True).count(),
+    })
 
 
 def registro_view(request):

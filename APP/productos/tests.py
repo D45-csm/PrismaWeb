@@ -97,11 +97,25 @@ class ProductoSeguridadTests(TestCase):
         self.assertContains(response, 'Crear producto')
         self.assertContains(response, 'css/admin_crud.css')
         self.assertContains(response, 'class="insumo-filter-bar"')
+        self.assertContains(response, 'class="insumo-dialog product-editor-dialog"')
+        self.assertContains(response, 'product-editor-description')
+        self.assertContains(response, 'admin-status-filter')
+        self.assertContains(response, 'admin-status-chevron')
+        self.assertContains(response, 'admin-status-options')
+        self.assertNotContains(response, 'Productos visibles')
+        self.assertNotContains(response, 'Productos ocultos')
+        self.assertNotContains(response, 'Sin filtrar por estado')
         self.assertContains(response, 'class="insumo-row insumo-row--record')
         self.assertContains(response, 'id="crudDetailDialog"')
         self.assertContains(response, 'id="crudDeleteDialog"')
         self.assertContains(response, 'data-open-crud-editor')
         self.assertContains(response, 'class="insumo-list-heading"')
+
+        response = self.client.get(
+            reverse('lista_productos'),
+            {'q': 'Torta'},
+        )
+        self.assertContains(response, 'Limpiar filtros')
 
         response = self.client.get(reverse('editar_producto', args=[self.producto.id]))
         self.assertEqual(response.status_code, 200)
@@ -132,6 +146,31 @@ class ProductoSeguridadTests(TestCase):
         self.assertContains(response, 'id="productEditorDialog"')
         self.assertContains(response, 'data-open=""')
         self.assertNotContains(response, 'data-open="editar"')
+
+    def test_lista_admin_muestra_todos_los_estados_por_defecto(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_productos_estado_predeterminado',
+            password='Clave-segura-123',
+            telefono='3005678127',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+        producto_inactivo = Producto.objects.create(
+            categoria=self.categoria,
+            nombre='Producto desactivado',
+            descripcion='Producto de prueba inactivo',
+            precio='8000.00',
+            activo=False,
+        )
+
+        response = self.client.get(reverse('lista_productos'))
+
+        self.assertEqual(response.context['estado'], 'todos')
+        self.assertEqual(
+            set(response.context['productos']),
+            {self.producto, producto_inactivo},
+        )
+        self.assertContains(response, 'value="todos" selected')
 
     def test_lista_publica_conserva_sus_estilos_de_productos(self):
         response = self.client.get(reverse('lista_productos'))
@@ -185,6 +224,109 @@ class ProductoSeguridadTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(list(response.context['productos']), [self.producto])
+
+    def test_admin_puede_crear_editar_y_eliminar_categoria_vacia(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_categorias_productos',
+            password='Clave-segura-123',
+            telefono='3001234098',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+        url = reverse('gestionar_categoria_producto')
+
+        response = self.client.post(url, {
+            'accion': 'crear_categoria',
+            'nombre': 'Bebidas',
+            'descripcion': 'Bebidas frías',
+        })
+        categoria = CategoriaProducto.objects.get(nombre='Bebidas')
+        self.assertRedirects(response, reverse('lista_productos'))
+
+        response = self.client.post(url, {
+            'accion': 'editar_categoria',
+            'categoria_id': categoria.pk,
+            f'categoria-{categoria.pk}-nombre': 'Bebidas calientes',
+            f'categoria-{categoria.pk}-descripcion': 'Bebidas calientes',
+        })
+        categoria.refresh_from_db()
+        self.assertEqual(categoria.nombre, 'Bebidas calientes')
+        self.assertRedirects(response, reverse('lista_productos'))
+
+        response = self.client.post(url, {
+            'accion': 'eliminar_categoria',
+            'categoria_id': categoria.pk,
+        })
+        self.assertRedirects(response, reverse('lista_productos'))
+        self.assertFalse(CategoriaProducto.objects.filter(pk=categoria.pk).exists())
+
+    def test_admin_puede_crear_categoria_sin_descripcion(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_categoria_sin_descripcion',
+            password='Clave-segura-123',
+            telefono='3001234101',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+
+        response = self.client.post(
+            reverse('gestionar_categoria_producto'),
+            {
+                'accion': 'crear_categoria',
+                'nombre': 'Bebidas sin descripción',
+            },
+        )
+
+        self.assertRedirects(response, reverse('lista_productos'))
+        categoria = CategoriaProducto.objects.get(nombre='Bebidas sin descripción')
+        self.assertEqual(categoria.descripcion, '')
+
+    def test_no_se_puede_eliminar_categoria_con_productos(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_categoria_producto_protegida',
+            password='Clave-segura-123',
+            telefono='3001234099',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+
+        response = self.client.post(
+            reverse('gestionar_categoria_producto'),
+            {
+                'accion': 'eliminar_categoria',
+                'categoria_id': self.categoria.pk,
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(CategoriaProducto.objects.filter(pk=self.categoria.pk).exists())
+        self.assertTrue(Producto.objects.filter(pk=self.producto.pk).exists())
+        self.assertContains(response, 'Reasigna sus productos primero.')
+
+    def test_lista_muestra_acciones_y_formularios_para_categorias(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_categoria_producto_ui',
+            password='Clave-segura-123',
+            telefono='3001234100',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+        CategoriaProducto.objects.create(
+            nombre='Categoría vacía',
+            descripcion='Sin productos',
+        )
+
+        response = self.client.get(reverse('lista_productos'))
+
+        self.assertContains(response, 'data-open-category-dialog="crear"')
+        self.assertContains(response, 'data-open-category-dialog="editar"')
+        self.assertContains(response, 'data-confirm-category-delete')
+        self.assertContains(response, 'id="categoryDialog"')
+        self.assertContains(response, 'id="deleteCategoryDialog"')
+        self.assertContains(response, 'product-category-name')
+        self.assertNotContains(response, '>Todas</span>')
+        self.assertNotContains(response, 'class="insumo-category-count">')
 
     def test_visitante_no_puede_abrir_vistas_de_escritura(self):
         rutas = (
