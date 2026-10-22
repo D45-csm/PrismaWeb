@@ -3,6 +3,7 @@ from django.urls import reverse
 
 from APP.inventario.models import Movimiento
 from APP.insumos.models import CategoriaInsumo, Insumo
+from APP.proveedores.models import Proveedor
 from APP.usuarios.models import Usuario
 
 
@@ -54,6 +55,7 @@ class GestionInsumosTests(TestCase):
         self.assertContains(response, 'id="insumoCreateDialog"')
         self.assertContains(response, 'admin-crud-editor-dialog')
         self.assertContains(response, 'data-open-insumo-create')
+        self.assertContains(response, 'Proveedor de referencia')
         self.assertContains(response, 'Encuentra un insumo')
         self.assertNotContains(response, 'data-insumo-row=')
         self.assertContains(response, 'Tamaño / unidad')
@@ -123,10 +125,23 @@ class GestionInsumosTests(TestCase):
         self.assertEqual(response.json()['nombre'], 'Leche entera')
         self.assertEqual(response.json()['categoria'], 'Lácteos')
         self.assertTrue(response.json()['activo'])
+        self.assertIsNone(response.json()['proveedor_referencia_id'])
         self.assertIn({'id': 'l', 'nombre': 'Litro'}, response.json()['unidades'])
+        self.assertEqual(response.json()['proveedores'], [])
         management_response = self.client.get(self.url)
         self.assertContains(management_response, 'insumo-dialog-delete')
         self.assertContains(management_response, 'id="deleteInsumoDialog"')
+
+    def test_crear_insumo_invalido_reabre_formulario_centrado(self):
+        response = self.client.post(
+            self.url,
+            {'accion': 'crear_insumo'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="insumoCreateDialog"')
+        self.assertContains(response, 'data-open="true"')
+        self.assertContains(response, 'Proveedor de referencia')
 
     def test_modal_actualiza_y_switch_activa_o_desactiva_insumo(self):
         url = reverse('detalle_insumo', args=[self.insumo.pk])
@@ -140,6 +155,22 @@ class GestionInsumosTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['nombre'], 'Leche deslactosada')
+        proveedor = Proveedor.objects.create(nombre='Proveedor de prueba')
+        response = self.client.post(url, {
+            'accion': 'editar_insumo',
+            f'insumo-{self.insumo.pk}-nombre': 'Leche deslactosada',
+            f'insumo-{self.insumo.pk}-descripcion': 'Leche fresca',
+            f'insumo-{self.insumo.pk}-categoria': self.categoria.pk,
+            f'insumo-{self.insumo.pk}-unidad_medida': 'l',
+            f'insumo-{self.insumo.pk}-proveedor_referencia': proveedor.pk,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()['proveedor_referencia'],
+            'Proveedor de prueba',
+        )
+        self.insumo.refresh_from_db()
+        self.assertEqual(self.insumo.proveedor_referencia, proveedor)
         self.assertEqual(
             response.json()['message'],
             'Insumo actualizado correctamente.',
@@ -278,7 +309,7 @@ class GestionInsumosTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="insumoCreateDialog"')
-        self.assertContains(response, 'data-open="crear"')
+        self.assertContains(response, 'data-open="true"')
         self.assertContains(response, 'data-open-insumo-create')
         self.assertTrue(response.context['insumo_form'].errors)
 
@@ -309,6 +340,7 @@ class GestionInsumosTests(TestCase):
 
     def test_crea_edita_y_desactiva_insumo_sin_perderlo(self):
         otra_categoria = CategoriaInsumo.objects.create(nombre='Repostería')
+        proveedor = Proveedor.objects.create(nombre='Proveedor de harina')
         response = self.client.post(
             self.url,
             {
@@ -317,9 +349,11 @@ class GestionInsumosTests(TestCase):
                 'descripcion': 'Harina de trigo',
                 'categoria': otra_categoria.pk,
                 'unidad_medida': 'kg',
+                'proveedor_referencia': proveedor.pk,
             },
         )
         harina = Insumo.objects.get(nombre='Harina')
+        self.assertEqual(harina.proveedor_referencia, proveedor)
         self.assertRedirects(response, f'{self.url}?q=Harina&campo=nombre')
 
         response = self.client.post(
@@ -331,11 +365,19 @@ class GestionInsumosTests(TestCase):
                 f'insumo-{harina.pk}-descripcion': 'Harina integral de trigo',
                 f'insumo-{harina.pk}-categoria': otra_categoria.pk,
                 f'insumo-{harina.pk}-unidad_medida': 'kg',
+                f'insumo-{harina.pk}-proveedor_referencia': '',
             },
         )
         harina.refresh_from_db()
         self.assertEqual(harina.nombre, 'Harina integral')
+        self.assertIsNone(harina.proveedor_referencia)
         self.assertRedirects(response, self.url)
+
+        harina.proveedor_referencia = proveedor
+        harina.save(update_fields=['proveedor_referencia'])
+        proveedor.delete()
+        harina.refresh_from_db()
+        self.assertIsNone(harina.proveedor_referencia)
 
         self.client.post(
             self.url,

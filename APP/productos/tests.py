@@ -195,10 +195,10 @@ class ProductoSeguridadTests(TestCase):
         self.assertContains(response, 'value="todos" selected')
 
     def test_lista_publica_conserva_sus_estilos_de_productos(self):
-        response = self.client.get(reverse('lista_productos'))
+        response = self.client.get(reverse('productos'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'css/gestion_productos.css')
+        self.assertContains(response, 'css/style.css')
 
     def test_ficha_y_estado_de_producto_siguen_el_patron_de_insumos(self):
         admin = get_user_model().objects.create_user(

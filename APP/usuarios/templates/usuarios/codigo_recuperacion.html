@@ -1,0 +1,37 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Código de recuperación - Prisma{% endblock %}
+{% block body_attrs %} class="auth-page"{% endblock %}
+
+{% block content %}
+    <div class="auth-container customer-auth-container customer-recovery-container">
+        <div class="auth-form-container customer-auth-panel">
+            <div class="auth-logo">
+                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
+            </div>
+            {% if recovery_code %}
+                <h2>Guarda este código</h2>
+                <p class="auth-subtitle">
+                    Es la única vez que mostraremos este código. Guárdalo en un lugar privado; lo necesitarás junto con tu teléfono para recuperar tu cuenta.
+                </p>
+                <p class="recovery-code-value" aria-label="Código de recuperación">{{ recovery_code }}</p>
+                <p class="auth-subtitle">Selecciona y copia el código para guardarlo.</p>
+            {% else %}
+                <h2>Tu código de recuperación</h2>
+                <p class="auth-subtitle">
+                    El código no se puede consultar después de generarlo. Si lo perdiste, crea uno nuevo; el código anterior dejará de funcionar.
+                </p>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <button class="btn-primary btn-full" type="submit">
+                    {% if recovery_code %}Generar otro código{% else %}Generar o renovar código{% endif %}
+                </button>
+            </form>
+            <div class="auth-switch">
+                <p><a href="{% url 'base_cliente' %}">Volver a Prisma</a></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}

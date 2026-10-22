@@ -13,7 +13,7 @@
         <nav class="nav-menu" id="navMenu" aria-label="Navegación principal">
             <ul>
                 <li><a class="{% if active == 'inicio' %}active{% endif %}" href="{% url 'base_cliente' %}">Inicio</a></li>
-                <li><a class="{% if active == 'productos' %}active{% endif %}" href="{% url 'lista_productos' %}">Productos</a></li>
+                <li><a class="{% if active == 'productos' %}active{% endif %}" href="{% url 'productos' %}">Productos</a></li>
                 <li><a class="{% if active == 'reservas' %}active{% endif %}" href="{% url 'reservas' %}">Reserva</a></li>
                 <li><a class="{% if active == 'contactos' %}active{% endif %}" href="{% url 'contactos' %}">Contacto</a></li>
             </ul>

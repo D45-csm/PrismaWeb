@@ -90,7 +90,7 @@
         <button type="submit" class="insumo-button insumo-button-filter">Buscar</button>
         {% if query or categoria_seleccionada or estado != 'todos' %}
             <a class="insumo-clear-filter" href="{% url 'lista_productos' %}">
-                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Limpiar
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Limpiar filtros
             </a>
         {% endif %}
     </form>

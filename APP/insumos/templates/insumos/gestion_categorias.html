@@ -134,6 +134,7 @@
                              data-categoria-id="{{ insumo.categoria_id }}"
                              data-categoria="{{ insumo.categoria.nombre }}"
                              data-unidad="{{ insumo.get_unidad_medida_display }}"
+                             data-proveedor="{{ insumo.proveedor_referencia.nombre|default:'' }}"
                              data-activo="{{ insumo.activo|yesno:'true,false' }}"
                              data-active-before-update="{{ insumo.activo|yesno:'true,false' }}">
                         <div class="insumo-row-info">
@@ -147,6 +148,7 @@
                             <div class="insumo-row-meta">
                                 <span><i class="fa-solid fa-tag"></i> {{ insumo.categoria.nombre }}</span>
                                 <span><i class="fa-solid fa-scale-balanced"></i> {{ insumo.get_unidad_medida_display }}</span>
+                                <span class="insumo-row-supplier"><i class="fa-solid fa-truck-field"></i> {{ insumo.proveedor_referencia.nombre|default:"Sin proveedor" }}</span>
                                 <span class="insumo-status{% if not insumo.activo %} inactive{% endif %}">
                                     {% if insumo.activo %}Activo{% else %}Desactivado{% endif %}
                                 </span>
@@ -178,9 +180,9 @@
 {% endblock %}
 
 {% block crud_after_workspace %}
-<dialog class="insumo-category-dialog admin-crud-editor-dialog" id="insumoCreateDialog"
+<dialog class="insumo-category-dialog insumo-create-dialog admin-crud-editor-dialog" id="insumoCreateDialog"
         aria-labelledby="insumoCreateTitle"
-        data-open="{% if insumo_form.errors and not insumo_form.instance.pk %}crear{% endif %}">
+        data-open="{% if insumo_form.errors and not insumo_form.instance.pk %}true{% endif %}">
     <form method="post" enctype="multipart/form-data" class="insumo-editor-form">
         {% csrf_token %}
         <input type="hidden" name="accion" value="crear_insumo">
@@ -335,6 +337,7 @@
             <div class="insumo-dialog-meta">
                 <span class="insumo-dialog-category"></span>
                 <span class="insumo-dialog-unit"></span>
+                <span class="insumo-dialog-supplier"></span>
                 <span class="insumo-dialog-status"></span>
             </div>
         </div>

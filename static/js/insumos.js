@@ -1,4 +1,17 @@
 (() => {
+    const createInsumoDialog = document.querySelector('#insumoCreateDialog');
+    if (createInsumoDialog) {
+        document.querySelectorAll('[data-open-insumo-create]').forEach((button) => {
+            button.addEventListener('click', () => createInsumoDialog.showModal());
+        });
+        createInsumoDialog.querySelectorAll('[data-close-insumo-create]').forEach((button) => {
+            button.addEventListener('click', () => createInsumoDialog.close());
+        });
+        if (createInsumoDialog.dataset.open === 'true') {
+            createInsumoDialog.showModal();
+        }
+    }
+
     const deleteDialog = document.querySelector('#deleteCategoryDialog');
     if (deleteDialog) {
         const categoryId = deleteDialog.querySelector('#deleteCategoryId');
@@ -127,6 +140,8 @@
             item.descripcion || 'Aún no tiene descripción.';
         dialog.querySelector('.insumo-dialog-category').textContent = `Categoría: ${item.categoria}`;
         dialog.querySelector('.insumo-dialog-unit').textContent = `Unidad: ${item.unidad_medida_display}`;
+        dialog.querySelector('.insumo-dialog-supplier').textContent =
+            `Proveedor: ${item.proveedor_referencia || 'Sin proveedor'}`;
 
         const status = dialog.querySelector('.insumo-dialog-status');
         status.textContent = item.activo ? 'Activo' : 'Desactivado';
@@ -166,6 +181,24 @@
             category.append(option);
         });
         fields.append(makeField('Categoría', `${prefix}-categoria`, category));
+
+        const supplier = document.createElement('select');
+        const noSupplier = document.createElement('option');
+        noSupplier.value = '';
+        noSupplier.textContent = 'Sin proveedor';
+        supplier.append(noSupplier);
+        item.proveedores.forEach((supplierItem) => {
+            const option = document.createElement('option');
+            option.value = supplierItem.id;
+            option.textContent = supplierItem.nombre;
+            option.selected = String(supplierItem.id) === String(item.proveedor_referencia_id);
+            supplier.append(option);
+        });
+        fields.append(makeField(
+            'Proveedor de referencia',
+            `${prefix}-proveedor_referencia`,
+            supplier,
+        ));
 
         const unit = document.createElement('select');
         item.unidades.forEach((unitItem) => {
@@ -314,16 +347,23 @@
                 item.descripcion || 'Sin descripción';
             const categoryLabel = row.querySelector('.insumo-row-meta > span:first-child');
             const unitLabel = row.querySelector('.insumo-row-meta > span:nth-child(2)');
+            const supplierLabel = row.querySelector('.insumo-row-supplier');
             const categoryIcon = categoryLabel.querySelector('i');
             const unitIcon = unitLabel.querySelector('i');
+            const supplierIcon = supplierLabel.querySelector('i');
             categoryLabel.replaceChildren(categoryIcon, document.createTextNode(` ${item.categoria}`));
             unitLabel.replaceChildren(
                 unitIcon,
                 document.createTextNode(` ${item.unidad_medida_display}`),
             );
+            supplierLabel.replaceChildren(
+                supplierIcon,
+                document.createTextNode(` ${item.proveedor_referencia || 'Sin proveedor'}`),
+            );
             if (item.categoria_id) row.dataset.categoriaId = item.categoria_id;
             row.dataset.categoria = item.categoria;
             row.dataset.unidad = item.unidad_medida_display;
+            row.dataset.proveedor = item.proveedor_referencia || '';
         }
         if (typeof item.activo === 'boolean') {
             row.dataset.activo = String(item.activo);

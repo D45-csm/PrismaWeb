@@ -380,6 +380,15 @@ button, input, textarea, select { font-family: inherit; outline: none; }
 }
 .btn-add:hover { background: var(--magenta); }
 
+.sin-productos-card {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--blanco);
+    border: 1px dashed #d1d5db;
+    border-radius: 14px;
+}
+.sin-productos { color: var(--gris); margin: 0; font-size: 1rem; }
+
 /* ============================================
    11. TEMPORADA
    ============================================ */
@@ -700,6 +709,22 @@ button, input, textarea, select { font-family: inherit; outline: none; }
 .customer-login-form-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 22px; flex-wrap: wrap; }
 .customer-login-form-options .remember-me { margin: 0; }
 .customer-login-form-options .remember-me input { flex: 0 0 auto; accent-color: var(--magenta); }
+.customer-password-control { position: relative; }
+.customer-password-control input { padding-right: 96px; }
+.customer-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    padding: 8px;
+    border: 0;
+    background: transparent;
+    color: var(--magenta);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+.customer-password-toggle:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; border-radius: 6px; }
 .customer-recovery-link {
     display: flex;
     align-items: center;
@@ -718,6 +743,15 @@ button, input, textarea, select { font-family: inherit; outline: none; }
 .customer-auth-container .auth-logo { margin-bottom: 26px; }
 .customer-auth-container .auth-logo img { width: 58px; height: 58px; }
 .customer-auth-container .auth-subtitle { margin-bottom: 26px; }
+.customer-recovery-container { min-height: 100vh; }
+.customer-recovery-container .auth-image { background-image: url('../img/imagen_registro.jpeg'); }
+.customer-recovery-container .auth-form-container { max-width: 720px; margin: 0 auto; }
+.customer-recovery-container .auth-logo { margin-bottom: 26px; }
+.customer-recovery-container .auth-logo img { width: 58px; height: 58px; }
+.customer-recovery-container .auth-form-container > h2 { text-align: left; font-size: clamp(2.3rem, 5vw, 3.2rem); line-height: 1.1; }
+.customer-recovery-container .auth-subtitle { text-align: left; margin-bottom: 26px; }
+.customer-recovery-container .auth-form-container form { width: 100%; }
+.customer-recovery-container .auth-switch { margin-top: 18px; }
 .auth-row {
     display: flex;
     align-items: center;
