@@ -7,6 +7,8 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from APP.proveedores.models import Proveedor
+
 from .forms import CategoriaInsumoForm, InsumoForm
 from .models import CategoriaInsumo, Insumo
 
@@ -25,7 +27,10 @@ def _get_posted_object(model, value):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_http_methods(['GET', 'POST'])
 def detalle_insumo(request, pk):
-    insumo = get_object_or_404(Insumo.objects.select_related('categoria'), pk=pk)
+    insumo = get_object_or_404(
+        Insumo.objects.select_related('categoria', 'proveedor_referencia'),
+        pk=pk,
+    )
 
     if request.method == 'GET':
         return JsonResponse({
@@ -36,6 +41,14 @@ def detalle_insumo(request, pk):
             'categoria_id': insumo.categoria_id,
             'categorias': list(
                 CategoriaInsumo.objects.order_by('nombre').values('id', 'nombre')
+            ),
+            'proveedor_referencia': (
+                insumo.proveedor_referencia.nombre
+                if insumo.proveedor_referencia else ''
+            ),
+            'proveedor_referencia_id': insumo.proveedor_referencia_id,
+            'proveedores': list(
+                Proveedor.objects.order_by('nombre').values('id', 'nombre')
             ),
             'unidad_medida': insumo.unidad_medida,
             'unidad_medida_display': insumo.get_unidad_medida_display(),
@@ -68,6 +81,11 @@ def detalle_insumo(request, pk):
             'descripcion': insumo.descripcion or '',
             'categoria': insumo.categoria.nombre,
             'categoria_id': insumo.categoria_id,
+            'proveedor_referencia': (
+                insumo.proveedor_referencia.nombre
+                if insumo.proveedor_referencia else ''
+            ),
+            'proveedor_referencia_id': insumo.proveedor_referencia_id,
             'unidad_medida': insumo.unidad_medida,
             'unidad_medida_display': insumo.get_unidad_medida_display(),
             'imagen': insumo.imagen.url if insumo.imagen else '',
@@ -125,7 +143,7 @@ def _render_gestion(
     if campo not in ('nombre', 'categoria', 'tamano'):
         campo = 'nombre'
     estado = request.GET.get('estado', 'activos')
-    insumos = Insumo.objects.select_related('categoria')
+    insumos = Insumo.objects.select_related('categoria', 'proveedor_referencia')
 
     if estado == 'activos':
         insumos = insumos.filter(activo=True)
