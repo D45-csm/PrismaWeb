@@ -1,31 +1,39 @@
-from smtplib import SMTPException
+import logging
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import send_mail
-from django.db import transaction
-from django.http import Http404
 from django.db.models import F, Sum
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
 from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.http import (
+    url_has_allowed_host_and_scheme,
+    urlsafe_base64_decode,
+    urlsafe_base64_encode,
+)
+from django.views.decorators.http import require_POST, require_http_methods
 
-from .forms import AdminLoginForm, LoginForm, RegistroForm
+from .forms import (
+    AdminLoginForm,
+    LoginForm,
+    NuevaContrasenaForm,
+    RecuperarPasswordForm,
+    RegistroForm,
+)
 from .models import Usuario
-from .tokens import email_verification_token
 from APP.compra_insumos.models import DetalleCompraInsumo
 from APP.insumos.models import Insumo
 from APP.productos.models import Producto
 from APP.reserva.models import Reserva
 from APP.ventas.models import DetalleVenta
+
+logger = logging.getLogger(__name__)
 
 
 def es_administrador(user):
@@ -50,70 +58,20 @@ def registro_view(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
-            try:
-                with transaction.atomic():
-                    usuario = form.save()
-                    uid = urlsafe_base64_encode(force_bytes(usuario.pk))
-                    token = email_verification_token.make_token(usuario)
-                    current_site = get_current_site(request)
-                    verification_url = (
-                        f'{"https" if request.is_secure() else "http"}://'
-                        f'{current_site.domain}'
-                        f'{reverse("verificar_correo", kwargs={"uidb64": uid, "token": token})}'
-                    )
-                    send_mail(
-                        'Confirma tu correo de Prisma',
-                        (
-                            f'Hola {usuario.username},\n\n'
-                            'Confirma que este correo te pertenece abriendo este enlace:\n'
-                            f'{verification_url}\n\n'
-                            f'Si no creaste una cuenta en {current_site.name}, ignora este mensaje.'
-                        ),
-                        None,
-                        [usuario.email],
-                        fail_silently=False,
-                    )
-            except (OSError, SMTPException, ImproperlyConfigured, ValueError):
-                form.add_error(
-                    None,
-                    'No pudimos enviar el correo de verificación. Revisa la configuración del correo e inténtalo otra vez.',
-                )
-            else:
-                messages.success(
-                    request,
-                    'Te enviamos un enlace de verificación. Confirma tu correo antes de iniciar sesión.',
-                )
-                return redirect('registro')
+            usuario = form.save()
+            login(request, usuario)
+            messages.success(request, 'Tu cuenta Prisma está lista. ¡Bienvenido!')
+            return redirect('base_cliente')
     else:
         form = RegistroForm()
     return render(request, 'usuarios/registro.html', {'form': form})
-
-
-def verificar_correo_view(request, uidb64, token):
-    try:
-        user_id = force_str(urlsafe_base64_decode(uidb64))
-        usuario = Usuario.objects.get(pk=user_id)
-    except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
-        raise Http404('El enlace de verificación no es válido.')
-
-    if usuario.is_active:
-        messages.info(request, 'Este correo ya fue verificado. Inicia sesión para continuar.')
-        return redirect('login')
-    if not email_verification_token.check_token(usuario, token):
-        messages.error(request, 'El enlace de verificación venció o no es válido.')
-        return redirect('registro')
-
-    usuario.is_active = True
-    usuario.save(update_fields=['is_active'])
-    login(request, usuario)
-    messages.success(request, 'Correo verificado. Tu cuenta de cliente está lista.')
-    return redirect('base_cliente')
 
 
 def login_view(request):
     if request.user.is_authenticated:
         return redirect(redireccion_post_login(request.user))
 
+    next_url = request.POST.get('next') or request.GET.get('next', '')
     if request.method == 'POST':
         form = LoginForm(request=request, data=request.POST)
         if form.is_valid():
@@ -123,10 +81,19 @@ def login_view(request):
             else:
                 request.session.set_expiry(0)
             messages.success(request, 'Inicio de sesión exitoso.')
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                return redirect(next_url)
             return redirect('base_cliente')
     else:
         form = LoginForm()
-    return render(request, 'usuarios/login.html', {'form': form})
+    return render(request, 'usuarios/login.html', {
+        'form': form,
+        'next': next_url,
+    })
 
 
 def admin_login_view(request):
@@ -148,28 +115,96 @@ def admin_login_view(request):
     )
 
 
+def _enviar_correo_recuperacion(request, usuario):
+    uid = urlsafe_base64_encode(force_bytes(usuario.pk))
+    token = default_token_generator.make_token(usuario)
+    enlace = request.build_absolute_uri(
+        reverse('recuperar_confirmar', kwargs={'uidb64': uid, 'token': token})
+    )
+    asunto = 'Recupera tu contraseña - Prisma'
+    mensaje = render_to_string('usuarios/email/recuperar_contrasena.txt', {
+        'usuario': usuario,
+        'enlace': enlace,
+    })
+    try:
+        send_mail(
+            asunto,
+            mensaje,
+            settings.DEFAULT_FROM_EMAIL,
+            [usuario.email],
+            fail_silently=False,
+        )
+    except Exception:
+        logger.exception('No se pudo enviar el correo de recuperación de contraseña.')
+
+
+@require_http_methods(['GET', 'POST'])
 def recuperar_view(request):
-    return render(request, 'usuarios/recuperar.html')
+    """Primer paso de la recuperación de contraseña: el cliente pide el enlace a su correo."""
+    if request.method == 'POST':
+        form = RecuperarPasswordForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email'].strip().lower()
+            usuario = Usuario.objects.filter(
+                email__iexact=email,
+                is_active=True,
+                is_staff=False,
+                is_superuser=False,
+            ).first()
+            if usuario:
+                _enviar_correo_recuperacion(request, usuario)
+
+            # Mismo mensaje exista o no la cuenta: evita revelar qué correos están registrados.
+            messages.success(
+                request,
+                'Si el correo está registrado, te enviamos un enlace para '
+                'restablecer tu contraseña. Revisa tu bandeja de entrada y spam.',
+            )
+            return redirect('recuperar')
+    else:
+        form = RecuperarPasswordForm()
+
+    return render(request, 'usuarios/recuperar.html', {'form': form})
 
 
-class ClientePasswordResetView(auth_views.PasswordResetView):
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['email_console'] = (
-            settings.EMAIL_BACKEND
-            == 'django.core.mail.backends.console.EmailBackend'
+@require_http_methods(['GET', 'POST'])
+def recuperar_confirmar_view(request, uidb64, token):
+    """Segundo paso: el cliente define su nueva contraseña desde el enlace del correo."""
+    usuario = None
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        usuario = Usuario.objects.get(
+            pk=uid,
+            is_active=True,
+            is_staff=False,
+            is_superuser=False,
         )
-        return context
+    except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
+        usuario = None
 
+    token_valido = usuario is not None and default_token_generator.check_token(usuario, token)
 
-class ClientePasswordResetDoneView(auth_views.PasswordResetDoneView):
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['email_console'] = (
-            settings.EMAIL_BACKEND
-            == 'django.core.mail.backends.console.EmailBackend'
-        )
-        return context
+    if not token_valido:
+        return render(request, 'usuarios/recuperar_confirmar.html', {
+            'token_valido': False,
+        })
+
+    if request.method == 'POST':
+        form = NuevaContrasenaForm(usuario, request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                'Tu contraseña fue actualizada correctamente. Ya puedes iniciar sesión.',
+            )
+            return redirect('login')
+    else:
+        form = NuevaContrasenaForm(usuario)
+
+    return render(request, 'usuarios/recuperar_confirmar.html', {
+        'token_valido': True,
+        'form': form,
+    })
 
 
 @require_POST
