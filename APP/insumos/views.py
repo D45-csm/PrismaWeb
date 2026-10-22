@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count
+from django.db.models.deletion import ProtectedError
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -48,6 +49,26 @@ def detalle_insumo(request, pk):
         })
 
     accion = request.POST.get('accion')
+    if accion == 'eliminar_insumo':
+        try:
+            insumo.delete()
+        except ProtectedError:
+            return JsonResponse(
+                {
+                    'error': (
+                        'No se puede eliminar este insumo porque tiene movimientos '
+                        'de inventario o compras asociados. Puedes marcarlo como '
+                        'no disponible.'
+                    ),
+                },
+                status=409,
+            )
+        return JsonResponse({
+            'id': pk,
+            'deleted': True,
+            'message': 'Insumo eliminado correctamente.',
+        })
+
     if accion == 'editar_insumo':
         form = InsumoForm(
             request.POST,
