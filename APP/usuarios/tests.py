@@ -1,10 +1,11 @@
-from django.contrib.auth.tokens import default_token_generator
+from datetime import timedelta
+
+from django.contrib.auth.hashers import check_password, make_password
 from django.core import mail
 from django.test import TestCase
 from django.conf import settings
 from django.urls import reverse
-from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
+from django.utils import timezone
 
 from APP.insumos.models import CategoriaInsumo, Insumo
 
@@ -19,6 +20,9 @@ class AccesoUsuarioTests(TestCase):
             telefono='3001234567',
             password='Clave-segura-2026!',
         )
+        self.codigo_recuperacion = '34890127'
+        self.cliente.recovery_code_hash = make_password(self.codigo_recuperacion)
+        self.cliente.save(update_fields=['recovery_code_hash'])
         self.administrador = Usuario.objects.create_user(
             username='admin',
             email='admin@example.com',
@@ -150,12 +154,22 @@ class AccesoUsuarioTests(TestCase):
         self.assertContains(response_cliente, 'data-password-toggle')
         self.assertContains(response_cliente, 'name="username"')
         self.assertContains(response_cliente, 'name="password"')
+        self.assertContains(
+            response_cliente,
+            f'?next={reverse("codigo_recuperacion_cuenta")}',
+        )
+        self.assertContains(response_cliente, 'Recordarme en este dispositivo')
+        self.assertContains(response_cliente, 'logo_prisma.png')
         self.assertNotContains(response_cliente, 'Google')
         self.assertNotContains(response_cliente, 'google')
         self.assertNotContains(response_cliente, 'Próximamente')
+        self.assertNotContains(response_admin, 'Código de recuperación')
         self.assertNotContains(response_admin, 'Recordarme en este dispositivo')
         self.assertNotContains(response_admin, '¿Olvidaste tu contraseña?')
         self.assertNotContains(response_admin, 'data-password-toggle')
+
+        response_home = self.client.get(reverse('base_cliente'))
+        self.assertNotContains(response_home, 'Código de recuperación')
 
     def test_login_redirige_a_destino_local_y_rechaza_destino_externo(self):
         response = self.client.post(
@@ -180,16 +194,47 @@ class AccesoUsuarioTests(TestCase):
         )
         self.assertRedirects(response, reverse('base_cliente'))
 
-    def test_recuperacion_envia_correo_si_el_cliente_existe(self):
+    def test_enlace_codigo_en_login_lleva_al_codigo_tras_autenticar_cliente(self):
+        url_codigo = reverse('codigo_recuperacion_cuenta')
+        response = self.client.get(url_codigo)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response['Location'])
+        self.assertIn('next=', response['Location'])
+
+        response = self.client.get(response['Location'])
+        self.assertContains(response, f'value="{url_codigo}"')
+        self.assertContains(response, 'te llevaremos a generar o renovar tu código')
+        response = self.client.post(
+            response.request['PATH_INFO'] + '?' + response.request['QUERY_STRING'],
+            {
+                'username': self.cliente.email,
+                'password': 'Clave-segura-2026!',
+                'next': url_codigo,
+            },
+        )
+        self.assertRedirects(response, url_codigo)
+        response = self.client.get(url_codigo)
+        self.assertContains(response, 'Generar un código nuevo')
+
+        response = self.client.post(url_codigo, follow=True)
+        self.assertContains(response, 'Guarda tu código')
+        self.assertRegex(response.context['codigo'], r'^[0-9]{8}$')
+
+    def test_recuperacion_usa_codigo_guardado_sin_enviar_correo(self):
+        response = self.client.get(reverse('recuperar'))
+        self.assertContains(response, 'No enviamos correos ni mensajes')
+
         response = self.client.post(
             reverse('recuperar'),
             {'email': self.cliente.email},
             follow=True,
         )
 
-        self.assertContains(response, 'Si el correo está registrado')
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertIn(self.cliente.email, mail.outbox[0].to)
+        self.assertContains(response, 'Ingresa el código de recuperación')
+        self.assertEqual(len(mail.outbox), 0)
+        self.cliente.refresh_from_db()
+        self.assertTrue(check_password(self.codigo_recuperacion, self.cliente.recovery_code_hash))
 
     def test_recuperacion_no_revela_si_el_correo_no_existe(self):
         response = self.client.post(
@@ -198,7 +243,7 @@ class AccesoUsuarioTests(TestCase):
             follow=True,
         )
 
-        self.assertContains(response, 'Si el correo está registrado')
+        self.assertContains(response, 'Ingresa el código de recuperación')
         self.assertEqual(len(mail.outbox), 0)
 
     def test_recuperacion_no_envia_correo_para_cuentas_administrativas(self):
@@ -208,19 +253,26 @@ class AccesoUsuarioTests(TestCase):
             follow=True,
         )
 
-        self.assertContains(response, 'Si el correo está registrado')
+        self.assertContains(response, 'Ingresa el código de recuperación')
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_cliente_puede_restablecer_su_contrasena_con_el_enlace(self):
-        uid = urlsafe_base64_encode(force_bytes(self.cliente.pk))
-        token = default_token_generator.make_token(self.cliente)
-        url = reverse('recuperar_confirmar', kwargs={'uidb64': uid, 'token': token})
+    def test_cliente_restablece_contrasena_con_codigo_de_un_solo_uso(self):
+        self.client.post(reverse('recuperar'), {'email': self.cliente.email})
 
-        response = self.client.get(url)
+        response = self.client.post(
+            reverse('recuperar_codigo'),
+            {'code': self.codigo_recuperacion},
+        )
+        self.assertRedirects(response, reverse('recuperar_nueva_contrasena'))
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.recovery_code_hash, '')
+        self.assertTrue(self.cliente.recovery_reset_grant_hash)
+
+        response = self.client.get(reverse('recuperar_nueva_contrasena'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Crea tu nueva contraseña')
 
-        response = self.client.post(url, {
+        response = self.client.post(reverse('recuperar_nueva_contrasena'), {
             'new_password1': 'Otra-clave-mas-segura-2026!',
             'new_password2': 'Otra-clave-mas-segura-2026!',
         })
@@ -228,14 +280,122 @@ class AccesoUsuarioTests(TestCase):
 
         self.cliente.refresh_from_db()
         self.assertTrue(self.cliente.check_password('Otra-clave-mas-segura-2026!'))
+        self.assertEqual(self.cliente.recovery_reset_grant_hash, '')
+        self.assertFalse(self.client.session.get('password_reset_nonce'))
 
-    def test_enlace_de_recuperacion_invalido_no_permite_cambiar_la_contrasena(self):
-        uid = urlsafe_base64_encode(force_bytes(self.cliente.pk))
-        url = reverse('recuperar_confirmar', kwargs={'uidb64': uid, 'token': 'token-invalido'})
+        response = self.client.post(
+            reverse('recuperar_codigo'),
+            {'code': self.codigo_recuperacion},
+        )
+        self.assertRedirects(response, reverse('recuperar'))
+        self.cliente.refresh_from_db()
+        self.assertTrue(self.cliente.check_password('Otra-clave-mas-segura-2026!'))
 
-        response = self.client.get(url)
+    def test_codigo_se_bloquea_despues_de_cinco_intentos_incorrectos(self):
+        self.client.post(reverse('recuperar'), {'email': self.cliente.email})
+
+        for intento in range(5):
+            with self.subTest(intento=intento + 1):
+                response = self.client.post(
+                    reverse('recuperar_codigo'),
+                    {
+                        'code': '00000000'
+                        if self.codigo_recuperacion != '00000000'
+                        else '11111111'
+                    },
+                )
+                self.assertEqual(response.status_code, 200)
+
+        self.cliente.refresh_from_db()
+        self.assertTrue(check_password(
+            self.codigo_recuperacion,
+            self.cliente.recovery_code_hash,
+        ))
+        self.assertEqual(self.cliente.recovery_code_attempts, 5)
+        self.assertGreater(self.cliente.recovery_code_locked_until, timezone.now())
+        response = self.client.post(
+            reverse('recuperar_codigo'),
+            {'code': self.codigo_recuperacion},
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Este enlace ya no es válido')
+        self.assertNotIn('password_reset_user_id', self.client.session)
+
+    def test_codigo_bloqueado_se_puede_usar_tras_quince_minutos(self):
+        self.client.post(reverse('recuperar'), {'email': self.cliente.email})
+        Usuario.objects.filter(pk=self.cliente.pk).update(
+            recovery_code_attempts=5,
+            recovery_code_locked_until=timezone.now() - timedelta(seconds=1),
+        )
+
+        response = self.client.post(
+            reverse('recuperar_codigo'),
+            {'code': self.codigo_recuperacion},
+        )
+
+        self.assertRedirects(response, reverse('recuperar_nueva_contrasena'))
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.recovery_code_hash, '')
+        self.assertIsNone(self.cliente.recovery_code_locked_until)
+
+    def test_autorizacion_temporal_para_crear_contrasena_tambien_caduca(self):
+        self.client.post(reverse('recuperar'), {'email': self.cliente.email})
+        self.client.post(
+            reverse('recuperar_codigo'),
+            {'code': self.codigo_recuperacion},
+        )
+        Usuario.objects.filter(pk=self.cliente.pk).update(
+            recovery_reset_grant_expires_at=timezone.now() - timedelta(seconds=1),
+        )
+
+        response = self.client.get(reverse('recuperar_nueva_contrasena'))
+
+        self.assertRedirects(response, reverse('recuperar'))
+        self.cliente.refresh_from_db()
+        self.assertTrue(self.cliente.check_password('Clave-segura-2026!'))
+
+    def test_pantallas_de_recuperacion_tienen_diseno_con_imagen_lateral_y_codigo(self):
+        response = self.client.get(reverse('recuperar'))
+        self.assertContains(response, 'customer-recovery-container')
+        self.assertContains(response, 'Continuar')
+        self.assertContains(response, 'logo_prisma.png')
+
+        self.client.post(reverse('recuperar'), {'email': self.cliente.email})
+        response = self.client.get(reverse('recuperar_codigo'))
+        self.assertContains(response, 'código personal que guardaste')
+
+    def test_cliente_puede_generar_y_ver_su_codigo_una_sola_vez_con_sesion(self):
+        self.client.force_login(self.cliente)
+        response = self.client.get(reverse('codigo_recuperacion_cuenta'))
+        self.assertContains(response, 'Generar un código nuevo')
+        self.assertNotContains(response, self.codigo_recuperacion)
+        self.assertIn('no-store', response['Cache-Control'])
+
+        response = self.client.post(
+            reverse('codigo_recuperacion_cuenta'),
+            follow=True,
+        )
+        self.assertContains(response, 'Guarda tu código')
+        codigo_generado = response.context['codigo']
+        self.assertRegex(codigo_generado, r'^[0-9]{8}$')
+        self.assertContains(response, 'recovery-code-card')
+        self.assertContains(response, 'Copiar código')
+        self.assertContains(response, 'tomar una captura')
+        self.assertNotIn('codigo_recuperacion_mostrar', self.client.session)
+
+        response = self.client.get(reverse('codigo_recuperacion_cuenta'))
+        self.assertNotContains(response, codigo_generado)
+        self.cliente.refresh_from_db()
+        self.assertTrue(check_password(codigo_generado, self.cliente.recovery_code_hash))
+        self.assertFalse(check_password(self.codigo_recuperacion, self.cliente.recovery_code_hash))
+
+    def test_administrador_no_puede_generar_codigo_de_recuperacion_de_cliente(self):
+        self.client.force_login(self.administrador)
+
+        response = self.client.get(reverse('codigo_recuperacion_cuenta'))
+
+        self.assertRedirects(response, reverse('perfil'))
+        self.administrador.refresh_from_db()
+        self.assertEqual(self.administrador.recovery_code_hash, '')
 
     def test_rechaza_contrasena_incorrecta_y_accesos_cruzados(self):
         for url_name, email in (
@@ -305,14 +465,58 @@ class AccesoUsuarioTests(TestCase):
             },
         )
 
-        self.assertRedirects(response, reverse('base_cliente'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response['Location'],
+            reverse('codigo_recuperacion_cuenta'),
+        )
         usuario = Usuario.objects.get(username='nueva')
         self.assertTrue(usuario.is_active)
         self.assertFalse(usuario.is_staff)
+        self.assertTrue(usuario.recovery_code_hash)
+        self.assertRegex(
+            self.client.session['codigo_recuperacion_mostrar'],
+            r'^[0-9]{8}$',
+        )
         self.assertEqual(
             self.client.session['_auth_user_id'],
             str(usuario.pk),
         )
+
+    def test_registro_muestra_sesion_iniciada_y_permite_cerrar_sesion_desde_inicio(self):
+        response = self.client.post(
+            reverse('registro'),
+            {
+                'username': 'nueva',
+                'email': 'nueva@example.com',
+                'telefono': '3111234567',
+                'password1': 'Fuerte-password-2026!',
+                'password2': 'Fuerte-password-2026!',
+            },
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse('codigo_recuperacion_cuenta'))
+        self.assertContains(response, 'Tu cuenta Prisma está lista. ¡Bienvenido!')
+        self.assertContains(response, 'Guarda tu código')
+        codigo = response.context['codigo']
+        self.assertRegex(codigo, r'^[0-9]{8}$')
+        self.assertNotIn('codigo_recuperacion_mostrar', self.client.session)
+        usuario = Usuario.objects.get(username='nueva')
+        self.assertTrue(check_password(codigo, usuario.recovery_code_hash))
+
+        response = self.client.get(reverse('login'))
+        self.assertRedirects(response, reverse('base_cliente'))
+        self.assertEqual(
+            self.client.session['_auth_user_id'],
+            str(Usuario.objects.get(username='nueva').pk),
+        )
+
+        response = self.client.post(reverse('logout'), follow=True)
+        self.assertRedirects(response, reverse('base_cliente'))
+        self.assertContains(response, 'Has cerrado sesión correctamente.')
+        self.assertContains(response, 'aria-label="Iniciar sesión"')
+        self.assertNotContains(response, 'Código de recuperación</a>')
 
 
 class GestionCategoriasInsumosTests(TestCase):
