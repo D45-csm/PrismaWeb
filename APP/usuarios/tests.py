@@ -193,6 +193,21 @@ class AccesoUsuarioTests(TestCase):
                     f'{reverse("admin_login")}?next={reverse(url_name)}',
                 )
 
+    def test_lista_de_usuarios_usa_el_diseno_compartido_del_panel(self):
+        self.client.force_login(self.administrador)
+
+        response = self.client.get(reverse('Lista de usuarios'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'insumo-dashboard user-admin-page')
+        self.assertContains(response, 'class="admin-page-heading"')
+        self.assertContains(response, 'class="admin-crud-sidebar insumo-sidebar"')
+        self.assertContains(response, 'class="admin-crud-main insumo-main-panel"')
+        self.assertContains(response, self.cliente.username)
+        self.assertContains(response, self.cliente.email)
+        self.assertContains(response, 'css/admin_crud.css')
+        self.assertNotContains(response, 'css/lista_usuarios.css')
+
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     def test_registro_exige_confirmar_correo_y_no_concede_staff(self):
         response = self.client.post(

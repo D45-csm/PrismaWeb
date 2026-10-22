@@ -1,0 +1,32 @@
+<div class="insumo-status-filter admin-status-filter" data-status-filter>
+    <label class="visually-hidden" for="{{ status_filter_id }}">{{ status_filter_label }}</label>
+    <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+    <select name="estado" id="{{ status_filter_id }}" class="insumo-input">
+        <option value="activos"{% if estado == 'activos' %} selected{% endif %}>Activos</option>
+        <option value="inactivos"{% if estado == 'inactivos' %} selected{% endif %}>Desactivados</option>
+        <option value="todos"{% if estado == 'todos' %} selected{% endif %}>Todos</option>
+    </select>
+    <i class="fa-solid fa-chevron-down admin-status-native-chevron" aria-hidden="true"></i>
+    <button type="button" class="admin-status-trigger" aria-label="{{ status_filter_label }}"
+            aria-haspopup="listbox" aria-expanded="false"
+            aria-controls="{{ status_filter_options_id }}" hidden>
+        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+        <span data-status-label></span>
+        <i class="fa-solid fa-chevron-down admin-status-chevron" aria-hidden="true"></i>
+    </button>
+    <div class="admin-status-options" id="{{ status_filter_options_id }}" role="listbox"
+         aria-label="Filtrar por estado" hidden>
+        <div class="admin-status-option" role="option" tabindex="-1" data-status-option="activos">
+            <span><strong>Activos</strong></span>
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+        </div>
+        <div class="admin-status-option" role="option" tabindex="-1" data-status-option="inactivos">
+            <span><strong>Desactivados</strong></span>
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+        </div>
+        <div class="admin-status-option" role="option" tabindex="-1" data-status-option="todos">
+            <span><strong>Todos</strong></span>
+            <i class="fa-solid fa-check" aria-hidden="true"></i>
+        </div>
+    </div>
+</div>

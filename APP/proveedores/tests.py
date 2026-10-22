@@ -59,6 +59,9 @@ class ProveedorNotificacionesTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="supplierEditorDialog"')
+        self.assertContains(response, 'admin-crud-editor-dialog')
+        self.assertContains(response, 'supplier-editor-availability')
+        self.assertContains(response, 'Proveedor inactivo')
         self.assertContains(response, 'data-open="editar"')
         self.assertContains(response, 'class="insumo-filter-bar"')
         self.assertContains(response, 'class="admin-crud-sidebar insumo-sidebar"')
