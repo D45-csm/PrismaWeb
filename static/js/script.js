@@ -6,31 +6,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const CFG = window.PRISMA || {};
     const URLS = CFG.urls || {};
     const IMG_BASE = CFG.imgBase || '';
-    // Convierte 'postre_1.jpeg' en '/static/img/postre_1.jpeg'
-    const imgUrl = (nombre) => IMG_BASE + encodeURI(nombre);
+    // Convierte 'postre_1.jpeg' en '/static/img/postre_1.jpeg'.
+    // Si ya es una URL absoluta (p.ej. una imagen subida a /media/...), se deja tal cual.
+    const imgUrl = (nombre) => (/^(https?:)?\//.test(nombre || '') ? nombre : IMG_BASE + encodeURI(nombre || ''));
 
     // ============================================
-    // 1. CONFIGURACIÓN Y DATOS
+    // 1. CONFIGURACIÓN Y DATOS (productos reales desde la base de datos)
     // ============================================
-    const productos = [
-        { id: 1, nombre: 'Manzana Verde', precio: 15000, img: 'mangue_azul_julho2023_dmr__420___1_-23855745.jpg', categoria: 'frutas', desc: 'Delicioso postre con sabor a manzana verde, textura suave y cremosa.' },
-        { id: 2, nombre: 'Café Chocolate', precio: 15000, img: 'postre_1.jpeg', categoria: 'chocolate', desc: 'La combinación perfecta de café y chocolate. Intenso y aromático.' },
-        { id: 3, nombre: 'Naranja Fresca', precio: 15000, img: 'postre_2.jpeg', categoria: 'frutas', desc: 'Refrescante postre con sabor cítrico a naranja natural.' },
-        { id: 4, nombre: 'Coco Tropical', precio: 15000, img: 'postre_3.jpg', categoria: 'especiales', desc: 'Exótico postre con coco rallado y crema tropical.' },
-        { id: 5, nombre: 'Mango Exótico', precio: 15000, img: 'postre_4.jpg', categoria: 'frutas', desc: 'Sabor tropical intenso a mango maduro.' },
-        { id: 6, nombre: 'Fresa Chocolate', precio: 15000, img: 'postre_5.jpg', categoria: 'chocolate', desc: 'Fresa fresca cubierta de chocolate suave.' },
-        { id: 7, nombre: 'Piña Amarilla', precio: 15000, img: 'postre_6.jpg', categoria: 'frutas', desc: 'Dulce y tropical postre con piña fresca.' },
-        { id: 8, nombre: 'Corazón Rojo', precio: 15000, img: 'postre_7.jpg', categoria: 'especiales', desc: 'Especial romántico con frutos rojos y chocolate.' }
-    ];
+    const leerDatosJSON = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return [];
+        try {
+            return JSON.parse(el.textContent) || [];
+        } catch (e) {
+            return [];
+        }
+    };
 
-    const temporada = [
-        { id: 101, nombre: 'Cheesecake Frutos Rojos', desc: 'Suave y cremoso con coulis artesanal.', precio: 15000, img: 'frutos rojos.jpeg', categoria: 'especiales' },
-        { id: 102, nombre: 'Arándano', desc: 'Cítrica y refrescante con merengue.', precio: 15000, img: 'Arándano.jpeg', categoria: 'frutas' },
-        { id: 103, nombre: 'Mango', desc: 'Relleno de chocolate belga fundido.', precio: 15000, img: 'mango.jpeg', categoria: 'chocolate' },
-        { id: 104, nombre: 'Coulant Maracuyá', desc: 'Puro sabor a la pasión.', precio: 15000, img: 'postre de maracuyá.jpeg', categoria: 'especiales' },
-        { id: 105, nombre: 'Tiramisú Clásico', desc: 'El italiano tradicional.', precio: 15000, img: 'postre_6.jpg', categoria: 'especiales' },
-        { id: 106, nombre: 'Mousse Maracuyá', desc: 'Aireada y refrescante.', precio: 15000, img: 'postre_7.jpg', categoria: 'frutas' }
-    ];
+    const productos = leerDatosJSON('productos-data');
+    const temporada = leerDatosJSON('temporada-data');
 
     let carrito = JSON.parse(localStorage.getItem('prismaCarrito')) || [];
     let productoActual = null;
@@ -526,8 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     const filtrarProductos = (categoria) => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        const btnActivo = [...document.querySelectorAll('.filter-btn')]
-            .find(b => b.textContent.trim().toLowerCase() === categoria || (categoria === 'todos' && b.textContent.trim().toLowerCase() === 'todos'));
+        const btnActivo = document.querySelector(`.filter-btn[data-categoria="${categoria}"]`);
         if (btnActivo) btnActivo.classList.add('active');
         renderProductos(categoria === 'todos' ? productos : productos.filter(p => p.categoria === categoria));
     };
