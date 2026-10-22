@@ -137,8 +137,24 @@ class RecuperarPasswordForm(forms.Form):
     )
 
 
+class CodigoRecuperacionForm(forms.Form):
+    code = forms.RegexField(
+        regex=r'^[0-9]{8}$',
+        label='Código de recuperación',
+        error_messages={'invalid': 'Ingresa el código de 8 dígitos que recibiste.'},
+        widget=forms.TextInput(attrs={
+            'autocomplete': 'one-time-code',
+            'inputmode': 'numeric',
+            'pattern': '[0-9]{8}',
+            'maxlength': '8',
+            'placeholder': '12345678',
+            'autofocus': True,
+        }),
+    )
+
+
 class NuevaContrasenaForm(forms.Form):
-    """Formulario para definir una nueva contraseña desde el enlace de recuperación."""
+    """Formulario para definir una contraseña tras verificar el código de recuperación."""
     new_password1 = forms.CharField(
         label='Nueva contraseña',
         strip=False,
