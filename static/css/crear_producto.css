@@ -153,12 +153,13 @@
     justify-content: center;
     cursor: pointer;
     overflow: hidden;
-    transition: border-color 0.25s ease;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
     border-radius: 8px;
 }
 
 .imagen-principal:hover {
     border-color: #111827;
+    box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
 }
 
 .imagen-principal input {
@@ -294,13 +295,14 @@
     color: #111827;
     font-family: Georgia, "Times New Roman", serif;
     outline: none;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .campo input:focus,
 .campo select:focus,
 .campo textarea:focus {
     border-color: #111827;
+    box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
 }
 
 .campo textarea {
