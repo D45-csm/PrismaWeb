@@ -308,6 +308,26 @@
     resize: vertical;
 }
 
+.campo-checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.campo-checkbox .label-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+.campo-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #111827;
+    cursor: pointer;
+}
+
 /* CAMPO PRECIO CON SÍMBOLO $ */
 
 .precio-input {
