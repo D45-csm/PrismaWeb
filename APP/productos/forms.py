@@ -55,6 +55,7 @@ class ProductoForm(forms.ModelForm):
             'descripcion',
             'precio',
             'categoria',
+            'activo',
             'imagen_principal',
             'imagen_2',
             'imagen_3',

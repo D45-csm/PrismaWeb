@@ -51,6 +51,7 @@ class GestionInsumosTests(TestCase):
         self.assertContains(response, 'Lácteos')
         self.assertContains(response, 'Crear categoría')
         self.assertContains(response, 'id="insumoCreateDialog"')
+        self.assertContains(response, 'admin-crud-editor-dialog')
         self.assertContains(response, 'data-open-insumo-create')
         self.assertContains(response, 'Encuentra un insumo')
         self.assertNotContains(response, 'data-insumo-row=')

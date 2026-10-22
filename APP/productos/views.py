@@ -187,7 +187,6 @@ def crear_producto(request):
         producto = form.save(commit=False)
         if not producto.imagen_principal:
             producto.imagen_principal = DEFAULT_PRODUCT_IMAGE
-        producto.activo = True
         producto.save()
         messages.success(request, 'Producto creado correctamente.')
         return redirect('lista_productos')

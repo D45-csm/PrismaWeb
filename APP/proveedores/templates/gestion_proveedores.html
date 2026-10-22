@@ -17,7 +17,6 @@
             <span class="insumo-eyebrow">DIRECTORIO</span>
             <h2>Proveedores</h2>
         </div>
-        <span class="insumo-count">{{ total_proveedores }}</span>
     </div>
     <div class="insumo-category-list">
         <a class="insumo-category-link{% if estado == 'activos' %} selected{% endif %}"
@@ -126,7 +125,7 @@
 {% endblock %}
 
 {% block crud_after_workspace %}
-    <dialog class="insumo-category-dialog" id="supplierEditorDialog"
+    <dialog class="insumo-category-dialog admin-crud-editor-dialog" id="supplierEditorDialog"
             data-open="{{ modal_open }}" aria-labelledby="supplierEditorTitle">
         <form method="post" class="insumo-editor-form">
             {% csrf_token %}
@@ -136,6 +135,9 @@
                 <div>
                     <span class="insumo-eyebrow">{% if modo_edicion %}ACTUALIZAR DIRECTORIO{% else %}NUEVO REGISTRO{% endif %}</span>
                     <h2 id="supplierEditorTitle">{% if modo_edicion %}Editar proveedor{% else %}Crear proveedor{% endif %}</h2>
+                    <p class="crud-editor-description">
+                        {% if modo_edicion %}Actualiza los datos de contacto del proveedor.{% else %}Registra un proveedor para tener su información a mano.{% endif %}
+                    </p>
                 </div>
                 <button type="button" class="insumo-dialog-close" data-close-crud-dialog aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
@@ -145,11 +147,26 @@
                 <div class="admin-form-errors" role="alert">{{ form.non_field_errors }}</div>
             {% endif %}
             {% for field in form %}
-                <div class="insumo-field{% if field.name == 'activo' %} insumo-field-checkbox{% endif %}">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
-                </div>
+                {% if field.name == 'activo' %}
+                    <div class="crud-editor-availability supplier-editor-availability">
+                        <label class="insumo-availability-control" for="{{ field.id_for_label }}">
+                            {{ field }}
+                            <span class="insumo-switch" aria-hidden="true"></span>
+                            <span class="supplier-editor-availability-state" aria-live="polite">
+                                <span class="is-active">Proveedor activo</span>
+                                <span class="is-inactive">Proveedor inactivo</span>
+                            </span>
+                        </label>
+                        <p>Los proveedores inactivos no estarán disponibles para el inventario.</p>
+                        {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                    </div>
+                {% else %}
+                    <div class="insumo-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                    </div>
+                {% endif %}
             {% endfor %}
             <div class="insumo-dialog-actions">
                 <button type="button" class="insumo-button insumo-button-filter" data-close-crud-dialog>

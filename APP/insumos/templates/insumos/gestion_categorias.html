@@ -178,7 +178,7 @@
 {% endblock %}
 
 {% block crud_after_workspace %}
-<dialog class="insumo-category-dialog" id="insumoCreateDialog"
+<dialog class="insumo-category-dialog admin-crud-editor-dialog" id="insumoCreateDialog"
         aria-labelledby="insumoCreateTitle"
         data-open="{% if insumo_form.errors and not insumo_form.instance.pk %}crear{% endif %}">
     <form method="post" enctype="multipart/form-data" class="insumo-editor-form">
@@ -188,6 +188,7 @@
             <div>
                 <span class="insumo-eyebrow">NUEVO REGISTRO</span>
                 <h2 id="insumoCreateTitle">Agregar insumo</h2>
+                <p class="crud-editor-description">Registra la información para organizar este insumo en tu inventario.</p>
             </div>
             <button type="button" class="insumo-dialog-close" data-close-insumo-create
                     aria-label="Cerrar formulario">
@@ -213,13 +214,17 @@
         </div>
     </form>
 </dialog>
-<dialog class="insumo-category-dialog" id="categoryDialog" aria-labelledby="categoryDialogTitle"
+<dialog class="insumo-category-dialog admin-crud-editor-dialog" id="categoryDialog" aria-labelledby="categoryDialogTitle"
         data-open="{{ categoria_modal }}">
     <form method="post" id="categoryCreateForm" class="insumo-editor-form">
         {% csrf_token %}
         <input type="hidden" name="accion" value="crear_categoria">
         <div class="insumo-category-dialog-header">
-            <h2 id="categoryDialogTitle">Crear categoría</h2>
+            <div>
+                <span class="insumo-eyebrow">ORGANIZA TU INVENTARIO</span>
+                <h2 id="categoryDialogTitle">Crear categoría</h2>
+                <p class="crud-editor-description">Agrupa tus insumos para mantener el inventario ordenado.</p>
+            </div>
             <button type="button" class="insumo-dialog-close" aria-label="Cerrar">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -242,7 +247,11 @@
             <input type="hidden" name="accion" value="editar_categoria">
             <input type="hidden" name="categoria_id" value="{{ categoria_seleccionada.pk }}">
             <div class="insumo-category-dialog-header">
-                <h2 id="categoryEditTitle">Editar categoría</h2>
+                <div>
+                    <span class="insumo-eyebrow">ORGANIZA TU INVENTARIO</span>
+                    <h2 id="categoryEditTitle">Editar categoría</h2>
+                    <p class="crud-editor-description">Actualiza el nombre y la descripción de esta categoría.</p>
+                </div>
                 <button type="button" class="insumo-dialog-close" aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
                 </button>

@@ -153,7 +153,7 @@
 {% endblock %}
 
 {% block crud_after_workspace %}
-    <dialog class="insumo-dialog product-editor-dialog" id="productEditorDialog"
+    <dialog class="insumo-dialog product-editor-dialog admin-crud-editor-dialog" id="productEditorDialog"
             data-open="{{ editor_mode }}" aria-labelledby="productEditorTitle">
         <div class="insumo-dialog-header">
             <div>
@@ -194,6 +194,18 @@
                     <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
                     {{ form.descripcion }}
                     {% for error in form.descripcion.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="crud-editor-availability product-editor-availability">
+                    <label class="insumo-availability-control" for="{{ form.activo.id_for_label }}">
+                        {{ form.activo }}
+                        <span class="insumo-switch" aria-hidden="true"></span>
+                        <span class="product-editor-availability-state" aria-live="polite">
+                            <span class="is-active">Activo</span>
+                            <span class="is-inactive">Inactivo</span>
+                        </span>
+                    </label>
+                    <p>Al desactivarlo, el producto dejará de aparecer disponible en tu catálogo.</p>
+                    {% for error in form.activo.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
                 </div>
                 <div class="product-editor-images">
                     <span class="insumo-eyebrow">IMÁGENES</span>
@@ -239,14 +251,18 @@
             </div>
         </form>
     </dialog>
-    <dialog class="insumo-category-dialog" id="categoryDialog"
+    <dialog class="insumo-category-dialog admin-crud-editor-dialog" id="categoryDialog"
             aria-labelledby="categoryDialogTitle" data-open="{{ categoria_modal }}">
         <form method="post" action="{% url 'gestionar_categoria_producto' %}"
               id="categoryCreateForm" class="insumo-editor-form">
             {% csrf_token %}
             <input type="hidden" name="accion" value="crear_categoria">
             <div class="insumo-category-dialog-header">
-                <h2 id="categoryDialogTitle">Crear categoría</h2>
+                <div>
+                    <span class="insumo-eyebrow">ORGANIZA TU CATÁLOGO</span>
+                    <h2 id="categoryDialogTitle">Crear categoría</h2>
+                    <p class="product-category-description">Agrupa tus productos para que sea más fácil encontrarlos.</p>
+                </div>
                 <button type="button" class="insumo-dialog-close" aria-label="Cerrar">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -270,7 +286,11 @@
                 <input type="hidden" name="accion" value="editar_categoria">
                 <input type="hidden" name="categoria_id" value="{{ editar_categoria_form.instance.pk }}">
                 <div class="insumo-category-dialog-header">
-                    <h2 id="categoryEditTitle">Editar categoría</h2>
+                    <div>
+                        <span class="insumo-eyebrow">ORGANIZA TU CATÁLOGO</span>
+                        <h2 id="categoryEditTitle">Editar categoría</h2>
+                        <p class="product-category-description">Actualiza el nombre y la descripción de esta categoría.</p>
+                    </div>
                     <button type="button" class="insumo-dialog-close" aria-label="Cerrar">
                         <i class="fa-solid fa-xmark"></i>
                     </button>

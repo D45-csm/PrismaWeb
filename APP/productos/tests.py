@@ -64,6 +64,25 @@ class ProductoImagenesOpcionalesTests(TestCase):
         self.assertEqual(producto.nombre, 'Torta de prueba')
         self.assertEqual(producto.imagen_principal.name, DEFAULT_PRODUCT_IMAGE)
 
+    def test_estado_del_producto_se_guarda_al_crear_y_editar(self):
+        self.assertTrue(ProductoForm()['activo'].value())
+        datos = self.datos_producto()
+        response = self.client.post(reverse('crear_producto'), datos)
+
+        self.assertRedirects(response, reverse('lista_productos'))
+        producto = Producto.objects.get(nombre='Torta de prueba')
+        self.assertFalse(producto.activo)
+
+        datos['activo'] = 'on'
+        response = self.client.post(
+            reverse('editar_producto', args=[producto.id]),
+            datos,
+        )
+
+        self.assertRedirects(response, reverse('lista_productos'))
+        producto.refresh_from_db()
+        self.assertTrue(producto.activo)
+
 
 class ProductoSeguridadTests(TestCase):
     def setUp(self):
@@ -97,7 +116,8 @@ class ProductoSeguridadTests(TestCase):
         self.assertContains(response, 'Crear producto')
         self.assertContains(response, 'css/admin_crud.css')
         self.assertContains(response, 'class="insumo-filter-bar"')
-        self.assertContains(response, 'class="insumo-dialog product-editor-dialog"')
+        self.assertContains(response, 'class="insumo-dialog product-editor-dialog admin-crud-editor-dialog"')
+        self.assertContains(response, 'admin-crud-editor-dialog')
         self.assertContains(response, 'product-editor-description')
         self.assertContains(response, 'admin-status-filter')
         self.assertContains(response, 'admin-status-chevron')
@@ -110,6 +130,7 @@ class ProductoSeguridadTests(TestCase):
         self.assertContains(response, 'id="crudDeleteDialog"')
         self.assertContains(response, 'data-open-crud-editor')
         self.assertContains(response, 'class="insumo-list-heading"')
+        self.assertContains(response, 'admin-crud-editor-dialog')
 
         response = self.client.get(
             reverse('lista_productos'),
@@ -120,6 +141,7 @@ class ProductoSeguridadTests(TestCase):
         response = self.client.get(reverse('editar_producto', args=[self.producto.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="productEditorDialog"')
+        self.assertContains(response, 'admin-crud-editor-dialog')
         self.assertContains(response, 'data-open="editar"')
         self.assertContains(response, 'name="imagen_principal"')
         self.assertContains(
