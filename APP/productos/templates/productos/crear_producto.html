@@ -159,6 +159,19 @@
                     {{ form.categoria.errors }}
                 </div>
 
+                <!-- TEMPORADA -->
+                <div class="campo campo-checkbox">
+                    <label for="{{ form.disponible_temporada.id_for_label }}" class="label-checkbox">
+                        <input
+                            type="checkbox"
+                            id="{{ form.disponible_temporada.id_for_label }}"
+                            name="disponible_temporada"
+                            {% if form.disponible_temporada.value %}checked{% endif %}>
+                        Mostrar en la sección "Temporada"
+                    </label>
+                    {{ form.disponible_temporada.errors }}
+                </div>
+
                 <!-- DESCRIPCIÓN -->
                 <div class="campo">
                     <label for="descripcion">Descripción *</label>
