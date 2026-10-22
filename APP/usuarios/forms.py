@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import Group
 from django.contrib.auth.forms import (
     AuthenticationForm,
     PasswordResetForm,
@@ -8,6 +9,24 @@ from django.contrib.auth.forms import (
 from django.core.exceptions import ValidationError
 
 from .models import Usuario
+
+
+class RolForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        fields = ['name', 'permissions']
+        labels = {
+            'name': 'Nombre del rol',
+            'permissions': 'Permisos del rol',
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'admin-form-input',
+                'placeholder': 'Ej. Administrador de inventario',
+                'maxlength': 150,
+            }),
+            'permissions': forms.CheckboxSelectMultiple,
+        }
 
 
 class CorreoAuthenticationForm(AuthenticationForm):

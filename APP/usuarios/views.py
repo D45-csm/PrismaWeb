@@ -5,20 +5,21 @@ from django.contrib.auth import login, logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
+from django.contrib.auth.models import Group
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.core.mail import send_mail
 from django.db import transaction
 from django.http import Http404
-from django.db.models import F, Sum
-from django.shortcuts import redirect, render
+from django.db.models import Count, F, Sum
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
-from .forms import AdminLoginForm, LoginForm, RegistroForm
+from .forms import AdminLoginForm, LoginForm, RegistroForm, RolForm
 from .models import Usuario
 from .tokens import email_verification_token
 from APP.compra_insumos.models import DetalleCompraInsumo
@@ -26,6 +27,7 @@ from APP.insumos.models import Insumo
 from APP.productos.models import Producto
 from APP.reserva.models import Reserva
 from APP.ventas.models import DetalleVenta
+from .permissions import exigir_permiso, usuario_puede_acceder
 
 
 def es_administrador(user):
@@ -39,12 +41,110 @@ def redireccion_post_login(user):
 @login_required(login_url='admin_login')
 @user_passes_test(es_administrador, login_url='admin_login')
 def lista_usuarios(request):
-    usuarios = Usuario.objects.all()
+    if request.method == 'POST':
+        exigir_permiso(request, 'usuarios.change_usuario')
+        exigir_permiso(request, 'auth.change_group')
+        usuario_id = request.POST.get('usuario_id', '')
+        if not usuario_id.isdecimal() or len(usuario_id) > 18:
+            raise Http404
+        usuario = Usuario.objects.filter(pk=int(usuario_id)).first()
+        if usuario is None:
+            raise Http404
+        if usuario.pk == request.user.pk:
+            raise PermissionDenied
+        rol_id = request.POST.get('rol', '')
+        if rol_id:
+            if not rol_id.isdecimal() or len(rol_id) > 18:
+                raise Http404
+            rol = Group.objects.filter(pk=int(rol_id)).first()
+            if rol is None:
+                raise Http404
+            usuario.groups.set([rol])
+            messages.success(request, f'Rol de "{usuario.username}" actualizado a "{rol.name}".')
+        else:
+            usuario.groups.clear()
+            messages.success(request, f'Se quitó el rol de "{usuario.username}".')
+        return redirect('Lista de usuarios')
+
+    exigir_permiso(request, 'usuarios.view_usuario')
+    usuarios = Usuario.objects.prefetch_related('groups').order_by('username')
     return render(request, 'usuarios/lista_usuarios.html', {
         'usuarios': usuarios,
-        'total_usuarios': usuarios.count(),
-        'usuarios_activos': usuarios.filter(is_active=True).count(),
+        'roles': Group.objects.order_by('name'),
+        'usuario_actual_id': request.user.pk,
+        'total_usuarios': Usuario.objects.count(),
+        'usuarios_activos': Usuario.objects.filter(is_active=True).count(),
+        'puede_cambiar_roles': usuario_puede_acceder(
+            request.user,
+            'auth.change_group',
+        ),
     })
+
+
+def _render_gestion_roles(request, form=None, rol_actual=None):
+    roles = Group.objects.annotate(
+        usuarios_asignados=Count('user'),
+    ).order_by('name')
+    return render(request, 'usuarios/gestion_roles.html', {
+        'roles': roles,
+        'total_roles': Group.objects.count(),
+        'form': form or RolForm(instance=rol_actual),
+        'rol_actual': rol_actual,
+        'modo_edicion': rol_actual is not None,
+    })
+
+
+@login_required(login_url='admin_login')
+@user_passes_test(es_administrador, login_url='admin_login')
+def gestion_roles(request):
+    exigir_permiso(request, 'auth.view_group')
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        if accion in ('crear_rol', 'editar_rol'):
+            exigir_permiso(
+                request,
+                'auth.add_group' if accion == 'crear_rol' else 'auth.change_group',
+            )
+            rol_actual = None
+            if accion == 'editar_rol':
+                rol_id = request.POST.get('rol_id', '')
+                if not rol_id.isdecimal() or len(rol_id) > 18:
+                    raise Http404
+                rol_actual = get_object_or_404(Group, pk=int(rol_id))
+            form = RolForm(request.POST, instance=rol_actual)
+            if form.is_valid():
+                rol = form.save()
+                messages.success(
+                    request,
+                    f'Rol "{rol.name}" '
+                    f'{"actualizado" if rol_actual else "creado"} correctamente.',
+                )
+                return redirect('gestion_roles')
+            return _render_gestion_roles(request, form=form, rol_actual=rol_actual)
+
+        if accion == 'eliminar_rol':
+            exigir_permiso(request, 'auth.delete_group')
+            rol_id = request.POST.get('rol_id', '')
+            if not rol_id.isdecimal() or len(rol_id) > 18:
+                raise Http404
+            rol = get_object_or_404(Group, pk=int(rol_id))
+            nombre_rol = rol.name
+            rol.delete()
+            messages.success(
+                request,
+                f'El rol "{nombre_rol}" fue eliminado y se quitaron sus asignaciones.',
+            )
+            return redirect('gestion_roles')
+
+        messages.error(request, 'No se reconoció la acción solicitada.')
+
+    rol_actual = None
+    edit_id = request.GET.get('editar_rol', '')
+    if edit_id:
+        if not edit_id.isdecimal() or len(edit_id) > 18:
+            raise Http404
+        rol_actual = get_object_or_404(Group, pk=int(edit_id))
+    return _render_gestion_roles(request, rol_actual=rol_actual)
 
 
 def registro_view(request):
@@ -187,24 +287,59 @@ def logout_view(request):
 @user_passes_test(es_administrador, login_url='admin_login')
 def profile_view(request):
     hoy = timezone.localdate()
-    ventas_hoy = DetalleVenta.objects.filter(
-        venta__fecha=hoy,
-    ).aggregate(total=Sum(F('cantidad') * F('costo_unitario_producto')))['total'] or 0
+    permisos = {
+        'usuarios': usuario_puede_acceder(request.user, 'usuarios.view_usuario'),
+        'roles': usuario_puede_acceder(request.user, 'auth.view_group'),
+        'proveedores': usuario_puede_acceder(
+            request.user,
+            'proveedores.view_proveedor',
+        ),
+        'reservas': usuario_puede_acceder(request.user, 'reserva.view_reserva'),
+        'inventario': usuario_puede_acceder(request.user, 'insumos.view_insumo'),
+        'compras': usuario_puede_acceder(
+            request.user,
+            'compra_insumos.view_compra_insumo',
+        ),
+        'productos': usuario_puede_acceder(request.user, 'productos.view_producto'),
+        'insumos': usuario_puede_acceder(request.user, 'insumos.view_insumo'),
+        'ventas': usuario_puede_acceder(request.user, 'ventas.view_venta'),
+    }
+    ventas_hoy = 0
+    if permisos['ventas']:
+        ventas_hoy = DetalleVenta.objects.filter(
+            venta__fecha=hoy,
+        ).aggregate(total=Sum(F('cantidad') * F('costo_unitario_producto')))['total'] or 0
     context = {
-        'total_reservas_hoy': Reserva.objects.filter(fecha_reserva=hoy).count(),
+        'permisos_modulos': permisos,
+        'total_reservas_hoy': (
+            Reserva.objects.filter(fecha_reserva=hoy).count()
+            if permisos['reservas'] else 0
+        ),
         'ventas_hoy': ventas_hoy,
-        'total_productos': Producto.objects.count(),
-        'total_insumos': Insumo.objects.filter(activo=True).count(),
-        'reservas_recientes': Reserva.objects.order_by('-fecha_realizacion')[:5],
-        'insumos_recientes': Insumo.objects.filter(activo=True).select_related(
-            'categoria',
-        ).order_by('nombre')[:10],
-        'compras_recientes': DetalleCompraInsumo.objects.select_related(
-            'compra__proveedor',
-            'insumo',
-        ).order_by('-compra__fecha')[:5],
-        'productos_recientes': Producto.objects.select_related(
-            'categoria',
-        ).order_by('-id')[:10],
+        'total_productos': Producto.objects.count() if permisos['productos'] else 0,
+        'total_insumos': (
+            Insumo.objects.filter(activo=True).count() if permisos['insumos'] else 0
+        ),
+        'reservas_recientes': (
+            Reserva.objects.order_by('-fecha_realizacion')[:5]
+            if permisos['reservas'] else ()
+        ),
+        'insumos_recientes': (
+            Insumo.objects.filter(activo=True).select_related(
+                'categoria',
+            ).order_by('nombre')[:10]
+            if permisos['inventario'] else ()
+        ),
+        'compras_recientes': (
+            DetalleCompraInsumo.objects.select_related(
+                'compra__proveedor',
+                'insumo',
+            ).order_by('-compra__fecha')[:5]
+            if permisos['compras'] else ()
+        ),
+        'productos_recientes': (
+            Producto.objects.select_related('categoria').order_by('-id')[:10]
+            if permisos['productos'] else ()
+        ),
     }
     return render(request, 'usuarios/perfil.html', context)

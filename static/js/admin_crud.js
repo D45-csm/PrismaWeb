@@ -9,6 +9,24 @@
         button.addEventListener('click', () => button.closest('dialog')?.close());
     });
 
+    const roleDeleteDialog = document.querySelector('#roleDeleteDialog');
+    if (roleDeleteDialog) {
+        const roleId = roleDeleteDialog.querySelector('[data-role-delete-id-field]');
+        const roleName = roleDeleteDialog.querySelector('[data-role-delete-name]');
+
+        document.querySelectorAll('[data-role-delete-id]').forEach((button) => {
+            button.addEventListener('click', () => {
+                roleId.value = button.dataset.roleDeleteId;
+                roleName.textContent = button.dataset.roleDeleteName;
+                roleDeleteDialog.showModal();
+            });
+        });
+
+        roleDeleteDialog.querySelectorAll('[data-close-role-delete]').forEach((button) => {
+            button.addEventListener('click', () => roleDeleteDialog.close());
+        });
+    }
+
     document.querySelectorAll('[data-open-crud-editor]').forEach((button) => {
         button.addEventListener('click', () => {
             if (!editorDialog) return;

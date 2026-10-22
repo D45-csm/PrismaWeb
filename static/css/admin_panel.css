@@ -151,6 +151,36 @@
     padding: 35px 25px 60px;
 }
 
+.dashboard-module-blocked {
+    opacity: 0.48;
+    filter: grayscale(0.7);
+}
+
+a.dashboard-module-blocked {
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+.dashboard-module-locked {
+    display: flex;
+    min-height: 90px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    border: 1px dashed var(--admin-border);
+    border-radius: 14px;
+    background: #fff;
+    color: var(--admin-muted);
+    font-size: 0.9rem;
+    font-weight: 650;
+    text-align: center;
+}
+
+.dashboard-module-locked i {
+    color: var(--admin-primary);
+}
+
 /* ==========================================
    ENCABEZADO DEL PANEL
    ========================================== */
