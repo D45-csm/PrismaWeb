@@ -38,36 +38,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     );
 
-    document.querySelectorAll('.form-eliminar-proveedor').forEach(function (form) {
-        form.addEventListener('submit', async function (event) {
-            event.preventDefault();
-            const providerName = form.dataset.providerName || 'este proveedor';
-            const result = await Swal.fire({
-                title: '¿Eliminar proveedor?',
-                text: `¿Confirmas la eliminación definitiva de ${providerName}?`,
-                icon: 'warning',
-                background: '#ffffff',
-                backdrop: 'rgba(17, 24, 39, 0.6)',
-                showCancelButton: true,
-                confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#111827',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar',
-                reverseButtons: true,
-                focusCancel: true,
-                width: '25em',
-                padding: '1.5em 1em',
-                customClass: {
-                    title: 'prisma-message-title',
-                    htmlContainer: 'prisma-message-text',
-                    confirmButton: 'prisma-message-confirm',
-                    cancelButton: 'prisma-message-confirm',
-                },
-            });
-
-            if (result.isConfirmed) {
-                HTMLFormElement.prototype.submit.call(form);
-            }
-        });
-    });
 });

@@ -1,7 +1,9 @@
 {% load static %}
 
-<section class="productos-grid">
+{% if not user.is_staff %}
 <link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}">
+{% endif %}
+<section class="productos-grid">
     {% for producto in productos %}
 
         <article class="producto-card {% if not producto.activo %}producto-inactivo{% endif %}">

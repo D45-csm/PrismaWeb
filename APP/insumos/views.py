@@ -3,10 +3,12 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count
+from django.db.models.deletion import ProtectedError
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
+from APP.usuarios.permissions import exigir_permiso
 from APP.proveedores.models import Proveedor
 
 from .forms import CategoriaInsumoForm, InsumoForm
@@ -27,6 +29,11 @@ def _get_posted_object(model, value):
 @user_passes_test(es_administrador, login_url='admin_login')
 @require_http_methods(['GET', 'POST'])
 def detalle_insumo(request, pk):
+    exigir_permiso(
+        request,
+        'insumos.view_insumo' if request.method == 'GET'
+        else _permiso_accion_insumo(request.POST.get('accion')),
+    )
     insumo = get_object_or_404(
         Insumo.objects.select_related('categoria', 'proveedor_referencia'),
         pk=pk,
@@ -61,6 +68,26 @@ def detalle_insumo(request, pk):
         })
 
     accion = request.POST.get('accion')
+    if accion == 'eliminar_insumo':
+        try:
+            insumo.delete()
+        except ProtectedError:
+            return JsonResponse(
+                {
+                    'error': (
+                        'No se puede eliminar este insumo porque tiene movimientos '
+                        'de inventario o compras asociados. Puedes marcarlo como '
+                        'no disponible.'
+                    ),
+                },
+                status=409,
+            )
+        return JsonResponse({
+            'id': pk,
+            'deleted': True,
+            'message': 'Insumo eliminado correctamente.',
+        })
+
     if accion == 'editar_insumo':
         form = InsumoForm(
             request.POST,
@@ -192,11 +219,32 @@ def _render_gestion(
     })
 
 
+def _permiso_accion_insumo(accion):
+    permisos = {
+        'eliminar_insumo': 'insumos.delete_insumo',
+        'editar_insumo': 'insumos.change_insumo',
+        'cambiar_disponibilidad': 'insumos.change_insumo',
+    }
+    return permisos.get(accion, 'insumos.view_insumo')
+
+
 @login_required(login_url='admin_login')
 @user_passes_test(es_administrador, login_url='admin_login')
 def gestion_categorias(request):
+    exigir_permiso(request, 'insumos.view_insumo')
     if request.method == 'POST':
         accion = request.POST.get('accion')
+        permisos = {
+            'crear_categoria': 'insumos.add_categoriainsumo',
+            'editar_categoria': 'insumos.change_categoriainsumo',
+            'eliminar_categoria': 'insumos.delete_categoriainsumo',
+            'crear_insumo': 'insumos.add_insumo',
+            'editar_insumo': 'insumos.change_insumo',
+        }
+        exigir_permiso(
+            request,
+            permisos.get(accion, 'insumos.view_insumo'),
+        )
 
         if accion == 'crear_categoria':
             form = CategoriaInsumoForm(request.POST)

@@ -1,0 +1,54 @@
+<dialog class="insumo-dialog" id="crudDetailDialog" aria-labelledby="crudDetailTitle">
+    <div class="insumo-dialog-header">
+        <span class="insumo-eyebrow">FICHA DEL REGISTRO</span>
+        <button class="insumo-dialog-close" type="button" data-close-crud-dialog aria-label="Cerrar ficha">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="insumo-dialog-message" role="status" aria-live="polite" hidden></div>
+    <section class="insumo-dialog-details">
+        <div class="insumo-dialog-image">
+            <img alt="" hidden>
+            <span aria-hidden="true"><i class="fa-regular fa-image"></i></span>
+        </div>
+        <div class="insumo-dialog-copy">
+            <h2 id="crudDetailTitle"></h2>
+            <p class="insumo-dialog-description"></p>
+            <div class="insumo-dialog-meta"></div>
+        </div>
+    </section>
+    <div class="insumo-dialog-actions">
+        <a class="insumo-button insumo-button-primary" data-crud-edit-link>
+            <i class="fa-regular fa-pen-to-square"></i> Editar
+        </a>
+        <label class="insumo-availability-control">
+            <input type="checkbox" data-crud-availability>
+            <span class="insumo-switch" aria-hidden="true"></span>
+            <span>Disponible</span>
+        </label>
+    </div>
+</dialog>
+
+<dialog class="insumo-category-dialog insumo-delete-dialog" id="crudDeleteDialog"
+        aria-labelledby="crudDeleteTitle">
+    <form method="post" id="crudDeleteForm" class="insumo-editor-form">
+        {% csrf_token %}
+        <div class="insumo-category-dialog-header">
+            <span class="insumo-delete-icon"><i class="fa-regular fa-trash-can"></i></span>
+            <button type="button" class="insumo-dialog-close" data-close-crud-dialog
+                    aria-label="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <h2 id="crudDeleteTitle">¿Eliminar registro?</h2>
+        <p>Vas a eliminar <strong data-crud-delete-name></strong>. Esta acción no se puede deshacer.</p>
+        <div class="insumo-dialog-actions">
+            <button type="button" class="insumo-button insumo-button-filter" data-close-crud-dialog>
+                Cancelar
+            </button>
+            <button type="submit" class="insumo-button insumo-button-danger">
+                <i class="fa-regular fa-trash-can"></i> Sí, eliminar
+            </button>
+        </div>
+    </form>
+</dialog>

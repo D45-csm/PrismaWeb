@@ -28,6 +28,44 @@
         });
     }
 
+    const deleteInsumoDialog = document.querySelector('#deleteInsumoDialog');
+    const deleteInsumoButton = document.querySelector('.insumo-dialog-delete');
+    if (deleteInsumoDialog && deleteInsumoButton) {
+        const deleteInsumoName = deleteInsumoDialog.querySelector('#deleteInsumoName');
+        const confirmDelete = deleteInsumoDialog.querySelector('#confirmInsumoDelete');
+        deleteInsumoButton.addEventListener('click', () => {
+            deleteInsumoName.textContent = document.querySelector('#insumoDialogTitle').textContent;
+            deleteInsumoDialog.showModal();
+        });
+        deleteInsumoDialog.querySelectorAll('[data-close-insumo-delete]').forEach((button) => {
+            button.addEventListener('click', () => deleteInsumoDialog.close());
+        });
+        confirmDelete.addEventListener('click', async () => {
+            const data = new FormData();
+            data.set('accion', 'eliminar_insumo');
+            confirmDelete.disabled = true;
+
+            try {
+                const response = await fetch(currentUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: data,
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'No se pudo eliminar el insumo.');
+                window.location.reload();
+            } catch (error) {
+                deleteInsumoDialog.close();
+                setMessage(error.message || 'No se pudo eliminar el insumo.', true);
+            } finally {
+                confirmDelete.disabled = false;
+            }
+        });
+    }
+
     const categoryDialog = document.querySelector('#categoryDialog');
     if (categoryDialog) {
         const createForm = categoryDialog.querySelector('#categoryCreateForm');
@@ -53,6 +91,16 @@
         if (categoryDialog.dataset.open) {
             openCategoryDialog(categoryDialog.dataset.open);
         }
+    }
+
+    const createDialog = document.querySelector('#insumoCreateDialog');
+    if (createDialog) {
+        document.querySelectorAll('[data-open-insumo-create]').forEach((button) => {
+            button.addEventListener('click', () => createDialog.showModal());
+        });
+        createDialog.querySelectorAll('[data-close-insumo-create]')
+            .forEach((button) => button.addEventListener('click', () => createDialog.close()));
+        if (createDialog.dataset.open) createDialog.showModal();
     }
 
     const dialog = document.querySelector('#insumoDialog');
@@ -324,7 +372,7 @@
             badge.textContent = item.activo ? 'Activo' : 'Desactivado';
             badge.classList.toggle('inactive', !item.activo);
 
-            const summary = document.querySelector('.insumo-summary span:nth-child(2)');
+            const summary = document.querySelector('.insumo-active-summary');
             const count = document.querySelector('.insumo-dashboard');
             const wasActive = row.dataset.activeBeforeUpdate === 'true';
             if (wasActive !== item.activo && count) {

@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
+from APP.inventario.models import Movimiento
 from APP.insumos.models import CategoriaInsumo, Insumo
 from APP.proveedores.models import Proveedor
 from APP.usuarios.models import Usuario
@@ -39,10 +40,21 @@ class GestionInsumosTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Gestión de insumos')
+        self.assertContains(response, 'class="admin-page-heading"')
+        self.assertContains(response, 'insumo-active-summary')
+        self.assertContains(response, 'css/admin_crud.css')
+        self.assertContains(response, 'js/admin_crud.js')
+        self.assertContains(response, 'class="admin-crud-sidebar insumo-sidebar"')
+        self.assertContains(response, 'class="admin-crud-main insumo-main-panel"')
+        self.assertContains(response, f'action="{self.url}"')
+        self.assertContains(response, 'class="insumo-filter-bar"')
+        self.assertContains(response, 'admin-status-filter')
+        self.assertContains(response, 'admin-status-options')
         self.assertContains(response, 'Lácteos')
         self.assertContains(response, 'Crear categoría')
-        self.assertContains(response, 'data-open-insumo-create')
         self.assertContains(response, 'id="insumoCreateDialog"')
+        self.assertContains(response, 'admin-crud-editor-dialog')
+        self.assertContains(response, 'data-open-insumo-create')
         self.assertContains(response, 'Proveedor de referencia')
         self.assertContains(response, 'Encuentra un insumo')
         self.assertNotContains(response, 'data-insumo-row=')
@@ -116,6 +128,9 @@ class GestionInsumosTests(TestCase):
         self.assertIsNone(response.json()['proveedor_referencia_id'])
         self.assertIn({'id': 'l', 'nombre': 'Litro'}, response.json()['unidades'])
         self.assertEqual(response.json()['proveedores'], [])
+        management_response = self.client.get(self.url)
+        self.assertContains(management_response, 'insumo-dialog-delete')
+        self.assertContains(management_response, 'id="deleteInsumoDialog"')
 
     def test_crear_insumo_invalido_reabre_formulario_centrado(self):
         response = self.client.post(
@@ -163,7 +178,7 @@ class GestionInsumosTests(TestCase):
 
         page = self.client.get(self.url)
         self.assertContains(page, 'js/admin_messages.js')
-        self.assertContains(page, 'js/insumos.js')
+        self.assertContains(page, 'js/insumos.js?v=1')
 
         response = self.client.post(
             url,
@@ -205,6 +220,34 @@ class GestionInsumosTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.insumo.refresh_from_db()
         self.assertTrue(self.insumo.activo)
+
+    def test_admin_puede_eliminar_insumo_desde_su_ficha(self):
+        response = self.client.post(
+            reverse('detalle_insumo', args=[self.insumo.pk]),
+            {'accion': 'eliminar_insumo'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['deleted'])
+        self.assertFalse(Insumo.objects.filter(pk=self.insumo.pk).exists())
+
+    def test_no_se_puede_eliminar_insumo_con_movimientos_de_inventario(self):
+        Movimiento.objects.create(
+            origen='AJUSTE',
+            accion='ENTRADA',
+            insumo=self.insumo,
+            cantidad='1.000',
+            unidad_medida='l',
+        )
+
+        response = self.client.post(
+            reverse('detalle_insumo', args=[self.insumo.pk]),
+            {'accion': 'eliminar_insumo'},
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('movimientos de inventario o compras', response.json()['error'])
+        self.assertTrue(Insumo.objects.filter(pk=self.insumo.pk).exists())
 
     def test_busqueda_de_categorias_filtra_el_panel_izquierdo(self):
         CategoriaInsumo.objects.create(nombre='Limpieza')
@@ -251,6 +294,24 @@ class GestionInsumosTests(TestCase):
         )
         self.assertFalse(CategoriaInsumo.objects.filter(pk=categoria.pk).exists())
         self.assertRedirects(response, self.url)
+
+    def test_formulario_de_crear_insumo_abre_dialogo_si_hay_errores(self):
+        response = self.client.post(
+            self.url,
+            {
+                'accion': 'crear_insumo',
+                'nombre': '',
+                'descripcion': '',
+                'categoria': self.categoria.pk,
+                'unidad_medida': 'l',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="insumoCreateDialog"')
+        self.assertContains(response, 'data-open="true"')
+        self.assertContains(response, 'data-open-insumo-create')
+        self.assertTrue(response.context['insumo_form'].errors)
 
     def test_eliminar_categoria_usa_confirmacion_visual_no_alerta_nativa(self):
         CategoriaInsumo.objects.create(nombre='Categoría vacía')
@@ -335,13 +396,11 @@ class GestionInsumosTests(TestCase):
             f'{reverse("admin_login")}?next={self.url}',
         )
 
-    def test_accion_de_eliminar_insumo_ya_no_existe(self):
+    def test_eliminar_insumo_requiere_un_id_valido(self):
         response = self.client.post(
-            self.url,
-            {'accion': 'eliminar_insumo', 'insumo_id': 'no-es-un-id'},
+            reverse('detalle_insumo', args=[self.insumo.pk + 999]),
+            {'accion': 'eliminar_insumo'},
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 404)
         self.assertTrue(Insumo.objects.filter(pk=self.insumo.pk).exists())
-        self.insumo.refresh_from_db()
-        self.assertTrue(self.insumo.activo)

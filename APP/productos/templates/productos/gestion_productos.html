@@ -1,49 +1,347 @@
-{% extends 'base_admin.html' %}
+{% extends 'base_crud.html' %}
 {% load static %}
 
-{% block content %}
+{% block title %}Gestión de productos | Prisma{% endblock %}
+{% block crud_page_class %}insumo-dashboard product-admin-page{% endblock %}
+{% block crud_page_attributes %}data-active-count="{{ total_productos_activos }}" data-active-label="productos activos" data-active-state="{{ estado }}"{% endblock %}
 
-<!-- Vinculación del CSS con control de caché -->
-<link rel="stylesheet" href="{% static 'css/gestion_productos.css' %}">
+{% block crud_header %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='CATÁLOGO PRISMA' title='Gestión de productos' description='Administra los productos de tu catálogo y controla su visibilidad.' summary_value=total_productos summary_label='productos' summary_icon='fa-solid fa-box' summary2_value=total_productos_activos summary2_label='productos activos' summary2_icon='fa-solid fa-circle-check' summary2_class='product-active-summary' back_url=perfil_url back_label='Volver al panel' %}
+{% endblock %}
 
-<main class="gestion-container">
-
-    <!-- BOTÓN DE NAVEGACIÓN (ÚNICAMENTE ADMINISTRACIÓN) -->
-    <div class="acciones-navegacion">
-        <a href="{% url 'perfil' %}" class="btn-nav">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            <span>Administración</span>
-        </a>
-    </div>
-
-    <!-- BREADCRUMB -->
-    <div class="breadcrumb">
-        Administración / <strong>Gestión de Productos</strong>
-    </div>
-
-    <!-- ENCABEZADO Y BOTÓN CREAR -->
-    <div class="header-acciones">
+{% block crud_sidebar_class %}insumo-sidebar{% endblock %}
+{% block crud_sidebar %}
+    <div class="insumo-sidebar-heading">
         <div>
-            <h1>Gestión de Productos</h1>
-            <p class="subtitulo">Administra los productos de tu catálogo, edítalos o cambia su visibilidad</p>
+            <span class="insumo-eyebrow">CATÁLOGO</span>
+            <h2>Categorías</h2>
         </div>
-
-        <a href="{% url 'crear_producto' %}" class="boton-crear">
-            <span class="icono-mas">+</span> Crear Producto
-        </a>
+        <button type="button" class="insumo-button insumo-button-primary"
+                data-open-category-dialog="crear">
+            <i class="fa-solid fa-plus"></i> Crear categoría
+        </button>
     </div>
+    <nav class="insumo-category-list" aria-label="Filtrar por categoría">
+        {% for categoria in categorias %}
+            <div class="insumo-category-link{% if categoria_seleccionada == categoria.pk|stringformat:'s' %} selected{% endif %}">
+                <a class="product-category-filter"
+                   href="{% url 'lista_productos' %}?categoria={{ categoria.pk }}&estado={{ estado }}">
+                    <span class="insumo-category-icon"><i class="fa-solid fa-tag"></i></span>
+                    <span class="insumo-category-name product-category-name">{{ categoria.nombre }}</span>
+                </a>
+                <details class="insumo-category-menu">
+                    <summary aria-label="Opciones para {{ categoria.nombre }}">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </summary>
+                    <div class="insumo-category-menu-items">
+                        <button type="button" data-open-category-dialog="editar"
+                                data-category-id="{{ categoria.pk }}">
+                            <i class="fa-regular fa-pen-to-square"></i> Editar
+                        </button>
+                        {% if categoria.total_productos %}
+                            <span class="insumo-category-menu-disabled"
+                                  title="Reasigna sus productos antes de eliminarla">
+                                <i class="fa-regular fa-trash-can"></i> Eliminar
+                            </span>
+                        {% else %}
+                            <form method="post" action="{% url 'gestionar_categoria_producto' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="eliminar_categoria">
+                                <input type="hidden" name="categoria_id" value="{{ categoria.pk }}">
+                                <button type="button" data-confirm-category-delete
+                                        data-category-id="{{ categoria.pk }}"
+                                        data-category-name="{{ categoria.nombre }}">
+                                    <i class="fa-regular fa-trash-can"></i> Eliminar
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </details>
+            </div>
+        {% empty %}
+            <p class="insumo-sidebar-empty">Aún no has creado categorías.</p>
+        {% endfor %}
+    </nav>
+{% endblock %}
 
-    <!-- LISTA / GRID DE PRODUCTOS -->
-     {% include 'productos/lista_productos.html' %}
+{% block crud_main_class %}insumo-main-panel{% endblock %}
+{% block crud_main %}
+    <div class="insumo-list-heading">
+        <div>
+            <span class="insumo-eyebrow">INVENTARIO PRISMA</span>
+            <h2>Buscar productos</h2>
+            <p>Busca, filtra y administra los productos del catálogo.</p>
+        </div>
+        <button type="button" class="insumo-button insumo-button-primary"
+                data-open-crud-editor data-create-url="{% url 'crear_producto' %}"
+                data-create-action="crear_producto">
+            <i class="fa-solid fa-plus"></i> Crear producto
+        </button>
+    </div>
+    <form method="get" action="{% url 'lista_productos' %}" class="insumo-filter-bar" role="search">
+        <label class="insumo-search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <span class="visually-hidden">Buscar productos</span>
+            <input type="search" name="q" value="{{ query }}" placeholder="Nombre, categoría o descripción">
+        </label>
+        <input type="hidden" name="categoria" value="{{ categoria_seleccionada }}">
+        {% include 'partials/admin_status_filter.html' with estado=estado status_filter_id='productStatusSelect' status_filter_options_id='productStatusOptions' status_filter_label='Estado de los productos' %}
+        <button type="submit" class="insumo-button insumo-button-filter">Buscar</button>
+        {% if query or categoria_seleccionada or estado != 'todos' %}
+            <a class="insumo-clear-filter" href="{% url 'lista_productos' %}">
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Limpiar filtros
+            </a>
+        {% endif %}
+    </form>
+    <div class="insumo-results-label">
+        <span>{{ productos|length }} resultado{{ productos|length|pluralize:"s" }}</span>
+        {% if query %}<span class="insumo-query-chip">“{{ query }}”</span>{% endif %}
+    </div>
+    <div class="insumo-list">
+        {% for producto in productos %}
+            <article class="insumo-row insumo-row--record{% if not producto.activo %} insumo-row-inactive{% endif %}"
+                     data-crud-record-id="{{ producto.pk }}"
+                     data-active-before-update="{{ producto.activo|yesno:'true,false' }}">
+                <span class="insumo-row-image">
+                    {% if producto.imagen_principal %}
+                        <img src="{{ producto.imagen_principal.url }}" alt="">
+                    {% else %}
+                        <span aria-hidden="true"><i class="fa-regular fa-image"></i></span>
+                    {% endif %}
+                </span>
+                <div class="insumo-row-info">
+                    <h3>
+                        <button type="button" class="insumo-row-select"
+                                data-crud-detail-url="{% url 'detalle_producto' producto.pk %}">
+                            {{ producto.nombre }}
+                        </button>
+                    </h3>
+                    <p>{{ producto.descripcion|truncatechars:130 }}</p>
+                    <div class="insumo-row-meta">
+                        <span><i class="fa-solid fa-tag"></i>{{ producto.categoria.nombre }}</span>
+                        <span><i class="fa-solid fa-dollar-sign"></i>${{ producto.precio }}</span>
+                        <span class="insumo-status{% if not producto.activo %} inactive{% endif %}">
+                            {% if producto.activo %}Activo{% else %}Desactivado{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <details class="insumo-row-actions">
+                    <summary aria-label="Acciones para {{ producto.nombre }}">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </summary>
+                    <div class="insumo-row-menu">
+                        <a class="insumo-menu-action" href="{% url 'editar_producto' producto.pk %}">
+                            <i class="fa-regular fa-pen-to-square"></i> Editar producto
+                        </a>
+                        <button type="button" class="insumo-menu-action danger"
+                                data-crud-delete-url="{% url 'eliminar_producto' producto.pk %}"
+                                data-crud-delete-name="{{ producto.nombre }}">
+                            <i class="fa-regular fa-trash-can"></i> Eliminar producto
+                        </button>
+                    </div>
+                </details>
+            </article>
+        {% empty %}
+            <div class="insumo-empty-state">
+                <span class="insumo-empty-icon"><i class="fa-solid fa-box-open"></i></span>
+                <h3>No encontramos productos</h3>
+                <p>{% if query %}Prueba con otra búsqueda o limpia los filtros.{% else %}Crea un producto para comenzar.{% endif %}</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
 
-</main>
+{% block crud_after_workspace %}
+    <dialog class="insumo-dialog product-editor-dialog admin-crud-editor-dialog" id="productEditorDialog"
+            data-open="{{ editor_mode }}" aria-labelledby="productEditorTitle">
+        <div class="insumo-dialog-header">
+            <div>
+                <span class="insumo-eyebrow">{% if producto_editar %}ACTUALIZAR CATÁLOGO{% else %}NUEVO REGISTRO{% endif %}</span>
+                <h2 id="productEditorTitle">{% if producto_editar %}Editar producto{% else %}Crear producto{% endif %}</h2>
+                <p class="product-editor-description">
+                    {% if producto_editar %}Actualiza la información y las imágenes del producto.{% else %}Completa los datos para agregar un producto a tu catálogo.{% endif %}
+                </p>
+            </div>
+            <button class="insumo-dialog-close" type="button" data-close-crud-dialog aria-label="Cerrar formulario">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form method="post" enctype="multipart/form-data"
+              action="{% if producto_editar %}{% url 'editar_producto' producto_editar.pk %}{% else %}{% url 'crear_producto' %}{% endif %}"
+              class="insumo-dialog-edit product-editor-form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="admin-form-errors" role="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="insumo-dialog-fields product-editor-fields">
+                <div class="insumo-field">
+                    <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+                    {{ form.nombre }}
+                    {% for error in form.nombre.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="insumo-field">
+                    <label for="{{ form.precio.id_for_label }}">{{ form.precio.label }}</label>
+                    {{ form.precio }}
+                    {% for error in form.precio.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="insumo-field">
+                    <label for="{{ form.categoria.id_for_label }}">{{ form.categoria.label }}</label>
+                    {{ form.categoria }}
+                    {% for error in form.categoria.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="insumo-field">
+                    <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+                    {{ form.descripcion }}
+                    {% for error in form.descripcion.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="crud-editor-availability product-editor-availability">
+                    <label class="insumo-availability-control" for="{{ form.activo.id_for_label }}">
+                        {{ form.activo }}
+                        <span class="insumo-switch" aria-hidden="true"></span>
+                        <span class="product-editor-availability-state" aria-live="polite">
+                            <span class="is-active">Activo</span>
+                            <span class="is-inactive">Inactivo</span>
+                        </span>
+                    </label>
+                    <p>Al desactivarlo, el producto dejará de aparecer disponible en tu catálogo.</p>
+                    {% for error in form.activo.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="product-editor-images">
+                    <span class="insumo-eyebrow">IMÁGENES</span>
+                    {% for field in form %}
+                        {% if field.name == 'imagen_principal' or field.name == 'imagen_2' or field.name == 'imagen_3' or field.name == 'imagen_4' %}
+                            <div class="insumo-field product-image-field">
+                                {% if field.name == 'imagen_principal' %}
+                                    <label for="{{ field.id_for_label }}">Imagen principal</label>
+                                {% elif field.name == 'imagen_2' %}
+                                    <label for="{{ field.id_for_label }}">Imagen adicional 1</label>
+                                {% elif field.name == 'imagen_3' %}
+                                    <label for="{{ field.id_for_label }}">Imagen adicional 2</label>
+                                {% else %}
+                                    <label for="{{ field.id_for_label }}">Imagen adicional 3</label>
+                                {% endif %}
+                                {% if producto_editar and field.value %}
+                                    <img class="product-image-preview" src="{{ field.value.url }}" alt="Imagen actual">
+                                {% else %}
+                                    <img class="product-image-preview" alt="Vista previa" hidden>
+                                {% endif %}
+                                {{ field }}
+                                {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                                {% with clear_name='eliminar_'|add:field.name %}
+                                    {% for clear_field in form %}
+                                        {% if clear_field.name == clear_name and producto_editar and field.value %}
+                                            <label class="insumo-field-checkbox">
+                                                {{ clear_field }} Quitar imagen actual
+                                            </label>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endwith %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="insumo-dialog-actions">
+                <button type="button" class="insumo-button insumo-button-filter" data-close-crud-dialog>Cancelar</button>
+                <button type="submit" class="insumo-button insumo-button-primary">
+                    <i class="fa-regular fa-floppy-disk"></i>
+                    {% if producto_editar %}Guardar cambios{% else %}Crear producto{% endif %}
+                </button>
+            </div>
+        </form>
+    </dialog>
+    <dialog class="insumo-category-dialog admin-crud-editor-dialog" id="categoryDialog"
+            aria-labelledby="categoryDialogTitle" data-open="{{ categoria_modal }}">
+        <form method="post" action="{% url 'gestionar_categoria_producto' %}"
+              id="categoryCreateForm" class="insumo-editor-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="crear_categoria">
+            <div class="insumo-category-dialog-header">
+                <div>
+                    <span class="insumo-eyebrow">ORGANIZA TU CATÁLOGO</span>
+                    <h2 id="categoryDialogTitle">Crear categoría</h2>
+                    <p class="product-category-description">Agrupa tus productos para que sea más fácil encontrarlos.</p>
+                </div>
+                <button type="button" class="insumo-dialog-close" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            {% for field in categoria_form %}
+                <div class="insumo-field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+            {% endfor %}
+            <div class="insumo-dialog-actions">
+                <button type="button" class="insumo-button insumo-button-filter" data-close-category-dialog>Cancelar</button>
+                <button type="submit" class="insumo-button insumo-button-primary">Guardar categoría</button>
+            </div>
+        </form>
+        {% if editar_categoria_form %}
+            <form method="post" action="{% url 'gestionar_categoria_producto' %}"
+                  id="categoryEditForm" class="insumo-editor-form" data-category-edit-form>
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="editar_categoria">
+                <input type="hidden" name="categoria_id" value="{{ editar_categoria_form.instance.pk }}">
+                <div class="insumo-category-dialog-header">
+                    <div>
+                        <span class="insumo-eyebrow">ORGANIZA TU CATÁLOGO</span>
+                        <h2 id="categoryEditTitle">Editar categoría</h2>
+                        <p class="product-category-description">Actualiza el nombre y la descripción de esta categoría.</p>
+                    </div>
+                    <button type="button" class="insumo-dialog-close" aria-label="Cerrar">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                {% for field in editar_categoria_form %}
+                    <div class="insumo-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                    </div>
+                {% endfor %}
+                <div class="insumo-dialog-actions">
+                    <button type="button" class="insumo-button insumo-button-filter" data-close-category-dialog>Cancelar</button>
+                    <button type="submit" class="insumo-button insumo-button-primary">Guardar cambios</button>
+                </div>
+            </form>
+        {% endif %}
+    </dialog>
+    <dialog class="insumo-category-dialog insumo-delete-dialog" id="deleteCategoryDialog"
+            aria-labelledby="deleteCategoryTitle">
+        <form method="post" action="{% url 'gestionar_categoria_producto' %}"
+              id="deleteCategoryForm" class="insumo-editor-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="eliminar_categoria">
+            <input type="hidden" name="categoria_id" id="deleteCategoryId">
+            <div class="insumo-category-dialog-header">
+                <span class="insumo-delete-icon"><i class="fa-regular fa-trash-can"></i></span>
+                <button type="button" class="insumo-dialog-close" data-close-delete-dialog
+                        aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <h2 id="deleteCategoryTitle">¿Eliminar categoría?</h2>
+            <p>Vas a eliminar <strong id="deleteCategoryName"></strong>. Esta acción no se puede deshacer.</p>
+            <div class="insumo-dialog-actions">
+                <button type="button" class="insumo-button insumo-button-filter"
+                        data-close-delete-dialog>Cancelar</button>
+                <button type="submit" class="insumo-button insumo-button-danger">
+                    <i class="fa-regular fa-trash-can"></i> Sí, eliminar
+                </button>
+            </div>
+        </form>
+    </dialog>
+    {% include 'partials/admin_crud_dialogs.html' %}
+    <form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>
+{% endblock %}
 
-<script src="{% static 'js/gestion_productos.js' %}"></script>
-
-
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'js/admin_crud.js' %}?v=3" defer></script>
+    <script src="{% static 'js/product_editor.js' %}" defer></script>
+    <script src="{% static 'js/product_categories.js' %}" defer></script>
+    <script src="{% static 'js/admin_status_filter.js' %}?v=1" defer></script>
 {% endblock %}

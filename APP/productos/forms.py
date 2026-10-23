@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from django import forms
 
-from .models import Producto
+from .models import CategoriaProducto, Producto
 
 
 MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024
@@ -12,6 +12,34 @@ SAFE_IMAGE_EXTENSIONS = {
     'GIF': '.gif',
     'WEBP': '.webp',
 }
+
+
+class CategoriaProductoForm(forms.ModelForm):
+    class Meta:
+        model = CategoriaProducto
+        fields = ['nombre', 'descripcion']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'placeholder': 'Ej. Postres',
+                'class': 'insumo-input',
+                'autocomplete': 'off',
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'insumo-input',
+            }),
+        }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data['nombre'].strip()
+        if not nombre:
+            raise forms.ValidationError('Ingresa el nombre de la categoría.')
+        duplicado = CategoriaProducto.objects.filter(nombre__iexact=nombre)
+        if self.instance.pk:
+            duplicado = duplicado.exclude(pk=self.instance.pk)
+        if duplicado.exists():
+            raise forms.ValidationError('Ya existe una categoría con ese nombre.')
+        return nombre
 
 
 class ProductoForm(forms.ModelForm):
@@ -32,6 +60,7 @@ class ProductoForm(forms.ModelForm):
             'descripcion',
             'precio',
             'categoria',
+            'activo',
             'disponible_temporada',
             'imagen_principal',
             'imagen_2',
@@ -40,28 +69,35 @@ class ProductoForm(forms.ModelForm):
         ]
         widgets = {
             'nombre': forms.TextInput(attrs={
+                'class': 'insumo-input',
                 'placeholder': 'Escribe el nombre del producto',
                 'autocomplete': 'off',
             }),
             'descripcion': forms.Textarea(attrs={
+                'class': 'insumo-input',
                 'placeholder': 'Escribe una descripción del producto',
             }),
             'precio': forms.NumberInput(attrs={
+                'class': 'insumo-input',
                 'placeholder': '0',
                 'step': '0.01',
                 'min': '0.01',
             }),
-            'categoria': forms.Select(attrs={'id': 'categoria'}),
-            'imagen_principal': forms.ClearableFileInput(attrs={
+            'categoria': forms.Select(attrs={'id': 'categoria', 'class': 'insumo-input'}),
+            'imagen_principal': forms.FileInput(attrs={
+                'class': 'insumo-input',
                 'accept': 'image/*',
             }),
-            'imagen_2': forms.ClearableFileInput(attrs={
+            'imagen_2': forms.FileInput(attrs={
+                'class': 'insumo-input',
                 'accept': 'image/*',
             }),
-            'imagen_3': forms.ClearableFileInput(attrs={
+            'imagen_3': forms.FileInput(attrs={
+                'class': 'insumo-input',
                 'accept': 'image/*',
             }),
-            'imagen_4': forms.ClearableFileInput(attrs={
+            'imagen_4': forms.FileInput(attrs={
+                'class': 'insumo-input',
                 'accept': 'image/*',
             }),
         }

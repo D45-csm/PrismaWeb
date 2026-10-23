@@ -2,6 +2,7 @@ import re
 
 from django import forms
 from django.contrib.auth import authenticate, password_validation
+from django.contrib.auth.models import Group
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.auth.forms import (
     AuthenticationForm,
@@ -11,6 +12,24 @@ from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 
 from .models import Usuario
+
+
+class RolForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        fields = ['name', 'permissions']
+        labels = {
+            'name': 'Nombre del rol',
+            'permissions': 'Permisos del rol',
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'admin-form-input',
+                'placeholder': 'Ej. Administrador de inventario',
+                'maxlength': 150,
+            }),
+            'permissions': forms.CheckboxSelectMultiple,
+        }
 
 
 class LoginForm(AuthenticationForm):

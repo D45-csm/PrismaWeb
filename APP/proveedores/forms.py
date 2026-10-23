@@ -18,25 +18,25 @@ class ProveedorForm(forms.ModelForm):
         # Asignar clases CSS y atributos a los inputs (widgets)
         widgets = {
             'nombre': forms.TextInput(attrs={
-                'class': 'form-input',
+                'class': 'insumo-input',
                 'placeholder': 'Ej. Insumos PRISMA S.A.S.'
             }),
             'direccion': forms.Textarea(attrs={
-                'class': 'form-textarea',
+                'class': 'insumo-input',
                 'placeholder': 'Ej. Calle Falsa 123, Local 4',
                 'rows': 3
             }),
             'telefono': forms.TextInput(attrs={
-                'class': 'form-input',
+                'class': 'insumo-input',
                 'placeholder': 'Ej. 300 123 4567',
                 'type': 'tel'
             }),
             'email': forms.EmailInput(attrs={
-                'class': 'form-input',
+                'class': 'insumo-input',
                 'placeholder': 'contacto@proveedor.com',
                 'type': 'email'
             }),
             'activo': forms.CheckboxInput(attrs={
-                'class': 'form-checkbox'
+                'class': 'insumo-checkbox'
             }),
         }
