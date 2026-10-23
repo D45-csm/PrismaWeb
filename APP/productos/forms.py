@@ -47,6 +47,11 @@ class ProductoForm(forms.ModelForm):
     eliminar_imagen_2 = forms.BooleanField(required=False)
     eliminar_imagen_3 = forms.BooleanField(required=False)
     eliminar_imagen_4 = forms.BooleanField(required=False)
+    disponible_temporada = forms.BooleanField(
+        required=False,
+        label='Mostrar en Temporada',
+        help_text='Aparecerá en la sección "Temporada" del sitio para clientes.',
+    )
 
     class Meta:
         model = Producto
@@ -56,6 +61,7 @@ class ProductoForm(forms.ModelForm):
             'precio',
             'categoria',
             'activo',
+            'disponible_temporada',
             'imagen_principal',
             'imagen_2',
             'imagen_3',

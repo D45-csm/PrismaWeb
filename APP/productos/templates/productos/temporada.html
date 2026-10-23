@@ -5,7 +5,7 @@
 {% block body_attrs %} class="temporada-page"{% endblock %}
 
 {% block content %}
-    {% include 'partials/header_cliente.html' with active='' %}
+    {% include 'partials/header_cliente.html' with active='productos' %}
 
     <!-- Page Header -->
     <section class="page-header page-header-season">
@@ -24,10 +24,18 @@
                 <div class="title-line"></div>
             </div>
 
-            <!-- Grid de productos de temporada -->
-            <div class="seasonal-grid" id="temporadaGrid"></div>
+            {% if productos %}
+                <!-- Grid de productos de temporada (datos reales desde la base de datos) -->
+                <div class="seasonal-grid" id="temporadaGrid"></div>
+            {% else %}
+                <div class="sin-productos-card">
+                    <p class="sin-productos">Aún no hay creaciones de temporada disponibles. ¡Vuelve pronto!</p>
+                </div>
+            {% endif %}
         </div>
     </section>
+
+    {{ temporada_data|json_script:"temporada-data" }}
 
     <!-- MODAL DE PRODUCTO -->
     <div class="product-modal-overlay" id="productModal">

@@ -66,7 +66,7 @@
     font-size: 0.9rem;
     background-color: #f8fafc;
     box-sizing: border-box;
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .form-input:focus, .form-textarea:focus {
@@ -105,7 +105,7 @@
     cursor: pointer;
     border: none;
     text-decoration: none;
-    transition: 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
 .btn-submit { background-color: #2563eb; color: #fff; }
@@ -115,6 +115,21 @@
 
 /* Estilos de la Tabla */
 .table-wrapper { overflow-x: auto; }
+
+.custom-table tbody tr {
+    transition: background-color .18s ease;
+}
+
+.custom-table tbody tr:hover {
+    background-color: #faf8fc;
+}
+
+.btn:focus-visible,
+.btn-action:focus-visible,
+.btn-secondary:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.25);
+    outline-offset: 2px;
+}
 .custom-table {
     width: 100%;
     border-collapse: collapse;

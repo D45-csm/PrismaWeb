@@ -13,8 +13,11 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 from pathlib import Path
 import os
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -140,8 +143,8 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-# Email: configura estas variables de entorno en el servidor (para Gmail, usa
-# una contraseña de aplicación y no la contraseña normal de la cuenta).
+# Email: configura estas variables en .env localmente y en el entorno del
+# servidor al desplegar (para Gmail, usa una contraseña de aplicación).
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'true').lower() == 'true'
@@ -153,6 +156,10 @@ EMAIL_BACKEND = (
     else 'django.core.mail.backends.console.EmailBackend'
 )
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+
+# Tiempo (en segundos) que un enlace de "recuperar contraseña" sigue siendo
+# válido. 1 hora: suficiente para revisar el correo, corto por seguridad.
+PASSWORD_RESET_TIMEOUT = 60 * 60
 RESERVAS_EMAIL_DESTINO = os.getenv(
     'RESERVAS_EMAIL_DESTINO',
     'juansebastiangirataguarin12@gmail.com',

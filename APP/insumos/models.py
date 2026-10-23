@@ -21,6 +21,13 @@ class Insumo(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     unidad_medida= models.CharField(max_length=20, choices=unidad_medida_choices)
     categoria = models.ForeignKey(CategoriaInsumo, on_delete=models.CASCADE)
+    proveedor_referencia = models.ForeignKey(
+        'proveedores.Proveedor',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='insumos_referencia',
+    )
     imagen = models.ImageField(upload_to='insumos/', blank=True, null=True)
     activo = models.BooleanField(default=True)
 

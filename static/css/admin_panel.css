@@ -101,6 +101,15 @@
     color: #7652a3 !important;
 }
 
+.navbar .navbar-nav .nav-link:focus-visible,
+.insumo-button:focus-visible,
+.insumo-category-link:focus-visible,
+.insumo-back-link:focus-visible,
+.insumo-select-action:focus-visible {
+    outline: 3px solid rgba(118, 82, 163, 0.3);
+    outline-offset: 3px;
+}
+
 /* Enlace activo */
 
 .navbar .navbar-nav .nav-link.active {
@@ -581,6 +590,15 @@ a.dashboard-module-blocked {
     border: 1px solid var(--admin-border);
     border-radius: 9px;
     padding: 10px 12px;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.insumo-form input:focus,
+.insumo-form select:focus,
+.insumo-form textarea:focus {
+    border-color: var(--admin-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(118, 82, 163, 0.13);
 }
 
 .insumo-image-grid {
@@ -1117,7 +1135,6 @@ a.dashboard-module-blocked {
 }
 
 .insumo-disclosure > summary::-webkit-details-marker,
-.insumo-add-disclosure > summary::-webkit-details-marker,
 .insumo-row-actions > summary::-webkit-details-marker,
 .insumo-edit-disclosure > summary::-webkit-details-marker {
     display: none;
@@ -1129,8 +1146,7 @@ a.dashboard-module-blocked {
     padding: 8px;
 }
 
-.insumo-editor-form h3,
-.insumo-add-form h3 {
+.insumo-editor-form h3 {
     margin: 0 0 2px;
     color: var(--admin-text);
     font-size: 1.08rem;
@@ -1269,31 +1285,17 @@ a.dashboard-module-blocked {
     font-size: 0.88rem;
 }
 
-.insumo-add-disclosure {
-    position: relative;
-    flex: 0 0 auto;
+.insumo-create-dialog {
+    width: min(560px, calc(100vw - 32px));
 }
 
-.insumo-add-disclosure > summary {
-    list-style: none;
-}
-
-.insumo-add-form {
-    position: absolute;
-    z-index: 5;
-    top: calc(100% + 10px);
-    right: 0;
-    display: grid;
-    width: min(390px, calc(100vw - 40px));
-    max-height: min(72vh, 680px);
+.insumo-create-dialog .insumo-editor-form {
     gap: 14px;
-    overflow-y: auto;
-    padding: 20px;
-    border: 1px solid var(--admin-border);
-    border-radius: 16px;
-    background: #fff;
-    box-shadow: 0 18px 48px rgba(54, 35, 80, 0.18);
-    animation: insumo-panel-enter 0.2s ease both;
+}
+
+.insumo-create-dialog .insumo-dialog-actions {
+    justify-content: flex-end;
+    margin-top: 6px;
 }
 
 .insumo-filter-bar {
@@ -1974,7 +1976,6 @@ a.dashboard-module-blocked {
     .insumo-sidebar,
     .insumo-main-panel,
     .insumo-row,
-    .insumo-add-form,
     .insumo-row-menu {
         animation: none;
     }
