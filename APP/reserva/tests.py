@@ -1,10 +1,14 @@
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.core import mail
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .models import Reserva
+from APP.productos.models import CategoriaProducto, Producto
+from APP.ventas.models import Comprobante
+
+from .models import DetalleReserva, Reserva
 
 
 @override_settings(
@@ -33,8 +37,10 @@ class ReservaSubmissionTests(TestCase):
         self.assertIn('wa.me/573118689862', response.json()['whatsapp_url'])
         reserva = Reserva.objects.get()
         self.assertEqual(reserva.nombre_cliente, 'Cliente Prisma')
-        self.assertEqual(reserva.postre, 'Café Chocolate')
-        self.assertEqual(reserva.cantidad, 2)
+        detalle = reserva.lineas.get()
+        self.assertEqual(detalle.nombre_producto, 'Café Chocolate')
+        self.assertEqual(detalle.cantidad, 2)
+        self.assertEqual(detalle.precio_unitario, Decimal('28000'))
         self.assertEqual(reserva.hora, None)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['reservas@example.com'])
@@ -57,3 +63,44 @@ class ReservaSubmissionTests(TestCase):
         self.assertFalse(response.json()['email_sent'])
         self.assertEqual(Reserva.objects.count(), 1)
         self.assertIn('no se pudo enviar el correo', response.json()['message'])
+
+
+class ReservaRelationsTests(TestCase):
+    def test_reservation_can_have_multiple_product_lines_and_receipts(self):
+        categoria = CategoriaProducto.objects.create(nombre='Postres')
+        producto_a = Producto.objects.create(
+            categoria=categoria,
+            nombre='Cheesecake',
+            descripcion='Cheesecake artesanal',
+            precio=Decimal('25000.00'),
+        )
+        producto_b = Producto.objects.create(
+            categoria=categoria,
+            nombre='Brownie',
+            descripcion='Brownie de chocolate',
+            precio=Decimal('18000.00'),
+        )
+        reserva = Reserva.objects.create(
+            nombre_cliente='Cliente Prisma',
+            fecha_reserva=date.today(),
+        )
+        detalle_a = DetalleReserva.objects.create(
+            reserva=reserva,
+            producto=producto_a,
+            cantidad=2,
+            precio_unitario=Decimal('25000.00'),
+        )
+        DetalleReserva.objects.create(
+            reserva=reserva,
+            producto=producto_b,
+            cantidad=1,
+            precio_unitario=Decimal('18000.00'),
+        )
+        comprobante = Comprobante.objects.create(
+            direccion_comprobante='comprobantes/reserva.pdf',
+            reserva=reserva,
+        )
+
+        self.assertEqual(reserva.lineas.count(), 2)
+        self.assertEqual(reserva.comprobantes.get(), comprobante)
+        self.assertEqual(detalle_a.subtotal, Decimal('50000.00'))
