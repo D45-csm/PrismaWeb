@@ -10,9 +10,19 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='producto',
-            name='imagen_principal',
-            field=models.ImageField(blank=True, default='productos/imagen_por_defecto.svg', null=True, upload_to='productos/'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AlterField(
+                    model_name='producto',
+                    name='imagen_principal',
+                    field=models.ImageField(
+                        blank=True,
+                        default='productos/imagen_por_defecto.svg',
+                        null=True,
+                        upload_to='productos/',
+                    ),
+                ),
+            ],
         ),
     ]

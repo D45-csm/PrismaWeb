@@ -5,37 +5,50 @@
 {% block body_attrs %} class="auth-page"{% endblock %}
 
 {% block content %}
-    <div class="auth-container">
+    <div class="auth-container customer-auth-container customer-recovery-container">
         <div class="auth-image">
             <div class="auth-image-overlay"></div>
             <div class="auth-image-text">
-                <h2>Recupera tu acceso</h2>
-                <p>Protegemos tu cuenta con un enlace personal</p>
+                <h2>Estamos para ayudarte</h2>
+                <p>Recupera tu cuenta de forma sencilla y segura.</p>
             </div>
         </div>
-        <div class="auth-form-container">
+        <div class="auth-form-container customer-auth-panel">
             <div class="auth-logo">
                 <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo">
             </div>
-            <h2>Recuperar contraseña</h2>
-            <p class="auth-subtitle">Te enviaremos un enlace seguro al correo registrado.</p>
-            {% if email_console %}
-                <p class="auth-alert" role="status">
-                    El correo está en modo de desarrollo: el enlace se mostrará en la consola del servidor.
-                    Para enviarlo al buzón, configura las credenciales SMTP.
-                </p>
-            {% endif %}
-            <form method="post">
+            <h2>¿Olvidaste tu contraseña?</h2>
+            <p class="auth-subtitle">
+                Escribe el correo de tu cuenta. Si existe, te mostraremos o regeneraremos
+                tu código personal para que puedas recuperar tu acceso sin depender de una sesión abierta.
+            </p>
+
+            <form method="post" action="">
                 {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="form-error" role="alert">{{ form.non_field_errors }}</div>
+                {% endif %}
+
                 <div class="form-group">
                     <label for="{{ form.email.id_for_label }}">Correo electrónico</label>
                     {{ form.email }}
                     {% for error in form.email.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                 </div>
-                <button type="submit" class="btn-primary btn-full">Enviar enlace</button>
+
+                <button type="submit" class="btn-primary btn-full">
+                    <i class="fa-regular fa-paper-plane" aria-hidden="true"></i>
+                    Continuar
+                </button>
             </form>
+
+            <div class="auth-alert" role="note">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                No enviamos correos ni mensajes. Usa el código que guardaste al crear tu cuenta.
+            </div>
+
             <div class="auth-switch">
-                <p><a href="{% url 'login' %}">Volver al inicio de sesión</a></p>
+                <p><a href="{% url 'login' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio de sesión</a></p>
+                <p>¿Prefieres ayuda personalizada? <a href="{% url 'contactos' %}">Contáctanos</a></p>
             </div>
         </div>
     </div>

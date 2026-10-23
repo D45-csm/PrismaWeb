@@ -1,33 +1,43 @@
-from smtplib import SMTPException
+import secrets
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.hashers import check_password, make_password
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.exceptions import ImproperlyConfigured, PermissionDenied
-from django.core.mail import send_mail
-from django.db import transaction
+from django.core.exceptions import PermissionDenied
 from django.http import Http404
+from django.db import transaction
 from django.db.models import Count, F, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST, require_http_methods
 
-from .forms import AdminLoginForm, LoginForm, RegistroForm, RolForm
+from .forms import (
+    AdminLoginForm,
+    CodigoRecuperacionForm,
+    LoginForm,
+    NuevaContrasenaForm,
+    RecuperarPasswordForm,
+    RegistroForm,
+    RolForm,
+)
 from .models import Usuario
-from .tokens import email_verification_token
 from APP.compra_insumos.models import DetalleCompraInsumo
 from APP.insumos.models import Insumo
 from APP.productos.models import Producto
 from APP.reserva.models import Reserva
 from APP.ventas.models import DetalleVenta
 from .permissions import exigir_permiso, usuario_puede_acceder
+
+RECOVERY_CODE_MAX_ATTEMPTS = 5
+RECOVERY_CODE_LOCKOUT = timedelta(minutes=15)
+RECOVERY_GRANT_TTL = timedelta(minutes=10)
 
 
 def es_administrador(user):
@@ -154,70 +164,28 @@ def registro_view(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
-            try:
-                with transaction.atomic():
-                    usuario = form.save()
-                    uid = urlsafe_base64_encode(force_bytes(usuario.pk))
-                    token = email_verification_token.make_token(usuario)
-                    current_site = get_current_site(request)
-                    verification_url = (
-                        f'{"https" if request.is_secure() else "http"}://'
-                        f'{current_site.domain}'
-                        f'{reverse("verificar_correo", kwargs={"uidb64": uid, "token": token})}'
-                    )
-                    send_mail(
-                        'Confirma tu correo de Prisma',
-                        (
-                            f'Hola {usuario.username},\n\n'
-                            'Confirma que este correo te pertenece abriendo este enlace:\n'
-                            f'{verification_url}\n\n'
-                            f'Si no creaste una cuenta en {current_site.name}, ignora este mensaje.'
-                        ),
-                        None,
-                        [usuario.email],
-                        fail_silently=False,
-                    )
-            except (OSError, SMTPException, ImproperlyConfigured, ValueError):
-                form.add_error(
-                    None,
-                    'No pudimos enviar el correo de verificación. Revisa la configuración del correo e inténtalo otra vez.',
-                )
-            else:
-                messages.success(
-                    request,
-                    'Te enviamos un enlace de verificación. Confirma tu correo antes de iniciar sesión.',
-                )
-                return redirect('registro')
+            usuario = form.save()
+            codigo_recuperacion = f'{secrets.randbelow(100_000_000):08d}'
+            usuario.recovery_code_hash = make_password(codigo_recuperacion)
+            usuario.save(update_fields=['recovery_code_hash'])
+            login(
+                request,
+                usuario,
+                backend='django.contrib.auth.backends.ModelBackend',
+            )
+            request.session['codigo_recuperacion_mostrar'] = codigo_recuperacion
+            messages.success(request, 'Tu cuenta Prisma está lista. ¡Bienvenido!')
+            return redirect('codigo_recuperacion_cuenta')
     else:
         form = RegistroForm()
     return render(request, 'usuarios/registro.html', {'form': form})
-
-
-def verificar_correo_view(request, uidb64, token):
-    try:
-        user_id = force_str(urlsafe_base64_decode(uidb64))
-        usuario = Usuario.objects.get(pk=user_id)
-    except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
-        raise Http404('El enlace de verificación no es válido.')
-
-    if usuario.is_active:
-        messages.info(request, 'Este correo ya fue verificado. Inicia sesión para continuar.')
-        return redirect('login')
-    if not email_verification_token.check_token(usuario, token):
-        messages.error(request, 'El enlace de verificación venció o no es válido.')
-        return redirect('registro')
-
-    usuario.is_active = True
-    usuario.save(update_fields=['is_active'])
-    login(request, usuario)
-    messages.success(request, 'Correo verificado. Tu cuenta de cliente está lista.')
-    return redirect('base_cliente')
 
 
 def login_view(request):
     if request.user.is_authenticated:
         return redirect(redireccion_post_login(request.user))
 
+    next_url = request.POST.get('next') or request.GET.get('next', '')
     if request.method == 'POST':
         form = LoginForm(request=request, data=request.POST)
         if form.is_valid():
@@ -227,10 +195,22 @@ def login_view(request):
             else:
                 request.session.set_expiry(0)
             messages.success(request, 'Inicio de sesión exitoso.')
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                return redirect(next_url)
             return redirect('base_cliente')
     else:
         form = LoginForm()
-    return render(request, 'usuarios/login.html', {'form': form})
+    return render(request, 'usuarios/login.html', {
+        'form': form,
+        'next': next_url,
+        'next_is_recovery_code': (
+            next_url.split('?', 1)[0] == reverse('codigo_recuperacion_cuenta')
+        ),
+    })
 
 
 def admin_login_view(request):
@@ -248,32 +228,256 @@ def admin_login_view(request):
     return render(
         request,
         'usuarios/login.html',
-        {'form': form, 'admin_login': True},
+        {
+            'form': form,
+            'admin_login': True,
+        },
     )
 
 
+@login_required(login_url='login')
+@require_http_methods(['GET', 'POST'])
+@never_cache
+def codigo_recuperacion_cuenta_view(request):
+    """Create or display once the customer's offline recovery code."""
+    if es_administrador(request.user):
+        return redirect('perfil')
+
+    if request.method == 'POST':
+        codigo = f'{secrets.randbelow(100_000_000):08d}'
+        request.user.recovery_code_hash = make_password(codigo)
+        request.user.recovery_code_attempts = 0
+        request.user.recovery_code_locked_until = None
+        request.user.recovery_reset_grant_hash = ''
+        request.user.recovery_reset_grant_expires_at = None
+        request.user.save(update_fields=[
+            'recovery_code_hash',
+            'recovery_code_attempts',
+            'recovery_code_locked_until',
+            'recovery_reset_grant_hash',
+            'recovery_reset_grant_expires_at',
+        ])
+        request.session['codigo_recuperacion_mostrar'] = codigo
+        return redirect('codigo_recuperacion_cuenta')
+
+    codigo = request.session.pop('codigo_recuperacion_mostrar', None)
+    return render(request, 'usuarios/codigo_recuperacion_cuenta.html', {
+        'codigo': codigo,
+        'tiene_codigo': bool(request.user.recovery_code_hash),
+    })
+
+
+@require_http_methods(['GET', 'POST'])
 def recuperar_view(request):
-    return render(request, 'usuarios/recuperar.html')
+    """Paso 1: identificar la cuenta y mostrar o regenerar el código de recuperación."""
+    if request.method == 'POST':
+        form = RecuperarPasswordForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email'].strip().lower()
+            request.session.pop('password_reset_user_id', None)
+            request.session.pop('password_reset_nonce', None)
+            request.session.pop('password_reset_expires_at', None)
+            request.session['recovery_email'] = email
+            messages.info(
+                request,
+                'Si la cuenta existe, ingresa el código personal que guardaste para continuar.',
+            )
+            return redirect('recuperar_codigo')
+    else:
+        form = RecuperarPasswordForm()
+
+    return render(request, 'usuarios/recuperar.html', {'form': form})
 
 
-class ClientePasswordResetView(auth_views.PasswordResetView):
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['email_console'] = (
-            settings.EMAIL_BACKEND
-            == 'django.core.mail.backends.console.EmailBackend'
+@require_http_methods(['GET', 'POST'])
+@never_cache
+def recuperar_codigo_view(request):
+    """Paso 2: verificar y consumir el código personal de recuperación."""
+    email = request.session.get('recovery_email')
+    if not email:
+        return redirect('recuperar')
+
+    usuario = Usuario.objects.filter(
+        email__iexact=email,
+        is_active=True,
+        is_staff=False,
+        is_superuser=False,
+    ).order_by('pk').first()
+
+    codigo_a_mostrar = request.session.pop('codigo_recuperacion_mostrar', None)
+
+    if request.method == 'POST':
+        form = CodigoRecuperacionForm(request.POST)
+        if form.is_valid() and usuario:
+            with transaction.atomic():
+                cuenta = Usuario.objects.select_for_update().filter(
+                    pk=usuario.pk,
+                    is_active=True,
+                    is_staff=False,
+                    is_superuser=False,
+                ).first()
+                ahora = timezone.now()
+                if (
+                    cuenta
+                    and cuenta.recovery_code_locked_until
+                    and cuenta.recovery_code_locked_until <= ahora
+                ):
+                    cuenta.recovery_code_attempts = 0
+                    cuenta.recovery_code_locked_until = None
+                vigente = (
+                    cuenta is not None
+                    and bool(cuenta.recovery_code_hash)
+                    and cuenta.recovery_code_attempts < RECOVERY_CODE_MAX_ATTEMPTS
+                    and (
+                        cuenta.recovery_code_locked_until is None
+                        or cuenta.recovery_code_locked_until <= ahora
+                    )
+                )
+
+                if vigente and check_password(
+                    form.cleaned_data['code'],
+                    cuenta.recovery_code_hash,
+                ):
+                    nonce = secrets.token_urlsafe(32)
+                    cuenta.recovery_code_hash = ''
+                    cuenta.recovery_code_attempts = 0
+                    cuenta.recovery_code_locked_until = None
+                    cuenta.recovery_reset_grant_hash = make_password(nonce)
+                    cuenta.recovery_reset_grant_expires_at = (
+                        timezone.now() + RECOVERY_GRANT_TTL
+                    )
+                    cuenta.save(update_fields=[
+                        'recovery_code_hash',
+                        'recovery_code_attempts',
+                        'recovery_code_locked_until',
+                        'recovery_reset_grant_hash',
+                        'recovery_reset_grant_expires_at',
+                    ])
+                    request.session.cycle_key()
+                    request.session.pop('recovery_email', None)
+                    request.session['password_reset_user_id'] = cuenta.pk
+                    request.session['password_reset_nonce'] = nonce
+                    request.session['password_reset_expires_at'] = int(
+                        cuenta.recovery_reset_grant_expires_at.timestamp()
+                    )
+                    request.session.set_expiry(int(RECOVERY_GRANT_TTL.total_seconds()))
+                    return redirect('recuperar_nueva_contrasena')
+
+                if cuenta and cuenta.recovery_code_hash:
+                    intentos = cuenta.recovery_code_attempts + 1
+                    if intentos >= RECOVERY_CODE_MAX_ATTEMPTS:
+                        cuenta.recovery_code_attempts = RECOVERY_CODE_MAX_ATTEMPTS
+                        cuenta.recovery_code_locked_until = ahora + RECOVERY_CODE_LOCKOUT
+                    else:
+                        cuenta.recovery_code_attempts = intentos
+                    cuenta.save(update_fields=[
+                        'recovery_code_attempts',
+                        'recovery_code_locked_until',
+                    ])
+
+        messages.error(
+            request,
+            'El código no es válido, ya se utilizó, está bloqueado temporalmente o no se ha generado para esta cuenta. '
+            'Si no tienes uno, vuelve a "¿Olvidaste tu contraseña?" para generarlo otra vez.',
         )
-        return context
+    else:
+        form = CodigoRecuperacionForm()
+
+    return render(request, 'usuarios/codigo_recuperacion.html', {
+        'form': form,
+        'codigo': codigo_a_mostrar,
+    })
 
 
-class ClientePasswordResetDoneView(auth_views.PasswordResetDoneView):
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['email_console'] = (
-            settings.EMAIL_BACKEND
-            == 'django.core.mail.backends.console.EmailBackend'
-        )
-        return context
+@require_http_methods(['GET', 'POST'])
+def recuperar_nueva_contrasena_view(request):
+    """Step 3: save a password using the short-lived verification grant."""
+    user_id = request.session.get('password_reset_user_id')
+    nonce = request.session.get('password_reset_nonce')
+    expires_at = request.session.get('password_reset_expires_at')
+    try:
+        sesion_vigente = bool(expires_at) and int(expires_at) > int(timezone.now().timestamp())
+    except (TypeError, ValueError):
+        sesion_vigente = False
+
+    if not user_id or not nonce or not sesion_vigente:
+        request.session.pop('password_reset_user_id', None)
+        request.session.pop('password_reset_nonce', None)
+        request.session.pop('password_reset_expires_at', None)
+        messages.error(request, 'La verificación venció. Inicia sesión para generar un código nuevo.')
+        return redirect('recuperar')
+
+    usuario = Usuario.objects.filter(
+        pk=user_id,
+        is_active=True,
+        is_staff=False,
+        is_superuser=False,
+    ).first()
+    if not usuario:
+        request.session.flush()
+        messages.error(request, 'La verificación ya no es válida. Inténtalo de nuevo.')
+        return redirect('recuperar')
+
+    grant_vigente = (
+        bool(usuario.recovery_reset_grant_hash)
+        and usuario.recovery_reset_grant_expires_at is not None
+        and usuario.recovery_reset_grant_expires_at > timezone.now()
+        and check_password(nonce, usuario.recovery_reset_grant_hash)
+    )
+    if not grant_vigente:
+        request.session.flush()
+        messages.error(request, 'La verificación venció. Inicia sesión para generar un código nuevo.')
+        return redirect('recuperar')
+
+    if request.method == 'POST':
+        form = NuevaContrasenaForm(usuario, request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                cuenta = Usuario.objects.select_for_update().filter(
+                    pk=usuario.pk,
+                    is_active=True,
+                    is_staff=False,
+                    is_superuser=False,
+                    recovery_reset_grant_expires_at__gt=timezone.now(),
+                ).first()
+                if (
+                    not cuenta
+                    or not cuenta.recovery_reset_grant_hash
+                    or not check_password(nonce, cuenta.recovery_reset_grant_hash)
+                ):
+                    request.session.flush()
+                    messages.error(
+                        request,
+                        'La verificación ya se utilizó o venció. Inténtalo de nuevo.',
+                    )
+                    return redirect('recuperar')
+
+                cuenta.set_password(form.cleaned_data['new_password1'])
+                cuenta.recovery_reset_grant_hash = ''
+                cuenta.recovery_reset_grant_expires_at = None
+                cuenta.recovery_code_hash = ''
+                cuenta.recovery_code_attempts = 0
+                cuenta.recovery_code_locked_until = None
+                cuenta.save(update_fields=[
+                    'password',
+                    'recovery_reset_grant_hash',
+                    'recovery_reset_grant_expires_at',
+                    'recovery_code_hash',
+                    'recovery_code_attempts',
+                    'recovery_code_locked_until',
+                ])
+            request.session.flush()
+            messages.success(
+                request,
+                'Tu contraseña fue actualizada correctamente. Ya puedes iniciar sesión.',
+            )
+            return redirect('login')
+    else:
+        form = NuevaContrasenaForm(usuario)
+
+    return render(request, 'usuarios/recuperar_nueva_contrasena.html', {
+        'form': form,
+    })
 
 
 @require_POST

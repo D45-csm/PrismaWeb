@@ -1,5 +1,7 @@
 from django import forms
 
+from APP.proveedores.models import Proveedor
+
 from .models import CategoriaInsumo, Insumo
 
 
@@ -32,7 +34,17 @@ class CategoriaInsumoForm(forms.ModelForm):
 class InsumoForm(forms.ModelForm):
     class Meta:
         model = Insumo
-        fields = ['nombre', 'descripcion', 'categoria', 'unidad_medida', 'imagen']
+        fields = [
+            'nombre',
+            'descripcion',
+            'categoria',
+            'unidad_medida',
+            'proveedor_referencia',
+            'imagen',
+        ]
+        labels = {
+            'proveedor_referencia': 'Proveedor de referencia',
+        }
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'placeholder': 'Ej. Leche entera',
@@ -45,8 +57,14 @@ class InsumoForm(forms.ModelForm):
             }),
             'categoria': forms.Select(attrs={'class': 'insumo-input'}),
             'unidad_medida': forms.Select(attrs={'class': 'insumo-input'}),
+            'proveedor_referencia': forms.Select(attrs={'class': 'insumo-input'}),
             'imagen': forms.ClearableFileInput(attrs={
                 'accept': 'image/*',
                 'class': 'insumo-input',
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['proveedor_referencia'].queryset = Proveedor.objects.order_by('nombre')
+        self.fields['proveedor_referencia'].empty_label = 'Sin proveedor de referencia'

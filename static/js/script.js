@@ -1,4 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.body.classList.add('is-ready');
+
+    if (!prefersReducedMotion) {
+        const revealTargets = document.querySelectorAll('.reveal-entry, .section-title, .page-header, .auth-form-container, .auth-image, .product-card, .seasonal-card, .featured-card, .contact-card');
+        revealTargets.forEach((el, index) => {
+            el.style.transitionDelay = `${Math.min(index * 0.06, 0.32)}s`;
+            requestAnimationFrame(() => el.classList.add('is-visible'));
+        });
+    }
 
     // ============================================
     // 0. RUTAS DE DJANGO (definidas en base_prisma.html)
@@ -6,31 +16,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const CFG = window.PRISMA || {};
     const URLS = CFG.urls || {};
     const IMG_BASE = CFG.imgBase || '';
-    // Convierte 'postre_1.jpeg' en '/static/img/postre_1.jpeg'
-    const imgUrl = (nombre) => IMG_BASE + encodeURI(nombre);
+    // Convierte 'postre_1.jpeg' en '/static/img/postre_1.jpeg'.
+    // Si ya es una URL absoluta (p.ej. una imagen subida a /media/...), se deja tal cual.
+    const imgUrl = (nombre) => (/^(https?:)?\//.test(nombre || '') ? nombre : IMG_BASE + encodeURI(nombre || ''));
 
     // ============================================
-    // 1. CONFIGURACIÓN Y DATOS
+    // 1. CONFIGURACIÓN Y DATOS (productos reales desde la base de datos)
     // ============================================
-    const productos = [
-        { id: 1, nombre: 'Manzana Verde', precio: 15000, img: 'mangue_azul_julho2023_dmr__420___1_-23855745.jpg', categoria: 'frutas', desc: 'Delicioso postre con sabor a manzana verde, textura suave y cremosa.' },
-        { id: 2, nombre: 'Café Chocolate', precio: 15000, img: 'postre_1.jpeg', categoria: 'chocolate', desc: 'La combinación perfecta de café y chocolate. Intenso y aromático.' },
-        { id: 3, nombre: 'Naranja Fresca', precio: 15000, img: 'postre_2.jpeg', categoria: 'frutas', desc: 'Refrescante postre con sabor cítrico a naranja natural.' },
-        { id: 4, nombre: 'Coco Tropical', precio: 15000, img: 'postre_3.jpg', categoria: 'especiales', desc: 'Exótico postre con coco rallado y crema tropical.' },
-        { id: 5, nombre: 'Mango Exótico', precio: 15000, img: 'postre_4.jpg', categoria: 'frutas', desc: 'Sabor tropical intenso a mango maduro.' },
-        { id: 6, nombre: 'Fresa Chocolate', precio: 15000, img: 'postre_5.jpg', categoria: 'chocolate', desc: 'Fresa fresca cubierta de chocolate suave.' },
-        { id: 7, nombre: 'Piña Amarilla', precio: 15000, img: 'postre_6.jpg', categoria: 'frutas', desc: 'Dulce y tropical postre con piña fresca.' },
-        { id: 8, nombre: 'Corazón Rojo', precio: 15000, img: 'postre_7.jpg', categoria: 'especiales', desc: 'Especial romántico con frutos rojos y chocolate.' }
-    ];
+    const leerDatosJSON = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return [];
+        try {
+            return JSON.parse(el.textContent) || [];
+        } catch (e) {
+            return [];
+        }
+    };
 
-    const temporada = [
-        { id: 101, nombre: 'Cheesecake Frutos Rojos', desc: 'Suave y cremoso con coulis artesanal.', precio: 15000, img: 'frutos rojos.jpeg', categoria: 'especiales' },
-        { id: 102, nombre: 'Arándano', desc: 'Cítrica y refrescante con merengue.', precio: 15000, img: 'Arándano.jpeg', categoria: 'frutas' },
-        { id: 103, nombre: 'Mango', desc: 'Relleno de chocolate belga fundido.', precio: 15000, img: 'mango.jpeg', categoria: 'chocolate' },
-        { id: 104, nombre: 'Coulant Maracuyá', desc: 'Puro sabor a la pasión.', precio: 15000, img: 'postre de maracuyá.jpeg', categoria: 'especiales' },
-        { id: 105, nombre: 'Tiramisú Clásico', desc: 'El italiano tradicional.', precio: 15000, img: 'postre_6.jpg', categoria: 'especiales' },
-        { id: 106, nombre: 'Mousse Maracuyá', desc: 'Aireada y refrescante.', precio: 15000, img: 'postre_7.jpg', categoria: 'frutas' }
-    ];
+    const productos = leerDatosJSON('productos-data');
+    const temporada = leerDatosJSON('temporada-data');
+
+    // ============================================
+    // 1-B. REVELADO AL HACER SCROLL
+    // (definido aquí porque el grid de productos/temporada se arma con
+    // JavaScript: hay que poder observar tarjetas nuevas cada vez que se
+    // vuelven a pintar, por ejemplo al buscar o filtrar)
+    // ============================================
+    let observadorRevelado = null;
+    if ('IntersectionObserver' in window && !prefersReducedMotion) {
+        observadorRevelado = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in', 'is-visible');
+                    observadorRevelado.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.18, rootMargin: '0px 0px -40px 0px' });
+    }
+    const observarRevelado = (elementos) => {
+        if (observadorRevelado) {
+            elementos.forEach(el => observadorRevelado.observe(el));
+        } else {
+            elementos.forEach(el => { el.classList.add('animate-in', 'is-visible'); });
+        }
+    };
 
     let carrito = JSON.parse(localStorage.getItem('prismaCarrito')) || [];
     let productoActual = null;
@@ -400,6 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
+        observarRevelado(grid.querySelectorAll('.product-card'));
     };
 
     const renderTemporada = () => {
@@ -418,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
+        observarRevelado(grid.querySelectorAll('.seasonal-card'));
     };
 
     // ============================================
@@ -526,8 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     const filtrarProductos = (categoria) => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        const btnActivo = [...document.querySelectorAll('.filter-btn')]
-            .find(b => b.textContent.trim().toLowerCase() === categoria || (categoria === 'todos' && b.textContent.trim().toLowerCase() === 'todos'));
+        const btnActivo = document.querySelector(`.filter-btn[data-categoria="${categoria}"]`);
         if (btnActivo) btnActivo.classList.add('active');
         renderProductos(categoria === 'todos' ? productos : productos.filter(p => p.categoria === categoria));
     };
@@ -535,24 +565,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // 7. ANIMACIONES E INICIALIZACIÓN
     // ============================================
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('animate-in');
-            }
-        });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.product-card, .seasonal-card, .featured-card, .contact-card').forEach(el => {
-        observer.observe(el);
-    });
+    // .product-card y .seasonal-card se observan desde renderProductos() y
+    // renderTemporada() (se pintan por JS); aquí solo falta lo que ya está
+    // en el HTML desde el primer render del servidor.
+    observarRevelado(document.querySelectorAll('.featured-card, .contact-card, .section-title, [data-reveal]'));
 
     // Efecto de header al hacer scroll
     const header = document.getElementById('header');
     if (header) {
+        let scrollTicking = false;
         window.addEventListener('scroll', () => {
-            header.classList.toggle('scrolled', window.scrollY > 40);
-        });
+            if (scrollTicking) return;
+            scrollTicking = true;
+            // requestAnimationFrame evita recalcular en cada evento de scroll
+            // (pueden ser decenas por segundo) y lo alinea con el repintado
+            // del navegador: más fluido y más barato en CPU.
+            requestAnimationFrame(() => {
+                header.classList.toggle('scrolled', window.scrollY > 40);
+                scrollTicking = false;
+            });
+        }, { passive: true });
     }
 
     // Inicializar componentes según la página
@@ -666,6 +698,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const nav = document.getElementById('navMenu');
         if (nav) setMenuMovil(!nav.classList.contains('mobile-open'));
     };
+
+    const activarTransicionesDePagina = () => {
+        const links = document.querySelectorAll('a[href]');
+        links.forEach(link => {
+            if (!link.href || link.target === '_blank' || link.protocol === 'mailto:' || link.protocol === 'tel:') return;
+            link.addEventListener('click', (event) => {
+                const url = new URL(link.href, window.location.href);
+                if (url.origin !== window.location.origin) return;
+                if (event.defaultPrevented) return;
+                if (window.location.pathname === url.pathname && window.location.search === url.search) return;
+                document.body.classList.add('is-transitioning');
+            });
+        });
+    };
+    activarTransicionesDePagina();
 
     // Exponer al ámbito global lo que necesitan los onclick del HTML
     window.agregarAlCarrito = agregarAlCarrito;

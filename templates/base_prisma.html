@@ -4,10 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Prisma - El arte del postre{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2">
-    <link rel="stylesheet" href="{% static 'css/messages.css' %}?v=1">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=7">
+    <link rel="stylesheet" href="{% static 'css/messages.css' %}?v=2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <noscript>
+        <style>
+            /* Sin JavaScript no hay quién añada la clase "animate-in", así que
+               mostramos el contenido de inmediato en vez de dejarlo invisible. */
+            .product-card, .seasonal-card, .featured-card, .contact-card, .section-title {
+                opacity: 1 !important;
+                transform: none !important;
+            }
+        </style>
+    </noscript>
 </head>
 <body{% block body_attrs %}{% endblock %}>
 {% block content %}{% endblock %}
@@ -19,8 +29,8 @@
             imgBase: "{% static 'img/' %}",
             urls: {
                 inicio: "{% url 'base_cliente' %}",
-                productos: "{% url 'lista_productos' %}",
-                temporada: "{% url 'lista_productos' %}",
+                productos: "{% url 'productos' %}",
+                temporada: "{% url 'temporada' %}",
                 reservas: "{% url 'reservas' %}",
                 contactos: "{% url 'contactos' %}",
                 carrito: "{% url 'carrito' %}",
