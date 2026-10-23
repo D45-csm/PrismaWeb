@@ -265,7 +265,13 @@
                         <td>{{ reserva.nombre_cliente }}</td>
                         <td>{{ reserva.fecha_reserva|date:"d/m/Y" }}</td>
                         <td>{{ reserva.hora|time:"h:i A"|default:"Por acordar" }}</td>
-                        <td>{{ reserva.postre|default:"—" }} × {{ reserva.cantidad }}</td>
+                        <td>
+                            {% for linea in reserva.lineas.all %}
+                                {{ linea.nombre_producto }} × {{ linea.cantidad }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                —
+                            {% endfor %}
+                        </td>
                         <td>
                             <span class="status-badge status-pending">
                                 {{ reserva.estado|default:"Pendiente" }}
