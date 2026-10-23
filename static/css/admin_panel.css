@@ -101,6 +101,15 @@
     color: #7652a3 !important;
 }
 
+.navbar .navbar-nav .nav-link:focus-visible,
+.insumo-button:focus-visible,
+.insumo-category-link:focus-visible,
+.insumo-back-link:focus-visible,
+.insumo-select-action:focus-visible {
+    outline: 3px solid rgba(118, 82, 163, 0.3);
+    outline-offset: 3px;
+}
+
 /* Enlace activo */
 
 .navbar .navbar-nav .nav-link.active {
@@ -581,6 +590,15 @@ a.dashboard-module-blocked {
     border: 1px solid var(--admin-border);
     border-radius: 9px;
     padding: 10px 12px;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.insumo-form input:focus,
+.insumo-form select:focus,
+.insumo-form textarea:focus {
+    border-color: var(--admin-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(118, 82, 163, 0.13);
 }
 
 .insumo-image-grid {
