@@ -1,5 +1,8 @@
 from django.db import models
 from APP.usuarios.models import Usuario
+from APP.productos.models import Producto
+
+
 # Create your models here.
 class Reserva(models.Model):
     choices_estado = [
@@ -25,8 +28,6 @@ class Reserva(models.Model):
     hora = models.TimeField(blank=True, null=True)
     numero_personas = models.PositiveIntegerField(null=True, blank=True, )
     tipo_reserva = models.CharField(max_length=50, choices=choices_tipo_reserva, default='Para llevar')
-    postre = models.CharField(max_length=120, blank=True)
-    cantidad = models.PositiveSmallIntegerField(default=1)
     detalles = models.TextField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=choices_estado, default='Pendiente')
     asistencia = models.CharField(max_length=20, choices=choice_asistencia, blank=True , null=True)
@@ -34,3 +35,28 @@ class Reserva(models.Model):
     def __str__(self):
         nombre = self.usuario.username if self.usuario else "Usuario Eliminado/Invitado"
         return f"Reserva de {nombre} el {self.fecha_reserva} a las {self.hora}"
+
+
+class DetalleReserva(models.Model):
+    reserva = models.ForeignKey(
+        Reserva,
+        on_delete=models.CASCADE,
+        related_name='lineas',
+    )
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='detalles_reserva',
+    )
+    nombre_producto = models.CharField(max_length=120)
+    cantidad = models.PositiveIntegerField()
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.cantidad}x {self.nombre_producto} (Reserva #{self.reserva_id})"
+
+    @property
+    def subtotal(self):
+        return self.cantidad * self.precio_unitario

@@ -6,12 +6,14 @@ from urllib.parse import quote
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .models import Reserva
+from .models import DetalleReserva, Reserva
+from APP.productos.models import Producto
 
 
 logger = logging.getLogger(__name__)
@@ -75,17 +77,23 @@ def reservas_view(request):
             status=400,
         )
 
-    reserva = Reserva.objects.create(
-        nombre_cliente=nombre,
-        telefono=telefono,
-        fecha_reserva=fecha_reserva,
-        hora=None,
-        postre=postre,
-        cantidad=cantidad,
-        detalles=detalles,
-    )
-
     precio_unitario = POSTRES[postre]
+    with transaction.atomic():
+        reserva = Reserva.objects.create(
+            nombre_cliente=nombre,
+            telefono=telefono,
+            fecha_reserva=fecha_reserva,
+            hora=None,
+            detalles=detalles,
+        )
+        DetalleReserva.objects.create(
+            reserva=reserva,
+            producto=Producto.objects.filter(nombre__iexact=postre).first(),
+            nombre_producto=postre,
+            cantidad=cantidad,
+            precio_unitario=precio_unitario,
+        )
+
     total = precio_unitario * cantidad
     precio_texto = f'${total:,}'.replace(',', '.') if precio_unitario else 'A cotizar'
     fecha_formateada = fecha_reserva.strftime('%d/%m/%Y')
