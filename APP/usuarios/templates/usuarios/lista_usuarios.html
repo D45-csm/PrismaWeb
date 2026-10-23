@@ -1,70 +1,96 @@
-{% extends 'base_admin.html' %}
+{% extends 'base_crud.html' %}
 {% load static %}
 
-{% block title %}Lista de Usuarios - PRISMA{% endblock %}
+{% block title %}Lista de usuarios | Prisma{% endblock %}
+{% block crud_page_class %}insumo-dashboard user-admin-page{% endblock %}
+{% block crud_layout_class %}admin-crud-workspace--single{% endblock %}
+{% block crud_header %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='DIRECTORIO PRISMA' title='Lista de usuarios' description='Consulta las cuentas registradas y administra los roles asignados.' summary_value=total_usuarios summary_label='usuarios' summary_icon='fa-solid fa-users' summary2_value=usuarios_activos summary2_label='usuarios activos' summary2_icon='fa-solid fa-circle-check' back_url=perfil_url back_label='Volver al panel' %}
+{% endblock %}
 
-{% block content %}
-<link rel="stylesheet" href="{% static 'css/lista_usuarios.css' %}">
-
-<div class="prisma-container">
-    <!-- Botón para volver al Panel de Administración -->
-    <div class="prisma-header-nav">
-        <a href="{% url 'perfil' %}" class="btn-back">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            Volver al Panel
-        </a>
-    </div>
-
-    <h1 class="prisma-title">Lista de usuarios</h1>
-    <p class="prisma-subtitle">Administra y visualiza los usuarios registrados en el sistema.</p>
-
-    <div class="prisma-card">
-        <ul class="user-list">
+{% block crud_main_class %}admin-crud-panel{% endblock %}
+{% block crud_main %}
+    <section aria-labelledby="user-list-heading">
+        <div class="admin-crud-panel__heading">
+            <div>
+                <span class="admin-eyebrow">CUENTAS REGISTRADAS</span>
+                <h2 id="user-list-heading">Usuarios</h2>
+                <p>Asigna un rol a cada cuenta según los permisos que necesite.</p>
+            </div>
+        </div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Usuario</th>
+                        <th scope="col">Correo</th>
+                        <th scope="col">Teléfono</th>
+                        <th scope="col">Rol actual</th>
+                        {% if puede_cambiar_roles %}<th scope="col">Cambiar rol</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
             {% for usuario in usuarios %}
-                <li class="user-item">
-                    <div class="user-info-wrapper">
-                        <div class="user-icon-box">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                        </div>
-                        
-                        <div class="user-details">
-                            <div class="user-detail-group">
-                                <span class="user-detail-label">Usuario</span>
-                                <span class="user-detail-value">{{ usuario.username }}</span>
-                            </div>
-                            
-                            <div class="user-detail-group">
-                                <span class="user-detail-label">Correo</span>
-                                <span class="user-detail-value">{{ usuario.email }}</span>
-                            </div>
-                            
-                            <div class="user-detail-group">
-                                <span class="user-detail-label">Teléfono</span>
-                                <span class="user-detail-value">{{ usuario.telefono|default:"No registrado" }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </li>
+                    <tr>
+                        <td class="col-name">{{ usuario.username }}</td>
+                        <td>{{ usuario.email|default:"Sin correo registrado" }}</td>
+                        <td>{{ usuario.telefono|default:"No registrado" }}</td>
+                        <td>
+                            {% for rol in usuario.groups.all %}
+                                {{ rol.name }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                <span class="empty-text">Sin rol asignado</span>
+                            {% endfor %}
+                        </td>
+                        {% if puede_cambiar_roles %}
+                            <td>
+                                <form method="post" class="user-role-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="usuario_id" value="{{ usuario.pk }}">
+                                    <label class="visually-hidden" for="rol-{{ usuario.pk }}">
+                                        Rol de {{ usuario.username }}
+                                    </label>
+                                    <select id="rol-{{ usuario.pk }}" name="rol"
+                                            data-user-role-select
+                                            {% if usuario.pk == usuario_actual_id %}disabled{% endif %}>
+                                        <option value="">Sin rol</option>
+                                        {% for rol in roles %}
+                                            <option value="{{ rol.pk }}"{% if usuario.groups.all|length == 1 and rol in usuario.groups.all %} selected{% endif %}>
+                                                {{ rol.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if usuario.pk == usuario_actual_id %}
+                                        <span class="user-role-note">No puedes cambiar tu propio rol.</span>
+                                    {% else %}
+                                        <button type="submit" class="admin-button admin-button-primary"
+                                                data-user-role-save hidden>
+                                            Guardar
+                                        </button>
+                                        <noscript>
+                                            <button type="submit" class="admin-button admin-button-primary">
+                                                Guardar
+                                            </button>
+                                        </noscript>
+                                    {% endif %}
+                                </form>
+                            </td>
+                        {% endif %}
+                    </tr>
             {% empty %}
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                    </div>
-                    <p class="fw-bold mb-1">No hay usuarios registrados</p>
-                    <small>Cuando se registren nuevos usuarios, aparecerán en esta sección.</small>
-                </div>
-            {% endfor %}
-        </ul>
-    </div>
-</div>
+                    <tr>
+                        <td class="admin-table-empty" colspan="{% if puede_cambiar_roles %}5{% else %}4{% endif %}">
+                            No hay usuarios registrados.
+                        </td>
+                    </tr>
+        {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/lista_usuarios.js' %}?v=2" defer></script>
 {% endblock %}

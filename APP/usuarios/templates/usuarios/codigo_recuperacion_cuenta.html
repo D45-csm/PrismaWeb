@@ -1,0 +1,64 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Código de recuperación - Prisma{% endblock %}
+{% block body_attrs %} class="auth-page"{% endblock %}
+
+{% block content %}
+    <div class="auth-container customer-auth-container customer-recovery-container">
+        <div class="auth-image">
+            <div class="auth-image-overlay"></div>
+            <div class="auth-image-text">
+                <h2>Protege tu cuenta</h2>
+                <p>Guarda tu código en un lugar privado para recuperar el acceso cuando lo necesites.</p>
+            </div>
+        </div>
+        <div class="auth-form-container customer-auth-panel">
+            <div class="auth-logo">
+                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
+            </div>
+            {% if codigo %}
+                <h2>Guarda tu código</h2>
+                <p class="auth-subtitle">
+                    Muéstralo una sola vez y guárdalo en un lugar privado. No caduca, sirve una sola vez y se bloquea durante 15 minutos tras cinco intentos incorrectos.
+                    Si lo pierdes, puedes generar otro mientras tengas la sesión iniciada.
+                </p>
+                <div class="recovery-code-card">
+                    <p class="recovery-code-label">Tu código personal</p>
+                    <output id="recovery-code-value" class="recovery-code-value" aria-label="Código de recuperación">{{ codigo }}</output>
+                    <button class="recovery-code-copy" type="button" data-copy-recovery-code>
+                        Copiar código
+                    </button>
+                    <p class="recovery-code-copy-status" data-copy-recovery-code-status aria-live="polite"></p>
+                </div>
+                <p class="auth-subtitle">
+                    Puedes copiarlo o tomar una captura para guardarlo. Mantén esa copia privada y accesible solo para ti.
+                </p>
+                <p class="auth-alert" role="note">
+                    No compartas este código. Al generar uno nuevo, el anterior deja de funcionar.
+                </p>
+            {% else %}
+                <h2>Tu código de recuperación</h2>
+                <p class="auth-subtitle">
+                    El código no se envía por correo ni se puede consultar después de mostrarlo.
+                    Guárdalo fuera de este dispositivo. Si generas otro, el anterior se invalida.
+                </p>
+                {% if tiene_codigo %}
+                    <p class="auth-alert" role="note">Ya tienes un código guardado. Generar otro lo reemplazará.</p>
+                {% else %}
+                    <p class="auth-alert" role="note">Todavía no tienes un código. Genéralo y guárdalo ahora.</p>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <button class="btn-primary btn-full" type="submit">
+                        {% if tiene_codigo %}Generar un código nuevo{% else %}Generar mi código{% endif %}
+                    </button>
+                </form>
+            {% endif %}
+            <div class="auth-switch">
+                <p><a href="{% url 'base_cliente' %}">Volver a Prisma</a></p>
+            </div>
+        </div>
+    </div>
+    {% if codigo %}<script src="{% static 'js/recovery_code.js' %}" defer></script>{% endif %}
+{% endblock %}

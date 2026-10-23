@@ -1,0 +1,21 @@
+.swal2-popup {
+    border: 1px solid rgba(176, 25, 126, 0.1) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 20px 60px rgba(25, 16, 32, 0.2) !important;
+}
+
+.prisma-message-title {
+    color: #111827 !important;
+    font-family: Georgia, "Times New Roman", serif !important;
+    font-size: 20px !important;
+}
+
+.prisma-message-text {
+    color: #6b7280 !important;
+    font-size: 13px !important;
+}
+
+.prisma-message-confirm {
+    font-family: Georgia, "Times New Roman", serif !important;
+    font-size: 13px !important;
+}
