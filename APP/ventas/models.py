@@ -11,6 +11,13 @@ class Comprobante(models.Model):
     ]
     direccion_comprobante = models.FileField(upload_to='comprobantes/')
     estado = models.CharField(max_length=50, choices=CHOICES_ESTADO, default='Pendiente de Confirmación')
+    reserva = models.ForeignKey(
+        Reserva,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='comprobantes',
+    )
 
     def __str__(self):
         return f"Comprobante #{self.id} - {self.estado}"
@@ -22,9 +29,6 @@ class Venta(models.Model):
     
     #SET_NULL por si se elimina la reserva, la venta siga existiendo en el historial.
     reserva = models.ForeignKey(Reserva, on_delete=models.SET_NULL, null=True, blank=True)
-    
-    # RELACIÓN MUCHOS A MUCHOS
-    comprobantes = models.ManyToManyField(Comprobante, related_name='ventas', blank=True)
 
     def __str__(self):
         return f"Venta #{self.id} - Fecha: {self.fecha}"
