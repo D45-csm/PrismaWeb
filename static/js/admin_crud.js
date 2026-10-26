@@ -30,6 +30,9 @@
     document.querySelectorAll('[data-open-crud-editor]').forEach((button) => {
         button.addEventListener('click', () => {
             if (!editorDialog) return;
+            document.querySelectorAll('.admin-crud-editor-dialog[open]').forEach((dialog) => {
+                if (dialog !== editorDialog) dialog.close();
+            });
             const form = editorDialog.querySelector('form');
             if (form) {
                 form.querySelectorAll('input, select, textarea').forEach((field) => {
