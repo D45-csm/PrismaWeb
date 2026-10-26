@@ -131,7 +131,31 @@ class AccesoUsuarioTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Nuestros Cheesecakes')
+        self.assertContains(response, 'mobile-menu-dock')
+        self.assertContains(response, 'https://www.tiktok.com/@pasteleriaprisma')
+        self.assertContains(response, 'https://www.instagram.com/prisma_pasteleria1/')
         self.assertNotContains(response, '{%')
+
+    def test_contacto_muestra_canales_y_redes_con_el_usuario_de_prisma(self):
+        response = self.client.get(reverse('contactos'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Síguenos en redes sociales')
+        self.assertContains(
+            response,
+            'https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=juansebastiangirataguarin12%40gmail.com&amp;su=Consulta%20para%20Prisma',
+        )
+        self.assertContains(response, 'tel:+573118689862')
+        self.assertContains(response, '@prisma_pasteleria1')
+        self.assertContains(response, 'TikTok · @pasteleriaprisma')
+        self.assertContains(response, 'fab fa-tiktok')
+        self.assertContains(response, 'fab fa-instagram')
+        self.assertContains(response, 'https://maps.app.goo.gl/MkcuMJTPRKyRcEWt6?g_st=ic')
+        self.assertContains(
+            response,
+            'https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=juansebastiangirataguarin12%40gmail.com&amp;su=Consulta%20para%20Prisma',
+        )
+        self.assertNotContains(response, 'whatsapp-float')
 
     def test_recordarme_extiende_la_sesion_y_sin_marcar_usa_sesion_del_navegador(self):
         response = self.client.post(
