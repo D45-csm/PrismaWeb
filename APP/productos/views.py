@@ -112,9 +112,21 @@ def _render_admin_gestion(
 
 @login_required(login_url='admin_login')
 @user_passes_test(es_administrador, login_url='admin_login')
-@require_POST
+@require_http_methods(['GET', 'POST'])
 def gestionar_categoria_producto(request):
+    if request.method == 'GET':
+        query = request.GET.urlencode()
+        url = reverse('lista_productos')
+        return redirect(f'{url}?{query}' if query else url)
+
     accion = request.POST.get('accion')
+    permisos = {
+        'crear_categoria': 'productos.add_categoriaproducto',
+        'editar_categoria': 'productos.change_categoriaproducto',
+        'eliminar_categoria': 'productos.delete_categoriaproducto',
+    }
+    if accion in permisos:
+        exigir_permiso(request, permisos[accion])
 
     if accion == 'crear_categoria':
         form = CategoriaProductoForm(request.POST)
