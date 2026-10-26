@@ -853,10 +853,11 @@ body.is-transitioning * {
 }
 .auth-image {
     flex: 1;
-    background: url('../img/imagen_fruta_fondo.jpg') center/cover no-repeat;
+    background: url('../img/imagen_login.jpeg') center/cover no-repeat;
     position: relative;
     isolation: isolate;
 }
+.registration-page .auth-image { background-image: url('../img/imagen_registro.jpeg'); }
 .auth-image-overlay {
     position: absolute;
     inset: 0;
@@ -1012,20 +1013,25 @@ body.is-transitioning * {
 .customer-logout-button:hover { background: rgba(176, 25, 126, .25); border-color: var(--magenta); }
 .customer-logout-button:focus-visible { outline: 2px solid var(--blanco); outline-offset: 3px; }
 .customer-password-control { position: relative; }
-.customer-password-control input { padding-right: 96px; }
+.customer-password-control input { padding-right: 58px; }
 .customer-password-toggle {
     position: absolute;
     top: 50%;
     right: 10px;
     transform: translateY(-50%);
-    padding: 8px;
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    padding: 0;
     border: 0;
+    border-radius: 50%;
     background: transparent;
     color: var(--magenta);
-    font: inherit;
-    font-weight: 650;
+    font-size: 1.05rem;
     cursor: pointer;
 }
+.customer-password-toggle:hover { background: rgba(176, 25, 126, .08); }
 .customer-password-toggle:focus-visible { outline: 2px solid var(--magenta); outline-offset: 2px; border-radius: 6px; }
 .customer-recovery-link {
     display: flex;
@@ -1485,6 +1491,33 @@ body.is-transitioning * {
     .page-header-logo, .reservas-hero-logo { width: 80px; height: 80px; }
 }
 
+@media (max-width: 600px) {
+    .auth-page { min-height: 100svh; padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)); }
+    .auth-container { width: 100%; min-height: auto; overflow: hidden; border-radius: 22px; }
+    .auth-image { flex: 0 0 auto; width: 100%; min-height: 170px; }
+    .auth-image-overlay { background: linear-gradient(135deg, rgba(28, 18, 27, .78), rgba(65, 30, 58, .62)); }
+    .auth-image-text { padding: 22px 20px; }
+    .auth-image-text h2 { margin-bottom: 6px; font-size: clamp(1.65rem, 7vw, 2.35rem); line-height: 1.12; }
+    .auth-image-text p { max-width: 34ch; font-size: 1rem; line-height: 1.4; }
+    .customer-auth-container { min-height: auto; padding: 0; border-radius: 22px; }
+    .customer-recovery-container { min-height: auto; border-radius: 22px; }
+    .customer-recovery-container .auth-image { min-height: 180px; flex: 0 0 auto; }
+    .customer-recovery-container .auth-image-text { align-items: flex-start; text-align: left; }
+    .customer-recovery-container .auth-form-container > h2 { font-size: clamp(2rem, 8vw, 2.65rem); }
+    .customer-auth-panel { width: 100%; padding: 32px 24px 28px; }
+    .customer-auth-panel .auth-subtitle { margin-bottom: 22px; font-size: 1rem; line-height: 1.5; }
+    .auth-form-container { min-width: 0; padding: 32px 24px; border: 0; box-shadow: none; }
+    .auth-form-container h2 { font-size: clamp(2rem, 8vw, 2.65rem); }
+    .form-group { margin-bottom: 17px; }
+    .form-group input { min-height: 50px; padding: 13px 15px; font-size: 16px; }
+    .customer-password-control input { padding-right: 58px; }
+    .customer-password-toggle { right: 5px; width: 44px; height: 44px; }
+    .btn-full, .btn-primary { min-height: 48px; }
+    .recovery-code-card { margin: 20px 0; padding: 20px 16px; }
+    .recovery-code-value { overflow-wrap: anywhere; font-size: clamp(1.55rem, 8vw, 2rem); letter-spacing: .12em; }
+    .customer-recovery-container .auth-alert { font-size: .92rem; line-height: 1.5; }
+}
+
 @media (hover: none) {
     .featured-image img,
     .product-card img,
@@ -1533,7 +1566,19 @@ body.is-transitioning * {
     .contact-hero-content h1 { font-size: 2.2rem; }
     .contact-grid { grid-template-columns: 1fr; }
     .contact-panel, .reservas-info, .reservas-form-card { padding: 30px 22px; }
-    .customer-auth-panel { padding: 28px 20px 24px; }
+    .auth-page { padding: max(10px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom)); }
+    .auth-container, .customer-auth-container { border-radius: 18px; }
+    .auth-image { min-height: 150px; }
+    .customer-recovery-container .auth-image { min-height: 155px; }
+    .auth-image-text { padding: 18px 16px; }
+    .auth-image-text p { font-size: .92rem; }
+    .customer-auth-panel, .auth-form-container { padding: 25px 18px 22px; }
+    .customer-auth-panel .auth-logo { margin-bottom: 16px; }
+    .customer-auth-panel .auth-subtitle { margin-bottom: 18px; }
+    .auth-switch { margin-top: 18px; line-height: 1.55; }
+    .customer-login-form-options { align-items: flex-start; }
+    .customer-login-form-options .customer-recovery-setup-link { margin-left: 0; }
+    .recovery-code-card { padding: 18px 12px; }
 }
 
 /* ============================================
