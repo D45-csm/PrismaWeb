@@ -1,8 +1,9 @@
 Hola {{ usuario.get_full_name|default:usuario.username }},
 
 Recibimos una solicitud para restablecer la contraseña de tu cuenta Prisma.
-Abre este enlace para elegir una nueva contraseña:
+Ingresa este código en la página de recuperación de contraseña:
 
-{{ enlace }}
+{{ codigo }}
 
+El código vence en 10 minutos y solo se puede usar una vez.
 Si no solicitaste este cambio, puedes ignorar este mensaje.
