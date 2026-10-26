@@ -5,11 +5,6 @@
             <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
         </a>
 
-        <button class="mobile-menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false"
-                onclick="toggleMobileMenu()">
-            <i class="fas fa-bars"></i>
-        </button>
-
         <nav class="nav-menu" id="navMenu" aria-label="Navegación principal">
             <ul>
                 <li><a class="{% if active == 'inicio' %}active{% endif %}" href="{% url 'base_cliente' %}">Inicio</a></li>
@@ -38,3 +33,9 @@
         </div>
     </div>
 </header>
+<div class="mobile-menu-dock container">
+    <button class="mobile-menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false"
+            aria-controls="navMenu" onclick="toggleMobileMenu()">
+        <i class="fas fa-bars"></i>
+    </button>
+</div>
