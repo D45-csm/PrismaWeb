@@ -43,7 +43,7 @@ class GestionInsumosTests(TestCase):
         self.assertContains(response, 'class="admin-page-heading"')
         self.assertContains(response, 'insumo-active-summary')
         self.assertContains(response, 'css/admin_crud.css')
-        self.assertContains(response, 'js/admin_crud.js')
+        self.assertContains(response, 'js/admin_crud.js?v=5')
         self.assertContains(response, 'class="admin-crud-sidebar insumo-sidebar"')
         self.assertContains(response, 'class="admin-crud-main insumo-main-panel"')
         self.assertContains(response, f'action="{self.url}"')
@@ -178,7 +178,7 @@ class GestionInsumosTests(TestCase):
 
         page = self.client.get(self.url)
         self.assertContains(page, 'js/admin_messages.js')
-        self.assertContains(page, 'js/insumos.js?v=1')
+        self.assertContains(page, 'js/insumos.js?v=2')
 
         response = self.client.post(
             url,
