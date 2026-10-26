@@ -78,34 +78,5 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-brand">
-                    <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma"
-                        style="height: 60px; margin-bottom: 15px;">
-                    <p>El arte del postre</p>
-                </div>
-                <div class="footer-links">
-                    <h4>Enlaces Rápidos</h4>
-                    <ul>
-                        <li><a href="{% url 'base_cliente' %}">Inicio</a></li>
-                        <li><a href="{% url 'productos' %}">Productos</a></li>
-                        <li><a href="{% url 'temporada' %}">Temporada</a></li>
-                        <li><a href="{% url 'reservas' %}">Reservas</a></li>
-                        <li><a href="{% url 'contactos' %}">Contactos</a></li>
-                    </ul>
-                </div>
-                <div class="footer-contact">
-                    <h4>Contáctanos</h4>
-                    <p><i class="fas fa-phone"></i> +57 3118689862</p>
-                    <p><i class="fas fa-envelope"></i> juansebastiangirataguarin12@gmail.com</p>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 Prisma - El arte del postre. Todos los derechos reservados.</p>
-            </div>
-        </div>
-    </footer>
+    {% include 'partials/footer_cliente.html' %}
 {% endblock %}
