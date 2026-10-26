@@ -1,17 +1,4 @@
 (() => {
-    const createInsumoDialog = document.querySelector('#insumoCreateDialog');
-    if (createInsumoDialog) {
-        document.querySelectorAll('[data-open-insumo-create]').forEach((button) => {
-            button.addEventListener('click', () => createInsumoDialog.showModal());
-        });
-        createInsumoDialog.querySelectorAll('[data-close-insumo-create]').forEach((button) => {
-            button.addEventListener('click', () => createInsumoDialog.close());
-        });
-        if (createInsumoDialog.dataset.open === 'true') {
-            createInsumoDialog.showModal();
-        }
-    }
-
     const deleteDialog = document.querySelector('#deleteCategoryDialog');
     if (deleteDialog) {
         const categoryId = deleteDialog.querySelector('#deleteCategoryId');
@@ -70,14 +57,29 @@
     if (categoryDialog) {
         const createForm = categoryDialog.querySelector('#categoryCreateForm');
         const editForm = categoryDialog.querySelector('[data-category-edit-form]');
-        const openCategoryDialog = (mode) => {
+        const resetCategoryCreateForm = () => {
+            createForm.reset();
+            createForm.querySelectorAll('input:not([type="hidden"]), textarea')
+                .forEach((field) => { field.value = ''; });
+            createForm.querySelectorAll('.insumo-field-error, .admin-form-errors')
+                .forEach((error) => error.remove());
+        };
+        const closeCategoryDialog = () => {
+            categoryDialog.close();
+            resetCategoryCreateForm();
+        };
+        const openCategoryDialog = (mode, reset = false) => {
+            document.querySelectorAll('.admin-crud-editor-dialog[open]').forEach((dialog) => {
+                if (dialog !== categoryDialog) dialog.close();
+            });
+            if (reset && mode === 'crear') resetCategoryCreateForm();
             if (!categoryDialog.open) categoryDialog.showModal();
             if (createForm) createForm.hidden = mode !== 'crear';
             if (editForm) editForm.hidden = mode !== 'editar';
         };
 
         document.querySelectorAll('[data-open-category-dialog="crear"]').forEach((button) => {
-            button.addEventListener('click', () => openCategoryDialog('crear'));
+            button.addEventListener('click', () => openCategoryDialog('crear', true));
         });
         document.querySelectorAll('[data-open-category-dialog="editar"]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -87,7 +89,7 @@
             });
         });
         categoryDialog.querySelectorAll('.insumo-dialog-close, [data-close-category-dialog]')
-            .forEach((button) => button.addEventListener('click', () => categoryDialog.close()));
+            .forEach((button) => button.addEventListener('click', closeCategoryDialog));
         if (categoryDialog.dataset.open) {
             openCategoryDialog(categoryDialog.dataset.open);
         }
@@ -95,12 +97,38 @@
 
     const createDialog = document.querySelector('#insumoCreateDialog');
     if (createDialog) {
+        const createForm = createDialog.querySelector('form');
+        const resetCreateForm = () => {
+            createForm.reset();
+            createForm.querySelectorAll('input:not([type="hidden"]), textarea, select')
+                .forEach((field) => {
+                    if (field.tagName === 'SELECT') field.selectedIndex = 0;
+                    else field.value = '';
+                });
+            createForm.querySelectorAll('.insumo-field-error, .admin-form-errors')
+                .forEach((error) => error.remove());
+        };
+        const closeCreateDialog = () => {
+            createDialog.close();
+            resetCreateForm();
+        };
         document.querySelectorAll('[data-open-insumo-create]').forEach((button) => {
-            button.addEventListener('click', () => createDialog.showModal());
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.admin-crud-editor-dialog[open]').forEach((dialog) => {
+                    if (dialog !== createDialog) dialog.close();
+                });
+                resetCreateForm();
+                createDialog.showModal();
+            });
         });
         createDialog.querySelectorAll('[data-close-insumo-create]')
-            .forEach((button) => button.addEventListener('click', () => createDialog.close()));
-        if (createDialog.dataset.open) createDialog.showModal();
+            .forEach((button) => button.addEventListener('click', closeCreateDialog));
+        if (createDialog.dataset.open) {
+            document.querySelectorAll('.admin-crud-editor-dialog[open]').forEach((dialog) => {
+                if (dialog !== createDialog) dialog.close();
+            });
+            createDialog.showModal();
+        }
     }
 
     const dialog = document.querySelector('#insumoDialog');
