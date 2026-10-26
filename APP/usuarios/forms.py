@@ -160,7 +160,7 @@ class CodigoRecuperacionForm(forms.Form):
     code = forms.RegexField(
         regex=r'^[0-9]{8}$',
         label='Código de recuperación',
-        error_messages={'invalid': 'Ingresa el código de 8 dígitos que recibiste.'},
+        error_messages={'invalid': 'Ingresa el código de 8 dígitos que recibiste por correo.'},
         widget=forms.TextInput(attrs={
             'autocomplete': 'one-time-code',
             'inputmode': 'numeric',
