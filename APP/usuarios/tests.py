@@ -718,7 +718,7 @@ class GestionRolesUsuariosTests(TestCase):
         self.assertContains(response, 'id="roleDeleteDialog"')
         self.assertContains(response, 'insumo-category-dialog insumo-delete-dialog')
         self.assertContains(response, f'data-role-delete-id="{rol.pk}"')
-        self.assertContains(response, 'js/admin_crud.js?v=4')
+        self.assertContains(response, 'js/admin_crud.js?v=5')
         self.assertNotContains(response, '<script>\n')
         self.assertNotContains(response, 'onclick="return confirm(')
 

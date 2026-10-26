@@ -47,7 +47,7 @@ class ProveedorNotificacionesTests(TestCase):
         self.assertContains(response, 'data-crud-delete-url=')
         self.assertContains(response, 'data-crud-delete-name="Proveedor de prueba"')
         self.assertContains(response, 'id="crudDeleteDialog"')
-        self.assertContains(response, 'js/admin_crud.js')
+        self.assertContains(response, 'js/admin_crud.js?v=5')
 
     def test_proveedor_se_edita_en_dialogo_y_comparte_filtros_de_insumos(self):
         proveedor = Proveedor.objects.create(nombre='Distribuidora Prisma')
