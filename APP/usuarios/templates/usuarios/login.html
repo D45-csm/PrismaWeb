@@ -25,7 +25,7 @@
                 {% elif next_is_recovery_code %}
                     Inicia sesión y te llevaremos a generar o renovar tu código de recuperación.
                 {% else %}
-                    No necesitas Gmail: ingresa con el correo que usaste al registrarte, tu usuario o tu teléfono.
+                    Ingresa con el correo que usaste al registrarte, tu usuario o tu teléfono.
                 {% endif %}
             </p>
 
@@ -77,7 +77,7 @@
                                 aria-controls="{{ form.password.id_for_label }}"
                                 aria-label="Mostrar contraseña"
                                 aria-pressed="false"
-                            >Mostrar</button>
+                            ><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
                         </div>
                         {% for error in form.password.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                     </div>
@@ -104,5 +104,5 @@
             <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
         </div>
     </div>
-    {% if not admin_login %}<script src="{% static 'js/customer_login.js' %}" defer></script>{% endif %}
+    {% if not admin_login %}<script src="{% static 'js/customer_login.js' %}?v=3" defer></script>{% endif %}
 {% endblock %}
