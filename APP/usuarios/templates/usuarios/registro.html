@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}Crear cuenta de cliente - Prisma{% endblock %}
-{% block body_attrs %} class="auth-page"{% endblock %}
+{% block body_attrs %} class="auth-page registration-page"{% endblock %}
 
 {% block content %}
     <div class="auth-container">
@@ -19,7 +19,7 @@
                 <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo">
             </div>
             <h2>Crear cuenta de cliente</h2>
-            <p class="auth-subtitle">Crea tu cuenta para disfrutar de Prisma. Al registrarte, guarda tu código de recuperación para proteger el acceso.</p>
+            <p class="auth-subtitle">Crea tu cuenta para disfrutar de Prisma.</p>
 
             {% if messages %}
                 {% for message in messages %}
@@ -35,7 +35,21 @@
                 {% for field in form %}
                     <div class="form-group">
                         <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        {{ field }}
+                        {% if field.name == 'password1' or field.name == 'password2' %}
+                            <div class="customer-password-control">
+                                {{ field }}
+                                <button
+                                    type="button"
+                                    class="customer-password-toggle"
+                                    data-password-toggle
+                                    aria-controls="{{ field.id_for_label }}"
+                                    aria-label="Mostrar contraseña"
+                                    aria-pressed="false"
+                                ><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                            </div>
+                        {% else %}
+                            {{ field }}
+                        {% endif %}
                         {% for error in field.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                         {% if field.help_text %}<div class="auth-help">{{ field.help_text|safe }}</div>{% endif %}
                     </div>
@@ -49,4 +63,5 @@
             <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
         </div>
     </div>
+    <script src="{% static 'js/customer_login.js' %}?v=3" defer></script>
 {% endblock %}

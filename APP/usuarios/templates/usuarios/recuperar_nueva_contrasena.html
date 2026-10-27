@@ -30,13 +30,33 @@
 
                 <div class="form-group">
                     <label for="{{ form.new_password1.id_for_label }}">Nueva contraseña</label>
-                    {{ form.new_password1 }}
+                    <div class="customer-password-control">
+                        {{ form.new_password1 }}
+                        <button
+                            type="button"
+                            class="customer-password-toggle"
+                            data-password-toggle
+                            aria-controls="{{ form.new_password1.id_for_label }}"
+                            aria-label="Mostrar nueva contraseña"
+                            aria-pressed="false"
+                        ><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                    </div>
                     {% for error in form.new_password1.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                 </div>
 
                 <div class="form-group">
                     <label for="{{ form.new_password2.id_for_label }}">Confirma la nueva contraseña</label>
-                    {{ form.new_password2 }}
+                    <div class="customer-password-control">
+                        {{ form.new_password2 }}
+                        <button
+                            type="button"
+                            class="customer-password-toggle"
+                            data-password-toggle
+                            aria-controls="{{ form.new_password2.id_for_label }}"
+                            aria-label="Mostrar confirmación de contraseña"
+                            aria-pressed="false"
+                        ><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                    </div>
                     {% for error in form.new_password2.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                 </div>
 
@@ -51,4 +71,5 @@
             </div>
         </div>
     </div>
+    <script src="{% static 'js/customer_login.js' %}?v=3" defer></script>
 {% endblock %}
