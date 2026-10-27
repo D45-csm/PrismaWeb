@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Prisma - El arte del postre{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=10">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=14">
     <link rel="stylesheet" href="{% static 'css/messages.css' %}?v=2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -12,7 +12,8 @@
         <style>
             /* Sin JavaScript no hay quién añada la clase "animate-in", así que
                mostramos el contenido de inmediato en vez de dejarlo invisible. */
-            .product-card, .seasonal-card, .featured-card, .contact-card, .section-title {
+            .product-card, .seasonal-card, .featured-card, .contact-card, .section-title,
+            .motion-reveal {
                 opacity: 1 !important;
                 transform: none !important;
             }
@@ -40,7 +41,7 @@
             }
         };
     </script>
-    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/script.js' %}?v=3"></script>
     <script src="{% static 'js/admin_messages.js' %}"></script>
 </body>
 </html>

@@ -1,14 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.body.classList.add('is-ready');
-
-    if (!prefersReducedMotion) {
-        const revealTargets = document.querySelectorAll('.reveal-entry, .section-title, .page-header, .auth-form-container, .auth-image, .product-card, .seasonal-card, .featured-card, .contact-card');
-        revealTargets.forEach((el, index) => {
-            el.style.transitionDelay = `${Math.min(index * 0.06, 0.32)}s`;
-            requestAnimationFrame(() => el.classList.add('is-visible'));
-        });
-    }
 
     // ============================================
     // 0. RUTAS DE DJANGO (definidas en base_prisma.html)
@@ -55,9 +46,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const observarRevelado = (elementos) => {
         if (observadorRevelado) {
-            elementos.forEach(el => observadorRevelado.observe(el));
+            elementos.forEach(el => {
+                el.classList.add('motion-reveal');
+                observadorRevelado.observe(el);
+            });
         } else {
-            elementos.forEach(el => { el.classList.add('animate-in', 'is-visible'); });
+            elementos.forEach(el => {
+                el.classList.add('motion-reveal', 'animate-in', 'is-visible');
+            });
         }
     };
 
@@ -568,7 +564,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // .product-card y .seasonal-card se observan desde renderProductos() y
     // renderTemporada() (se pintan por JS); aquí solo falta lo que ya está
     // en el HTML desde el primer render del servidor.
-    observarRevelado(document.querySelectorAll('.featured-card, .contact-card, .section-title, [data-reveal]'));
+    observarRevelado(document.querySelectorAll(
+        '.reveal-entry, .section-title, .page-header, .auth-form-container, .auth-image, ' +
+        '.featured-card, .contact-card, .contact-panel, .contact-channel-section, ' +
+        '.social-channel-section, .contact-map-note, .info-item, .footer-section, ' +
+        '.footer-bottom, [data-reveal]',
+    ));
 
     // Efecto de header al hacer scroll
     const header = document.getElementById('header');

@@ -1,5 +1,6 @@
 from io import BytesIO
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -303,6 +304,79 @@ class ProductoSeguridadTests(TestCase):
         categoria = CategoriaProducto.objects.get(nombre='Bebidas sin descripción')
         self.assertEqual(categoria.descripcion, '')
 
+    def test_categoria_repetida_reabre_formulario_y_url_anterior_redirige(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_categoria_repetida',
+            password='Clave-segura-123',
+            telefono='3001234103',
+            is_staff=True,
+        )
+        self.client.force_login(admin)
+        url = reverse('gestionar_categoria_producto')
+
+        response = self.client.post(url, {
+            'accion': 'crear_categoria',
+            'nombre': self.categoria.nombre,
+            'descripcion': 'Descripción duplicada',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['categoria_modal'], 'crear')
+        self.assertContains(response, 'Ya existe una categoría con ese nombre.')
+        self.assertContains(response, 'js/product_categories.js?v=2')
+        self.assertEqual(CategoriaProducto.objects.count(), 1)
+
+        response = self.client.get(url, {'editar_categoria': self.categoria.pk})
+        self.assertRedirects(
+            response,
+            f'{reverse("lista_productos")}?editar_categoria={self.categoria.pk}',
+        )
+
+    def test_permisos_de_categoria_se_exigen_segun_accion(self):
+        admin = get_user_model().objects.create_user(
+            username='admin_categoria_permisos',
+            password='Clave-segura-123',
+            telefono='3001234102',
+            is_staff=True,
+        )
+        grupo = Group.objects.create(name='Solo ver productos')
+        permiso_ver_productos = Permission.objects.get(
+            content_type__app_label='productos',
+            codename='view_producto',
+        )
+        grupo.permissions.add(permiso_ver_productos)
+        admin.groups.add(grupo)
+        self.client.force_login(admin)
+
+        url = reverse('gestionar_categoria_producto')
+        acciones = (
+            {
+                'accion': 'crear_categoria',
+                'nombre': 'Categoría no autorizada',
+                'descripcion': '',
+            },
+            {
+                'accion': 'editar_categoria',
+                'categoria_id': self.categoria.pk,
+                f'categoria-{self.categoria.pk}-nombre': 'Nombre alterado',
+                f'categoria-{self.categoria.pk}-descripcion': 'Descripción alterada',
+            },
+            {
+                'accion': 'eliminar_categoria',
+                'categoria_id': self.categoria.pk,
+            },
+        )
+        for datos in acciones:
+            with self.subTest(accion=datos['accion']):
+                response = self.client.post(url, datos)
+                self.assertEqual(response.status_code, 403)
+
+        self.assertFalse(
+            CategoriaProducto.objects.filter(nombre='Categoría no autorizada').exists(),
+        )
+        self.categoria.refresh_from_db()
+        self.assertEqual(self.categoria.nombre, 'Postres')
+        self.assertTrue(CategoriaProducto.objects.filter(pk=self.categoria.pk).exists())
+
     def test_no_se_puede_eliminar_categoria_con_productos(self):
         admin = get_user_model().objects.create_user(
             username='admin_categoria_producto_protegida',
@@ -343,12 +417,24 @@ class ProductoSeguridadTests(TestCase):
 
         self.assertContains(response, 'data-open-category-dialog="crear"')
         self.assertContains(response, 'data-open-category-dialog="editar"')
+        self.assertContains(
+            response,
+            f'data-category-edit-url="{reverse("lista_productos")}"',
+        )
         self.assertContains(response, 'data-confirm-category-delete')
         self.assertContains(response, 'id="categoryDialog"')
         self.assertContains(response, 'id="deleteCategoryDialog"')
         self.assertContains(response, 'product-category-name')
         self.assertNotContains(response, '>Todas</span>')
         self.assertNotContains(response, 'class="insumo-category-count">')
+
+        response = self.client.get(
+            reverse('lista_productos'),
+            {'editar_categoria': self.categoria.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-open="editar"')
+        self.assertContains(response, 'id="categoryEditForm"')
 
     def test_visitante_no_puede_abrir_vistas_de_escritura(self):
         rutas = (

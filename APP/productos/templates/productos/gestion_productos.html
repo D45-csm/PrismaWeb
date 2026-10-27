@@ -36,7 +36,8 @@
                     </summary>
                     <div class="insumo-category-menu-items">
                         <button type="button" data-open-category-dialog="editar"
-                                data-category-id="{{ categoria.pk }}">
+                                data-category-id="{{ categoria.pk }}"
+                                data-category-edit-url="{% url 'lista_productos' %}">
                             <i class="fa-regular fa-pen-to-square"></i> Editar
                         </button>
                         {% if categoria.total_productos %}
@@ -340,8 +341,8 @@
 
 {% block extra_js %}
     {{ block.super }}
-    <script src="{% static 'js/admin_crud.js' %}?v=3" defer></script>
+    <script src="{% static 'js/admin_crud.js' %}?v=5" defer></script>
     <script src="{% static 'js/product_editor.js' %}" defer></script>
-    <script src="{% static 'js/product_categories.js' %}" defer></script>
+    <script src="{% static 'js/product_categories.js' %}?v=2" defer></script>
     <script src="{% static 'js/admin_status_filter.js' %}?v=1" defer></script>
 {% endblock %}
