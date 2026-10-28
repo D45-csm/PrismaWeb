@@ -11,9 +11,10 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.core.mail import send_mail
 from django.core.exceptions import PermissionDenied
-from django.http import Http404
+from django.db.models.deletion import ProtectedError
+from django.http import Http404, JsonResponse
 from django.db import transaction
-from django.db.models import Count, F, Sum
+from django.db.models import Count, F, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -30,6 +31,7 @@ from .forms import (
     RecuperarPasswordForm,
     RegistroForm,
     RolForm,
+    UsuarioAdminForm,
 )
 from .models import Usuario
 from APP.compra_insumos.models import DetalleCompraInsumo
@@ -54,10 +56,128 @@ def redireccion_post_login(user):
     return 'perfil' if es_administrador(user) else 'base_cliente'
 
 
+def _puede_cambiar_roles(request, usuario=None):
+    return (
+        (usuario is None or usuario.pk != request.user.pk)
+        and usuario_puede_acceder(request.user, 'usuarios.change_usuario')
+        and usuario_puede_acceder(request.user, 'auth.change_group')
+    )
+
+
+def _render_lista_usuarios(
+    request,
+    form=None,
+    modal_open='',
+    usuario_actual=None,
+):
+    puede_cambiar_roles = _puede_cambiar_roles(request, usuario_actual)
+    query = request.GET.get('q', '').strip()[:100]
+    estado = request.GET.get('estado', 'activos')
+    usuarios = Usuario.objects.prefetch_related('groups')
+    if estado == 'activos':
+        usuarios = usuarios.filter(is_active=True)
+    elif estado == 'inactivos':
+        usuarios = usuarios.filter(is_active=False)
+    else:
+        estado = 'todos'
+    if query:
+        usuarios = usuarios.filter(
+            Q(username__icontains=query)
+            | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+            | Q(email__icontains=query)
+            | Q(telefono__icontains=query)
+        )
+    return render(request, 'usuarios/lista_usuarios.html', {
+        'usuarios': usuarios.order_by('username'),
+        'roles': Group.objects.order_by('name'),
+        'usuario_actual_id': request.user.pk,
+        'total_usuarios': Usuario.objects.count(),
+        'usuarios_activos': Usuario.objects.filter(is_active=True).count(),
+        'usuarios_inactivos': Usuario.objects.filter(is_active=False).count(),
+        'puede_cambiar_roles': puede_cambiar_roles,
+        'puede_agregar_usuarios': usuario_puede_acceder(
+            request.user,
+            'usuarios.add_usuario',
+        ),
+        'puede_cambiar_usuarios': usuario_puede_acceder(
+            request.user,
+            'usuarios.change_usuario',
+        ),
+        'puede_eliminar_usuarios': usuario_puede_acceder(
+            request.user,
+            'usuarios.delete_usuario',
+        ),
+        'query': query,
+        'estado': estado,
+        'form': form or UsuarioAdminForm(
+            instance=usuario_actual,
+            include_role=puede_cambiar_roles,
+        ),
+        'usuario_actual': usuario_actual,
+        'modo_edicion': usuario_actual is not None,
+        'modal_open': modal_open,
+    })
+
+
 @login_required(login_url='admin_login')
 @user_passes_test(es_administrador, login_url='admin_login')
 def lista_usuarios(request):
+    exigir_permiso(request, 'usuarios.view_usuario')
     if request.method == 'POST':
+        accion = request.POST.get('accion')
+        if accion == 'crear_usuario':
+            exigir_permiso(request, 'usuarios.add_usuario')
+            puede_asignar_rol = _puede_cambiar_roles(request)
+            form = UsuarioAdminForm(
+                request.POST,
+                include_role=puede_asignar_rol,
+            )
+            if form.is_valid():
+                usuario = form.save()
+                if puede_asignar_rol:
+                    rol = form.cleaned_data['rol']
+                    usuario.groups.set([rol] if rol else [])
+                messages.success(
+                    request,
+                    f'Usuario "{usuario.username}" creado correctamente.',
+                )
+                return redirect(request.path)
+            return _render_lista_usuarios(request, form=form, modal_open='crear')
+
+        if accion == 'editar_usuario':
+            exigir_permiso(request, 'usuarios.change_usuario')
+            usuario_id = request.POST.get('usuario_id', '')
+            if not usuario_id.isdecimal() or len(usuario_id) > 18:
+                raise Http404
+            usuario = get_object_or_404(Usuario, pk=int(usuario_id))
+            puede_asignar_rol = _puede_cambiar_roles(request, usuario)
+            form = UsuarioAdminForm(
+                request.POST,
+                instance=usuario,
+                include_role=puede_asignar_rol,
+            )
+            if form.is_valid():
+                usuario = form.save()
+                if puede_asignar_rol:
+                    rol = form.cleaned_data['rol']
+                    usuario.groups.set([rol] if rol else [])
+                messages.success(
+                    request,
+                    f'Usuario "{usuario.username}" actualizado correctamente.',
+                )
+                return redirect(request.path)
+            return _render_lista_usuarios(
+                request,
+                form=form,
+                modal_open='editar',
+                usuario_actual=usuario,
+            )
+
+        if accion:
+            messages.error(request, 'No se reconoció la acción solicitada.')
+            return redirect(request.path)
+
         exigir_permiso(request, 'usuarios.change_usuario')
         exigir_permiso(request, 'auth.change_group')
         usuario_id = request.POST.get('usuario_id', '')
@@ -82,19 +202,95 @@ def lista_usuarios(request):
             messages.success(request, f'Se quitó el rol de "{usuario.username}".')
         return redirect('Lista de usuarios')
 
+    usuario_actual = None
+    edit_id = request.GET.get('editar_usuario', '')
+    if edit_id:
+        if not edit_id.isdecimal() or len(edit_id) > 18:
+            raise Http404
+        usuario_actual = get_object_or_404(Usuario, pk=int(edit_id))
+    return _render_lista_usuarios(
+        request,
+        modal_open='editar' if usuario_actual else request.GET.get('modal', ''),
+        usuario_actual=usuario_actual,
+    )
+
+
+@login_required(login_url='admin_login')
+@user_passes_test(es_administrador, login_url='admin_login')
+def detalle_usuario(request, pk):
     exigir_permiso(request, 'usuarios.view_usuario')
-    usuarios = Usuario.objects.prefetch_related('groups').order_by('username')
-    return render(request, 'usuarios/lista_usuarios.html', {
-        'usuarios': usuarios,
-        'roles': Group.objects.order_by('name'),
-        'usuario_actual_id': request.user.pk,
-        'total_usuarios': Usuario.objects.count(),
-        'usuarios_activos': Usuario.objects.filter(is_active=True).count(),
-        'puede_cambiar_roles': usuario_puede_acceder(
+    usuario = get_object_or_404(Usuario.objects.prefetch_related('groups'), pk=pk)
+    roles = ', '.join(usuario.groups.values_list('name', flat=True))
+    puede_cambiar = usuario.pk != request.user.pk and usuario_puede_acceder(
+        request.user,
+        'usuarios.change_usuario',
+    )
+    return JsonResponse({
+        'id': usuario.pk,
+        'nombre': usuario.username,
+        'descripcion': 'Cuenta de usuario',
+        'meta': [
+            f'Correo: {usuario.email}' if usuario.email else 'Sin correo registrado',
+            f'Teléfono: {usuario.telefono}' if usuario.telefono else 'Sin teléfono',
+            f'Rol: {roles}' if roles else 'Sin rol asignado',
+        ],
+        'imagen': '',
+        'activo': usuario.is_active,
+        'puede_editar': usuario_puede_acceder(
             request.user,
-            'auth.change_group',
+            'usuarios.change_usuario',
+        ),
+        'puede_cambiar_estado': puede_cambiar,
+        'edit_url': f'{reverse("Lista de usuarios")}?editar_usuario={usuario.pk}',
+        'status_url': reverse('cambiar_estado_usuario', args=[usuario.pk]),
+    })
+
+
+@login_required(login_url='admin_login')
+@user_passes_test(es_administrador, login_url='admin_login')
+@require_POST
+def cambiar_estado_usuario(request, pk):
+    exigir_permiso(request, 'usuarios.change_usuario')
+    usuario = get_object_or_404(Usuario, pk=pk)
+    if usuario.pk == request.user.pk:
+        raise PermissionDenied
+    valor = request.POST.get('activo')
+    if valor not in ('true', 'false'):
+        return JsonResponse(
+            {'error': 'Selecciona si el usuario está activo.'},
+            status=400,
+        )
+    usuario.is_active = valor == 'true'
+    usuario.save(update_fields=['is_active'])
+    return JsonResponse({
+        'id': usuario.pk,
+        'activo': usuario.is_active,
+        'message': (
+            'Usuario activado correctamente.'
+            if usuario.is_active else 'Usuario desactivado correctamente.'
         ),
     })
+
+
+@login_required(login_url='admin_login')
+@user_passes_test(es_administrador, login_url='admin_login')
+@require_POST
+def eliminar_usuario(request, pk):
+    exigir_permiso(request, 'usuarios.delete_usuario')
+    usuario = get_object_or_404(Usuario, pk=pk)
+    if usuario.pk == request.user.pk:
+        raise PermissionDenied
+    nombre = usuario.username
+    try:
+        usuario.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            f'No se puede eliminar a "{nombre}" porque tiene registros asociados.',
+        )
+    else:
+        messages.success(request, f'El usuario "{nombre}" ha sido eliminado.')
+    return redirect('Lista de usuarios')
 
 
 def _render_gestion_roles(request, form=None, rol_actual=None):
