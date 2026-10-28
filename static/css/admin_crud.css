@@ -365,43 +365,6 @@
     font-size: 0.78rem;
 }
 
-.user-role-form {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-}
-
-.user-role-form select {
-    min-width: 150px;
-    min-height: 38px;
-    padding: 6px 10px;
-    border: 1px solid var(--admin-border);
-    border-radius: 9px;
-    background: #fff;
-    color: var(--admin-text);
-    font: inherit;
-    font-size: 0.85rem;
-}
-
-.user-role-form select:disabled {
-    background: #f3f1f6;
-    color: var(--admin-muted);
-    cursor: not-allowed;
-}
-
-.user-role-form .admin-button {
-    min-height: 38px;
-    padding: 7px 12px;
-    font-size: 0.82rem;
-}
-
-.user-role-note {
-    color: var(--admin-muted);
-    font-size: 0.75rem;
-}
-
 .admin-status {
     display: inline-flex;
     align-items: center;
@@ -912,24 +875,29 @@
 }
 
 .product-editor-availability-state,
-.supplier-editor-availability-state {
+.supplier-editor-availability-state,
+.user-editor-availability-state {
     min-width: 52px;
 }
 
 .product-editor-availability-state .is-active,
-.supplier-editor-availability-state .is-active {
+.supplier-editor-availability-state .is-active,
+.user-editor-availability-state .is-active {
     color: #27834b;
 }
 
 .product-editor-availability-state .is-inactive,
-.supplier-editor-availability-state .is-inactive {
+.supplier-editor-availability-state .is-inactive,
+.user-editor-availability-state .is-inactive {
     color: var(--admin-muted);
 }
 
 .product-editor-availability .insumo-availability-control input:checked ~ .product-editor-availability-state .is-inactive,
 .product-editor-availability .insumo-availability-control input:not(:checked) ~ .product-editor-availability-state .is-active,
 .supplier-editor-availability .insumo-availability-control input:checked ~ .supplier-editor-availability-state .is-inactive,
-.supplier-editor-availability .insumo-availability-control input:not(:checked) ~ .supplier-editor-availability-state .is-active {
+.supplier-editor-availability .insumo-availability-control input:not(:checked) ~ .supplier-editor-availability-state .is-active,
+.user-editor-availability .insumo-availability-control input:checked ~ .user-editor-availability-state .is-inactive,
+.user-editor-availability .insumo-availability-control input:not(:checked) ~ .user-editor-availability-state .is-active {
     display: none;
 }
 
