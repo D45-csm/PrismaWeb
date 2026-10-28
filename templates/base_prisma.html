@@ -4,23 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Prisma - El arte del postre{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=14">
-    <link rel="stylesheet" href="{% static 'css/messages.css' %}?v=2">
+
+    <!-- Preconnect / DNS-prefetch para recursos externos (acelera carga de red) -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+    <!-- CSS del sitio -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=17">
+    <link rel="stylesheet" href="{% static 'css/messages.css' %}?v=3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Bloque para preloads específicos por página -->
+    {% block extra_head %}{% endblock %}
+
+    <!-- SweetAlert2 diferido para no bloquear el render inicial -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+
     <noscript>
         <style>
-            /* Sin JavaScript no hay quién añada la clase "animate-in", así que
-               mostramos el contenido de inmediato en vez de dejarlo invisible. */
+            /* Sin JavaScript mostramos el contenido de inmediato */
             .product-card, .seasonal-card, .featured-card, .contact-card, .section-title,
             .motion-reveal {
                 opacity: 1 !important;
                 transform: none !important;
+                filter: none !important;
             }
         </style>
     </noscript>
 </head>
 <body{% block body_attrs %}{% endblock %}>
+    <!-- Barra de progreso superior para transiciones instantáneas entre páginas -->
+    <div id="page-progress" aria-hidden="true"></div>
+
 {% block content %}{% endblock %}
 {% include 'partials/messages.html' %}
 
@@ -41,7 +58,7 @@
             }
         };
     </script>
-    <script src="{% static 'js/script.js' %}?v=3"></script>
-    <script src="{% static 'js/admin_messages.js' %}"></script>
+    <script src="{% static 'js/script.js' %}?v=4" defer></script>
+    <script src="{% static 'js/admin_messages.js' %}" defer></script>
 </body>
 </html>

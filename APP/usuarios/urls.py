@@ -5,6 +5,21 @@ from . import views
 urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('admin-login/', views.admin_login_view, name='admin_login'),
+    path(
+        'admin-login/recuperar/',
+        views.admin_recuperar_view,
+        name='admin_recuperar',
+    ),
+    path(
+        'admin-login/recuperar/codigo/',
+        views.admin_recuperar_codigo_view,
+        name='admin_recuperar_codigo',
+    ),
+    path(
+        'admin-login/recuperar/nueva-contrasena/',
+        views.admin_recuperar_nueva_contrasena_view,
+        name='admin_recuperar_nueva_contrasena',
+    ),
     path('logout/', views.logout_view, name='logout'),
     path('registro/', views.registro_view, name='registro'),
     path(
@@ -17,6 +32,11 @@ urlpatterns = [
         'recuperar/codigo/',
         views.recuperar_codigo_view,
         name='recuperar_codigo',
+    ),
+    path(
+        'recuperar/codigo/continuar/',
+        views.recuperar_codigo_email_link_view,
+        name='recuperar_codigo_email_link',
     ),
     path(
         'recuperar/nueva-contrasena/',

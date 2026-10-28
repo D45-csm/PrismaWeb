@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 from django import forms
 from django.contrib.auth import authenticate, password_validation
@@ -123,11 +124,11 @@ class UsuarioAdminForm(forms.ModelForm):
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(
-        label='Nombre de usuario, correo o teléfono',
+        label='Correo electrónico o teléfono',
         max_length=254,
         widget=forms.TextInput(attrs={
             'autocomplete': 'username',
-            'placeholder': 'Tu usuario, correo o teléfono',
+            'placeholder': 'Tu correo o teléfono',
             'autofocus': True,
         }),
     )
@@ -302,6 +303,26 @@ class NuevaContrasenaForm(forms.Form):
 
 
 class RegistroForm(UserCreationForm):
+    first_name = forms.CharField(
+        required=True,
+        max_length=80,
+        label='Nombre',
+        widget=forms.TextInput(attrs={
+            'autocomplete': 'given-name',
+            'placeholder': 'Tu nombre',
+            'maxlength': 80,
+        }),
+    )
+    last_name = forms.CharField(
+        required=True,
+        max_length=80,
+        label='Apellido',
+        widget=forms.TextInput(attrs={
+            'autocomplete': 'family-name',
+            'placeholder': 'Tu apellido',
+            'maxlength': 80,
+        }),
+    )
     email = forms.EmailField(required=True, label='Correo electrónico')
     telefono = forms.CharField(
         required=True,
@@ -317,16 +338,54 @@ class RegistroForm(UserCreationForm):
 
     class Meta:
         model = Usuario
-        fields = ['username', 'email', 'telefono', 'password1', 'password2']
+        fields = ['first_name', 'last_name', 'email', 'telefono', 'password1', 'password2']
+
+    def clean_first_name(self):
+        return self._clean_person_name('first_name')
+
+    def clean_last_name(self):
+        return self._clean_person_name('last_name')
+
+    def _clean_person_name(self, field_name):
+        value = ' '.join(self.cleaned_data[field_name].split())
+        if (
+            len(value) < 2
+            or not re.fullmatch(r"[^\W\d_]+(?:[ '-][^\W\d_]+)*", value, re.UNICODE)
+        ):
+            raise ValidationError(
+                'Usa solo letras; puedes incluir espacios, guiones o apóstrofos.',
+            )
+        return value
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.username = self._available_username()
         user.email = self.cleaned_data['email']
         user.is_active = True
         if commit:
             user.save()
             self.save_m2m()
         return user
+
+    def _available_username(self):
+        def normalize(value):
+            normalized = unicodedata.normalize('NFKD', value)
+            return ''.join(
+                character for character in normalized
+                if character.isascii() and character.isalnum()
+            ).lower()
+
+        base = '.'.join(filter(None, (
+            normalize(self.cleaned_data['first_name']),
+            normalize(self.cleaned_data['last_name']),
+        ))) or 'cliente'
+        username = base[:150]
+        suffix = 1
+        while Usuario.objects.filter(username__iexact=username).exists():
+            suffix_text = str(suffix)
+            username = f'{base[:150 - len(suffix_text) - 1]}{suffix_text}'
+            suffix += 1
+        return username
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()

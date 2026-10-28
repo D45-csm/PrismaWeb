@@ -25,7 +25,7 @@
                 {% elif next_is_recovery_code %}
                     Inicia sesión y te llevaremos a generar o renovar tu código de recuperación.
                 {% else %}
-                    Ingresa con el correo que usaste al registrarte, tu usuario o tu teléfono.
+                    Ingresa con el correo o teléfono asociado a tu cuenta.
                 {% endif %}
             </p>
 
@@ -50,6 +50,10 @@
 
                     <button type="submit" class="btn-primary btn-full">Ingresar</button>
                 </form>
+                <a href="{% url 'admin_recuperar' %}" class="customer-recovery-link">
+                    <i class="fa-regular fa-circle-question" aria-hidden="true"></i>
+                    ¿Olvidaste tu contraseña?
+                </a>
                 <div class="auth-switch">
                     <p><a href="{% url 'login' %}">Ir al acceso de clientes</a></p>
                 </div>
@@ -61,7 +65,7 @@
                     {% endif %}
 
                     <div class="form-group">
-                        <label for="{{ form.username.id_for_label }}">Correo, usuario o teléfono</label>
+                        <label for="{{ form.username.id_for_label }}">Correo electrónico o teléfono</label>
                         {{ form.username }}
                         {% for error in form.username.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                     </div>
