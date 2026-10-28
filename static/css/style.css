@@ -5,7 +5,7 @@
     /* Paleta Prisma */
     --rojo: #e63227;
     --naranja: #f47b20;
-    --amarillo: #f7d417;
+    --amarillo: #efa8cc;
     --verde: #7ab648;
     --teal: #0f9b8e;
     --azul: #2f6fd0;
@@ -53,12 +53,45 @@ html {
     scrollbar-color: #cbb5c2 transparent;
     scrollbar-width: thin;
 }
+#page-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: var(--arcoiris);
+    z-index: 999999;
+    opacity: 0;
+    transition: width .35s cubic-bezier(.16, 1, .3, 1), opacity .2s ease;
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(244, 123, 32, .7);
+}
+#page-progress.active {
+    opacity: 1;
+    width: 78%;
+}
+#page-progress.done {
+    width: 100%;
+    opacity: 0;
+    transition: width .15s ease, opacity .25s ease .1s;
+}
+
 body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     color: var(--negro);
     background: var(--blanco);
     line-height: 1.6;
     overflow-x: hidden;
+    animation: bodyFadeIn .22s ease-out both;
+}
+@keyframes bodyFadeIn {
+    from { opacity: .92; }
+    to { opacity: 1; }
+}
+
+body.page-navigating {
+    opacity: .94;
+    transition: opacity .2s ease;
 }
 img { max-width: 100%; display: block; }
 a { text-decoration: none; color: inherit; }
@@ -268,55 +301,55 @@ input[type="submit"]:focus-visible,
    6. ANIMACIONES GENERALES
    ============================================ */
 :root {
-    --motion-ease: cubic-bezier(.22, 1, .36, 1);
-    --motion-ease-strong: cubic-bezier(.16, 1, .3, 1);
+    --motion-ease: cubic-bezier(.16, 1, .3, 1);
+    --motion-ease-spring: cubic-bezier(.34, 1.56, .64, 1);
 }
 
 @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
+    from { opacity: 0; transform: translateY(14px); }
     to { opacity: 1; transform: translateY(0); }
 }
 @keyframes floatIn {
-    from { opacity: 0; transform: translate3d(0, 18px, 0) scale(.98); }
+    from { opacity: 0; transform: translate3d(0, 14px, 0) scale(.98); }
     to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
-.animate-fade-up { animation: fadeUp .72s var(--motion-ease) both; }
-.delay-1 { animation-delay: .14s; }
-.delay-2 { animation-delay: .28s; }
-.delay-3 { animation-delay: .42s; }
+.animate-fade-up { animation: fadeUp .42s var(--motion-ease) both; }
+.delay-1 { animation-delay: .06s; }
+.delay-2 { animation-delay: .12s; }
+.delay-3 { animation-delay: .18s; }
 
 .motion-reveal {
     opacity: 0;
-    transform: translate3d(0, 22px, 0) scale(.99);
-    filter: blur(2px);
+    transform: translate3d(0, 14px, 0);
     transition:
-        opacity .68s var(--motion-ease),
-        transform .78s var(--motion-ease),
-        filter .68s var(--motion-ease);
+        opacity .35s var(--motion-ease),
+        transform .35s var(--motion-ease);
+    will-change: opacity, transform;
 }
 
 .motion-reveal.is-visible {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+    will-change: auto;
 }
 
-/* Desfase visual para cada tarjeta dentro de la grilla */
+/* Desfase visual rápido y sutil dentro de la grilla */
 .product-grid .product-card:nth-child(3n+2),
 .seasonal-grid .seasonal-card:nth-child(3n+2),
 .featured-grid .featured-card:nth-child(3n+2),
-.contact-grid .contact-card:nth-child(3n+2) { transition-delay: .08s; }
+.contact-grid .contact-card:nth-child(3n+2) { transition-delay: .04s; }
 .product-grid .product-card:nth-child(3n+3),
 .seasonal-grid .seasonal-card:nth-child(3n+3),
 .featured-grid .featured-card:nth-child(3n+3),
-.contact-grid .contact-card:nth-child(3n+3) { transition-delay: .16s; }
+.contact-grid .contact-card:nth-child(3n+3) { transition-delay: .08s; }
 
-body.is-transitioning {
-    pointer-events: none;
+/* Entrada rápida de tarjetas al filtrar */
+@keyframes cardPopIn {
+    from { opacity: 0; transform: translate3d(0, 10px, 0) scale(.98); }
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
-
-body.is-transitioning * {
-    transition-duration: .15s !important;
+.product-grid .product-card {
+    animation: cardPopIn .26s var(--motion-ease) both;
 }
 
 /* ============================================
@@ -399,10 +432,11 @@ body.is-transitioning * {
     border-radius: 20px;
     overflow: hidden;
     box-shadow: var(--sombra);
-    transition: var(--transicion);
+    transition: transform .32s var(--motion-ease), box-shadow .32s var(--motion-ease), border-bottom-color .32s ease;
     border-bottom: 4px solid transparent;
+    transform: translateZ(0);
 }
-.featured-card:hover { box-shadow: 0 10px 26px rgba(44,44,44,.12); border-bottom-color: rgba(176,25,126,.55); transform: translateY(-6px); }
+.featured-card:hover { box-shadow: 0 16px 36px rgba(44,44,44,.12); border-bottom-color: rgba(176,25,126,.55); transform: translateY(-6px) translateZ(0); }
 .featured-image { height: 230px; overflow: hidden; }
 .featured-image img {
     width: 100%;
@@ -471,16 +505,17 @@ body.is-transitioning * {
     background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,249,244,.98));
     border-radius: 22px;
     overflow: hidden;
-    box-shadow: 0 16px 35px rgba(44,44,44,.08);
-    transition: transform .38s cubic-bezier(.2,.7,.25,1), box-shadow .38s ease, border-color .38s ease;
+    box-shadow: 0 14px 32px rgba(44,44,44,.08);
+    transition: transform .32s var(--motion-ease), box-shadow .32s var(--motion-ease), border-color .32s ease;
     border: 1px solid rgba(44,44,44,.06);
     position: relative;
     cursor: pointer;
+    transform: translateZ(0);
 }
 .product-card:hover {
     box-shadow: 0 18px 38px rgba(62,43,27,.12);
-    transform: translateY(-7px);
-    border-color: rgba(176,25,126,.18);
+    transform: translateY(-6px) translateZ(0);
+    border-color: rgba(176,25,126,.22);
 }
 .product-card img {
     width: 100%;
@@ -538,9 +573,10 @@ body.is-transitioning * {
     border-radius: 22px;
     overflow: hidden;
     box-shadow: var(--sombra);
-    transition: var(--transicion);
+    transition: transform .32s var(--motion-ease), box-shadow .32s var(--motion-ease), border-top-color .32s ease;
     border-top: 5px solid var(--teal);
     position: relative;
+    transform: translateZ(0);
 }
 .seasonal-card::before {
     content: 'NUEVO';
@@ -556,9 +592,9 @@ body.is-transitioning * {
     z-index: 2;
 }
 .seasonal-card:hover {
-    box-shadow: 0 10px 26px rgba(44,44,44,.12);
+    box-shadow: 0 16px 36px rgba(44,44,44,.12);
     border-top-color: var(--verde);
-    transform: translateY(-6px);
+    transform: translateY(-6px) translateZ(0);
 }
 .seasonal-card img {
     width: 100%;
@@ -568,6 +604,7 @@ body.is-transitioning * {
 }
 .seasonal-card:hover img {
     filter: brightness(1.025) saturate(1.02);
+    transform: scale(1.04) translateZ(0);
 }
 .seasonal-body { padding: 24px; }
 .seasonal-body h3 { 
@@ -991,7 +1028,8 @@ body.is-transitioning * {
 .form-options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 .remember-me { display: flex; align-items: center; gap: 8px; font-size: .95rem; }
 .forgot-link { color: var(--magenta); font-size: .95rem; }
-.auth-switch { text-align: center; margin-top: 25px; }
+.auth-switch { display: grid; gap: 10px; text-align: center; margin-top: 25px; }
+.auth-switch p { margin: 0; }
 .auth-switch a { color: var(--magenta); font-weight: 600; }
 .customer-login-form-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 22px; flex-wrap: wrap; }
 .customer-login-form-options .remember-me { margin: 0; }
@@ -1153,8 +1191,31 @@ body.is-transitioning * {
 .remember-me input { width: 16px; height: 16px; cursor: pointer; }
 .forgot-link { font-size: .9rem; color: var(--magenta); font-weight: 600; }
 .forgot-link:hover { text-decoration: underline; }
-.back-home { display: block; text-align: center; margin-top: 20px; color: var(--gris); }
-.back-home:hover { color: var(--magenta); }
+.back-home {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin: 25px auto 0;
+    padding: 11px 18px;
+    border: 1px solid rgba(176,25,126,.18);
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fff, #fff7fb);
+    color: #756a73;
+    font-weight: 650;
+    box-shadow: 0 8px 20px rgba(80,35,67,.08);
+    transition: transform .24s ease, box-shadow .24s ease, color .24s ease, border-color .24s ease;
+}
+.back-home i { color: var(--magenta); transition: transform .24s ease; }
+.back-home:hover {
+    color: var(--magenta);
+    border-color: rgba(176,25,126,.35);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(80,35,67,.14);
+}
+.back-home:hover i { transform: translateX(-3px); }
+.back-home:active { transform: translateY(0) scale(.98); }
 .auth-note {
     background: var(--gris-claro);
     color: var(--gris);
@@ -1667,9 +1728,9 @@ body.is-transitioning * {
     position: relative;
     box-shadow: 0 30px 80px rgba(0,0,0,.35);
     opacity: 0;
-    transform: translateY(40px) scale(0.97);
-    transition: opacity 0.35s cubic-bezier(0.25,0.46,0.45,0.94),
-                transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+    transform: translateY(16px) scale(0.97);
+    transition: opacity 0.22s var(--motion-ease),
+                transform 0.22s var(--motion-ease);
 }
 .product-modal-overlay.active .product-modal {
     opacity: 1;

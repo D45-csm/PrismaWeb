@@ -1,7 +1,7 @@
 {% extends 'base_prisma.html' %}
 {% load static %}
 
-{% block title %}Crear nueva contraseña - Prisma{% endblock %}
+{% block title %}{% if admin_recovery %}Nueva contraseña administrativa{% else %}Crear nueva contraseña{% endif %} - Prisma{% endblock %}
 {% block body_attrs %} class="auth-page"{% endblock %}
 
 {% block content %}
@@ -9,8 +9,8 @@
         <div class="auth-image">
             <div class="auth-image-overlay"></div>
             <div class="auth-image-text">
-                <h2>Ya casi terminas</h2>
-                <p>Elige una contraseña segura para volver a disfrutar de Prisma.</p>
+                <h2>{% if admin_recovery %}Acceso protegido{% else %}Ya casi terminas{% endif %}</h2>
+                <p>{% if admin_recovery %}Elige una contraseña segura para proteger el panel administrativo.{% else %}Elige una contraseña segura para volver a disfrutar de Prisma.{% endif %}</p>
             </div>
         </div>
         <div class="auth-form-container customer-auth-panel">
@@ -19,7 +19,7 @@
             </div>
             <h2>Crea tu nueva contraseña</h2>
             <p class="auth-subtitle">
-                La verificación se completó. Elige una contraseña que no hayas usado antes.
+                {% if admin_recovery %}La verificación administrativa se completó. Elige una contraseña nueva que no hayas usado antes.{% else %}La verificación se completó. Elige una contraseña que no hayas usado antes.{% endif %}
             </p>
 
             <form method="post" action="">
@@ -67,8 +67,9 @@
             </form>
 
             <div class="auth-switch">
-                <p><a href="{% url 'login' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio de sesión</a></p>
+                <p><a href="{% if admin_recovery %}{% url 'admin_login' %}{% else %}{% url 'login' %}{% endif %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio de sesión</a></p>
             </div>
+            <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al inicio</a>
         </div>
     </div>
     <script src="{% static 'js/customer_login.js' %}?v=3" defer></script>

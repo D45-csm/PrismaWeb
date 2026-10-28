@@ -1,7 +1,7 @@
 {% extends 'base_prisma.html' %}
 {% load static %}
 
-{% block title %}Recuperar contraseña - Prisma{% endblock %}
+{% block title %}{% if admin_recovery %}Recuperar acceso administrativo{% else %}Recuperar contraseña{% endif %} - Prisma{% endblock %}
 {% block body_attrs %} class="auth-page"{% endblock %}
 
 {% block content %}
@@ -9,18 +9,21 @@
         <div class="auth-image">
             <div class="auth-image-overlay"></div>
             <div class="auth-image-text">
-                <h2>Estamos para ayudarte</h2>
-                <p>Recupera tu cuenta de forma sencilla y segura.</p>
+                <h2>{% if admin_recovery %}Protegemos tu acceso{% else %}Estamos para ayudarte{% endif %}</h2>
+                <p>{% if admin_recovery %}Verificación privada para el equipo autorizado de Prisma.{% else %}Recupera tu cuenta de forma sencilla y segura.{% endif %}</p>
             </div>
         </div>
         <div class="auth-form-container customer-auth-panel">
             <div class="auth-logo">
                 <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo">
             </div>
-            <h2>¿Olvidaste tu contraseña?</h2>
+            <h2>{% if admin_recovery %}Recuperar acceso{% else %}¿Olvidaste tu contraseña?{% endif %}</h2>
             <p class="auth-subtitle">
-                Escribe el correo asociado a tu cuenta y te enviaremos un código de verificación
-                para que puedas crear una contraseña nueva.
+                {% if admin_recovery %}
+                    Escribe el correo registrado en una cuenta administrativa activa. Enviaremos allí un código de un solo uso.
+                {% else %}
+                    Escribe el correo asociado a tu cuenta y te enviaremos un código de verificación para que puedas crear una contraseña nueva.
+                {% endif %}
             </p>
 
             <form method="post" action="">
@@ -43,13 +46,22 @@
 
             <div class="auth-alert" role="note">
                 <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-                El código vence en 10 minutos y solo se puede usar una vez. Revisa también la carpeta de spam.
+                {% if admin_recovery %}
+                    Solo las cuentas administrativas activas pueden continuar. El código vence en 10 minutos, tiene intentos limitados y solo se usa una vez.
+                {% else %}
+                    El código vence en 10 minutos y solo se puede usar una vez. Revisa también la carpeta de spam.
+                {% endif %}
             </div>
 
             <div class="auth-switch">
-                <p><a href="{% url 'login' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio de sesión</a></p>
-                <p>¿Prefieres ayuda personalizada? <a href="{% url 'contactos' %}">Contáctanos</a></p>
+                {% if admin_recovery %}
+                    <p><a href="{% url 'admin_login' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al acceso administrativo</a></p>
+                {% else %}
+                    <p><a href="{% url 'login' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio de sesión</a></p>
+                    <p>¿Prefieres ayuda personalizada? <a href="{% url 'contactos' %}">Contáctanos</a></p>
+                {% endif %}
             </div>
+            <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al inicio</a>
         </div>
     </div>
 {% endblock %}

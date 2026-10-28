@@ -1,7 +1,9 @@
 import secrets
 import logging
 import smtplib
+from email import policy as email_policy
 from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -9,11 +11,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.hashers import check_password, make_password
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.db import transaction
-from django.db.models import Count, F, Sum
+from django.db.models import Count, F, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -44,6 +46,28 @@ RECOVERY_CODE_LOCKOUT = timedelta(minutes=15)
 RECOVERY_CODE_TTL = timedelta(minutes=10)
 RECOVERY_GRANT_TTL = timedelta(minutes=10)
 logger = logging.getLogger(__name__)
+
+
+class InlineImageEmailMultiAlternatives(EmailMultiAlternatives):
+    def __init__(self, *args, inline_image, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.inline_image = inline_image
+
+    def message(self, *, policy=email_policy.default):
+        message = super().message(policy=policy)
+        html_part = next(
+            (part for part in message.walk() if part.get_content_type() == 'text/html'),
+            None,
+        )
+        if html_part is None:
+            raise ValueError('El correo con logo debe incluir una alternativa HTML.')
+        html_part.add_related(
+            self.inline_image,
+            maintype='image',
+            subtype='png',
+            cid='<prisma-logo>',
+        )
+        return message
 
 
 def es_administrador(user):
@@ -237,6 +261,12 @@ def admin_login_view(request):
     )
 
 
+@require_http_methods(['GET', 'POST'])
+@never_cache
+def admin_recuperar_view(request):
+    return _recuperar_view(request, admin_only=True)
+
+
 @login_required(login_url='login')
 @require_http_methods(['GET', 'POST'])
 @never_cache
@@ -273,52 +303,108 @@ def codigo_recuperacion_cuenta_view(request):
     })
 
 
-@require_http_methods(['GET', 'POST'])
+@never_cache
 def recuperar_view(request):
-    """Send a short-lived recovery code to the account's email address."""
+    return _recuperar_view(request, admin_only=False)
+
+
+@never_cache
+def _recuperar_view(request, admin_only):
+    """Send a short-lived recovery code only to the matching account type."""
+    email_session_key = 'admin_recovery_email' if admin_only else 'recovery_email'
+    reset_prefix = 'admin_password_reset' if admin_only else 'password_reset'
+    code_url = 'admin_recuperar_codigo' if admin_only else 'recuperar_codigo'
+    form = RecuperarPasswordForm(request.POST or None)
     if request.method == 'POST':
-        form = RecuperarPasswordForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email'].strip().lower()
-            request.session.pop('password_reset_user_id', None)
-            request.session.pop('password_reset_nonce', None)
-            request.session.pop('password_reset_expires_at', None)
-            request.session['recovery_email'] = email
-            request.session.pop('codigo_recuperacion_mostrar', None)
+            request.session.pop(f'{reset_prefix}_user_id', None)
+            request.session.pop(f'{reset_prefix}_nonce', None)
+            request.session.pop(f'{reset_prefix}_expires_at', None)
+            request.session[email_session_key] = email
+            if not admin_only:
+                request.session.pop('codigo_recuperacion_mostrar', None)
 
-            usuario = Usuario.objects.filter(
+            usuario = _recovery_account_queryset(admin_only).filter(
                 email__iexact=email,
-                is_active=True,
-                is_staff=False,
-                is_superuser=False,
             ).order_by('pk').first()
             if usuario:
+                ahora = timezone.now()
+                if (
+                    admin_only
+                    and usuario.admin_recovery_code_sent_at
+                    and usuario.admin_recovery_code_sent_at
+                    > ahora - RECOVERY_CODE_TTL
+                ):
+                    messages.info(
+                        request,
+                        'Si el correo corresponde a una cuenta administrativa activa, '
+                        'recibirás instrucciones. Si no llegan, inténtalo más tarde.',
+                    )
+                    return redirect(code_url)
+
+                if (
+                    admin_only
+                    and usuario.email_recovery_code_hash
+                    and usuario.email_recovery_code_expires_at
+                    and usuario.email_recovery_code_expires_at > ahora
+                ):
+                    messages.info(
+                        request,
+                        'Si el correo corresponde a una cuenta administrativa activa, '
+                        'recibirás instrucciones. Si no llegan, inténtalo más tarde.',
+                    )
+                    return redirect(code_url)
+
                 codigo = f'{secrets.randbelow(100_000_000):08d}'
                 usuario.email_recovery_code_hash = make_password(codigo)
-                usuario.email_recovery_code_expires_at = timezone.now() + RECOVERY_CODE_TTL
+                usuario.email_recovery_code_expires_at = ahora + RECOVERY_CODE_TTL
                 usuario.recovery_code_attempts = 0
                 usuario.recovery_code_locked_until = None
                 usuario.recovery_reset_grant_hash = ''
                 usuario.recovery_reset_grant_expires_at = None
-                usuario.save(update_fields=[
+                update_fields = [
                     'email_recovery_code_hash',
                     'email_recovery_code_expires_at',
                     'recovery_code_attempts',
                     'recovery_code_locked_until',
                     'recovery_reset_grant_hash',
                     'recovery_reset_grant_expires_at',
-                ])
+                ]
+                if admin_only:
+                    usuario.admin_recovery_code_sent_at = ahora
+                    update_fields.append('admin_recovery_code_sent_at')
+                usuario.save(update_fields=update_fields)
                 try:
-                    email_enviado = send_mail(
-                        'Código para restablecer tu contraseña de Prisma',
-                        render_to_string(
-                            'usuarios/email/recuperar_contrasena.txt',
-                            {'usuario': usuario, 'codigo': codigo},
-                        ),
+                    logo_path = settings.BASE_DIR / 'static' / 'img' / 'logo_prisma_email.png'
+                    if admin_only:
+                        subject = 'Código seguro para tu acceso administrativo de Prisma'
+                        text_template = 'usuarios/email/recuperar_contrasena_admin.txt'
+                        html_template = 'usuarios/email/recuperar_contrasena_admin.html'
+                        email_context = {'usuario': usuario, 'codigo': codigo}
+                    else:
+                        subject = 'Código para restablecer tu contraseña de Prisma'
+                        text_template = 'usuarios/email/recuperar_contrasena.txt'
+                        html_template = 'usuarios/email/recuperar_contrasena.html'
+                        email_context = {
+                            'usuario': usuario,
+                            'codigo': codigo,
+                            'email_link_url': request.build_absolute_uri(
+                                reverse('recuperar_codigo_email_link')
+                            ) + '#' + urlencode({'email': usuario.email, 'code': codigo}),
+                        }
+                    email = InlineImageEmailMultiAlternatives(
+                        subject,
+                        render_to_string(text_template, email_context),
                         settings.DEFAULT_FROM_EMAIL,
                         [usuario.email],
-                        fail_silently=False,
+                        inline_image=logo_path.read_bytes(),
                     )
+                    email.attach_alternative(
+                        render_to_string(html_template, email_context),
+                        'text/html',
+                    )
+                    email_enviado = email.send(fail_silently=False)
                 except (OSError, smtplib.SMTPException):
                     logger.exception('No se pudo enviar el código de recuperación.')
                     email_enviado = 0
@@ -326,54 +412,92 @@ def recuperar_view(request):
                 if not email_enviado:
                     usuario.email_recovery_code_hash = ''
                     usuario.email_recovery_code_expires_at = None
-                    usuario.save(update_fields=[
+                    update_fields = [
                         'email_recovery_code_hash',
                         'email_recovery_code_expires_at',
-                    ])
-                    messages.error(
-                        request,
-                        'No pudimos enviar el correo. Inténtalo de nuevo más tarde.',
-                    )
-                    return render(request, 'usuarios/recuperar.html', {'form': form})
+                    ]
+                    if admin_only:
+                        usuario.admin_recovery_code_sent_at = None
+                        update_fields.append('admin_recovery_code_sent_at')
+                    usuario.save(update_fields=update_fields)
+                    if not admin_only:
+                        messages.error(
+                            request,
+                            'No pudimos enviar el correo. Inténtalo de nuevo más tarde.',
+                        )
+                        return render(request, 'usuarios/recuperar.html', {'form': form})
 
             messages.info(
                 request,
-                'Si existe una cuenta con ese correo, enviamos un código de verificación. '
-                'Revisa tu bandeja de entrada y la carpeta de spam.',
+                (
+                    'Si el correo corresponde a una cuenta administrativa activa, '
+                    'recibirás instrucciones. Si no llegan, inténtalo más tarde.'
+                    if admin_only
+                    else
+                    'Si existe una cuenta con ese correo, enviamos un código de verificación. '
+                    'Revisa tu bandeja de entrada y la carpeta de spam.'
+                ),
             )
-            return redirect('recuperar_codigo')
-    else:
-        form = RecuperarPasswordForm()
+            return redirect(code_url)
 
-    return render(request, 'usuarios/recuperar.html', {'form': form})
+    return render(request, 'usuarios/recuperar.html', {
+        'form': form,
+        'admin_recovery': admin_only,
+    })
 
 
 @require_http_methods(['GET', 'POST'])
 @never_cache
 def recuperar_codigo_view(request):
-    """Verify and consume the emailed recovery code."""
-    email = request.session.get('recovery_email')
-    if not email:
-        return redirect('recuperar')
+    return _recuperar_codigo_view(request, admin_only=False)
 
-    usuario = Usuario.objects.filter(
+
+@require_http_methods(['GET', 'POST'])
+@never_cache
+def admin_recuperar_codigo_view(request):
+    return _recuperar_codigo_view(request, admin_only=True)
+
+
+def _recovery_account_queryset(admin_only):
+    usuarios = Usuario.objects.filter(is_active=True)
+    if admin_only:
+        return usuarios.filter(Q(is_staff=True) | Q(is_superuser=True))
+    return usuarios.filter(is_staff=False, is_superuser=False)
+
+
+def _recuperar_codigo_view(request, admin_only):
+    """Verify and consume a short-lived code for the selected account type."""
+    email_session_key = 'admin_recovery_email' if admin_only else 'recovery_email'
+    reset_prefix = 'admin_password_reset' if admin_only else 'password_reset'
+    recovery_url = 'admin_recuperar' if admin_only else 'recuperar'
+    new_password_url = (
+        'admin_recuperar_nueva_contrasena'
+        if admin_only else 'recuperar_nueva_contrasena'
+    )
+    email = request.session.get(email_session_key)
+    if not email and request.method == 'POST':
+        email = request.POST.get('recovery_email', '').strip().lower()
+        if email:
+            request.session[email_session_key] = email
+    if not email:
+        return redirect(recovery_url)
+
+    usuario = _recovery_account_queryset(admin_only).filter(
         email__iexact=email,
-        is_active=True,
-        is_staff=False,
-        is_superuser=False,
     ).order_by('pk').first()
 
-    codigo_a_mostrar = request.session.pop('codigo_recuperacion_mostrar', None)
+    codigo_a_mostrar = (
+        None
+        if admin_only
+        else request.session.pop('codigo_recuperacion_mostrar', None)
+    )
 
     if request.method == 'POST':
         form = CodigoRecuperacionForm(request.POST)
         if form.is_valid() and usuario:
             with transaction.atomic():
-                cuenta = Usuario.objects.select_for_update().filter(
+                cuenta = _recovery_account_queryset(admin_only).select_for_update().filter(
                     pk=usuario.pk,
-                    is_active=True,
-                    is_staff=False,
-                    is_superuser=False,
                 ).first()
                 ahora = timezone.now()
                 if (
@@ -390,7 +514,8 @@ def recuperar_codigo_view(request):
                     and cuenta.email_recovery_code_expires_at > ahora
                 )
                 codigo_respaldo_vigente = (
-                    cuenta is not None
+                    not admin_only
+                    and cuenta is not None
                     and bool(cuenta.recovery_code_hash)
                 )
                 vigente = (
@@ -431,14 +556,14 @@ def recuperar_codigo_view(request):
                         'recovery_reset_grant_expires_at',
                     ])
                     request.session.cycle_key()
-                    request.session.pop('recovery_email', None)
-                    request.session['password_reset_user_id'] = cuenta.pk
-                    request.session['password_reset_nonce'] = nonce
-                    request.session['password_reset_expires_at'] = int(
+                    request.session.pop(email_session_key, None)
+                    request.session[f'{reset_prefix}_user_id'] = cuenta.pk
+                    request.session[f'{reset_prefix}_nonce'] = nonce
+                    request.session[f'{reset_prefix}_expires_at'] = int(
                         cuenta.recovery_reset_grant_expires_at.timestamp()
                     )
                     request.session.set_expiry(int(RECOVERY_GRANT_TTL.total_seconds()))
-                    return redirect('recuperar_nueva_contrasena')
+                    return redirect(new_password_url)
 
                 if cuenta and (
                     cuenta.recovery_code_hash or cuenta.email_recovery_code_hash
@@ -465,37 +590,57 @@ def recuperar_codigo_view(request):
     return render(request, 'usuarios/codigo_recuperacion.html', {
         'form': form,
         'codigo': codigo_a_mostrar,
+        'admin_recovery': admin_only,
+    })
+
+
+@require_http_methods(['GET'])
+@never_cache
+def recuperar_codigo_email_link_view(request):
+    """Render a landing page that submits the email link's fragment securely."""
+    return render(request, 'usuarios/codigo_recuperacion.html', {
+        'form': CodigoRecuperacionForm(),
+        'email_link': True,
     })
 
 
 @require_http_methods(['GET', 'POST'])
+@never_cache
 def recuperar_nueva_contrasena_view(request):
-    """Step 3: save a password using the short-lived verification grant."""
-    user_id = request.session.get('password_reset_user_id')
-    nonce = request.session.get('password_reset_nonce')
-    expires_at = request.session.get('password_reset_expires_at')
+    return _recuperar_nueva_contrasena_view(request, admin_only=False)
+
+
+@require_http_methods(['GET', 'POST'])
+@never_cache
+def admin_recuperar_nueva_contrasena_view(request):
+    return _recuperar_nueva_contrasena_view(request, admin_only=True)
+
+
+def _recuperar_nueva_contrasena_view(request, admin_only):
+    """Save a password using the short-lived grant for the selected account type."""
+    reset_prefix = 'admin_password_reset' if admin_only else 'password_reset'
+    recovery_url = 'admin_recuperar' if admin_only else 'recuperar'
+    login_url = 'admin_login' if admin_only else 'login'
+    user_id = request.session.get(f'{reset_prefix}_user_id')
+    nonce = request.session.get(f'{reset_prefix}_nonce')
+    expires_at = request.session.get(f'{reset_prefix}_expires_at')
     try:
         sesion_vigente = bool(expires_at) and int(expires_at) > int(timezone.now().timestamp())
     except (TypeError, ValueError):
         sesion_vigente = False
 
     if not user_id or not nonce or not sesion_vigente:
-        request.session.pop('password_reset_user_id', None)
-        request.session.pop('password_reset_nonce', None)
-        request.session.pop('password_reset_expires_at', None)
+        request.session.pop(f'{reset_prefix}_user_id', None)
+        request.session.pop(f'{reset_prefix}_nonce', None)
+        request.session.pop(f'{reset_prefix}_expires_at', None)
         messages.error(request, 'La verificación venció. Inicia sesión para generar un código nuevo.')
-        return redirect('recuperar')
+        return redirect(recovery_url)
 
-    usuario = Usuario.objects.filter(
-        pk=user_id,
-        is_active=True,
-        is_staff=False,
-        is_superuser=False,
-    ).first()
+    usuario = _recovery_account_queryset(admin_only).filter(pk=user_id).first()
     if not usuario:
         request.session.flush()
         messages.error(request, 'La verificación ya no es válida. Inténtalo de nuevo.')
-        return redirect('recuperar')
+        return redirect(recovery_url)
 
     grant_vigente = (
         bool(usuario.recovery_reset_grant_hash)
@@ -506,17 +651,14 @@ def recuperar_nueva_contrasena_view(request):
     if not grant_vigente:
         request.session.flush()
         messages.error(request, 'La verificación venció. Inicia sesión para generar un código nuevo.')
-        return redirect('recuperar')
+        return redirect(recovery_url)
 
     if request.method == 'POST':
         form = NuevaContrasenaForm(usuario, request.POST)
         if form.is_valid():
             with transaction.atomic():
-                cuenta = Usuario.objects.select_for_update().filter(
+                cuenta = _recovery_account_queryset(admin_only).select_for_update().filter(
                     pk=usuario.pk,
-                    is_active=True,
-                    is_staff=False,
-                    is_superuser=False,
                     recovery_reset_grant_expires_at__gt=timezone.now(),
                 ).first()
                 if (
@@ -529,7 +671,7 @@ def recuperar_nueva_contrasena_view(request):
                         request,
                         'La verificación ya se utilizó o venció. Inténtalo de nuevo.',
                     )
-                    return redirect('recuperar')
+                    return redirect(recovery_url)
 
                 cuenta.set_password(form.cleaned_data['new_password1'])
                 cuenta.recovery_reset_grant_hash = ''
@@ -554,12 +696,13 @@ def recuperar_nueva_contrasena_view(request):
                 request,
                 'Tu contraseña fue actualizada correctamente. Ya puedes iniciar sesión.',
             )
-            return redirect('login')
+            return redirect(login_url)
     else:
         form = NuevaContrasenaForm(usuario)
 
     return render(request, 'usuarios/recuperar_nueva_contrasena.html', {
         'form': form,
+        'admin_recovery': admin_only,
     })
 
 
