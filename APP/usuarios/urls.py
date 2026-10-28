@@ -45,5 +45,16 @@ urlpatterns = [
     ),
     path('perfil/', views.profile_view, name='perfil'),
     path('Lista_usuarios/', views.lista_usuarios, name='Lista de usuarios'),
+    path('Lista_usuarios/<int:pk>/detalle/', views.detalle_usuario, name='detalle_usuario'),
+    path(
+        'Lista_usuarios/<int:pk>/estado/',
+        views.cambiar_estado_usuario,
+        name='cambiar_estado_usuario',
+    ),
+    path(
+        'Lista_usuarios/<int:pk>/eliminar/',
+        views.eliminar_usuario,
+        name='eliminar_usuario',
+    ),
     path('roles/', views.gestion_roles, name='gestion_roles'),
 ]

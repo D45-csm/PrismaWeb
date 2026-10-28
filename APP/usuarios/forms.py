@@ -33,6 +33,95 @@ class RolForm(forms.ModelForm):
         }
 
 
+class UsuarioAdminForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = ['username', 'email', 'telefono', 'is_active']
+        labels = {
+            'username': 'Nombre de usuario',
+            'email': 'Correo electrónico',
+            'telefono': 'Teléfono',
+            'is_active': 'Está activo',
+        }
+        widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'insumo-input',
+                'autocomplete': 'username',
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'insumo-input',
+                'autocomplete': 'email',
+            }),
+            'telefono': forms.TextInput(attrs={
+                'class': 'insumo-input',
+                'autocomplete': 'tel',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{10}',
+                'maxlength': '10',
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'insumo-checkbox',
+            }),
+        }
+
+    def __init__(self, *args, include_role=False, **kwargs):
+        if not args and not kwargs.get('data') and not kwargs.get('instance'):
+            kwargs['initial'] = {
+                **kwargs.get('initial', {}),
+                'is_active': True,
+            }
+        super().__init__(*args, **kwargs)
+        self.fields['email'].required = True
+        if include_role:
+            rol_actual = None
+            if self.instance.pk and self.instance.groups.count() == 1:
+                rol_actual = self.instance.groups.first()
+            self.fields['rol'] = forms.ModelChoiceField(
+                queryset=Group.objects.order_by('name'),
+                required=False,
+                label='Rol',
+                initial=rol_actual,
+                empty_label='Sin rol',
+                widget=forms.Select(attrs={'class': 'insumo-input'}),
+            )
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        duplicados = Usuario.objects.filter(email__iexact=email)
+        if self.instance.pk:
+            duplicados = duplicados.exclude(pk=self.instance.pk)
+        if duplicados.exists():
+            raise ValidationError('Ya existe una cuenta con este correo.')
+        return email
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data['telefono'].strip()
+        if not re.fullmatch(r'[0-9]{10}', telefono):
+            raise ValidationError(
+                'Ingresa un teléfono de 10 dígitos, sin espacios ni símbolos.'
+            )
+        if not (self.instance.is_staff or self.instance.is_superuser):
+            duplicados = Usuario.objects.filter(
+                telefono=telefono,
+                is_staff=False,
+                is_superuser=False,
+            )
+            if self.instance.pk:
+                duplicados = duplicados.exclude(pk=self.instance.pk)
+            if duplicados.exists():
+                raise ValidationError('Ya existe una cuenta con este teléfono.')
+        return telefono
+
+    def save(self, commit=True):
+        usuario = super().save(commit=False)
+        if not usuario.pk:
+            usuario.set_unusable_password()
+        if commit:
+            usuario.save()
+            self.save_m2m()
+        return usuario
+
+
 class LoginForm(AuthenticationForm):
     username = forms.CharField(
         label='Correo electrónico o teléfono',

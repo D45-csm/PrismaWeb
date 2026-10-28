@@ -1,8 +1,8 @@
 (() => {
     const detailDialog = document.querySelector('#crudDetailDialog');
     const deleteDialog = document.querySelector('#crudDeleteDialog');
-    const editorDialog = document.querySelector('[data-open-crud-editor]')?.closest('.admin-crud-page')
-        ?.querySelector('dialog[data-open]');
+    const editorDialog = document.querySelector('.admin-crud-page')
+        ?.querySelector('dialog.admin-crud-editor-dialog[data-open]');
     const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]')?.value;
 
     document.querySelectorAll('[data-close-crud-dialog]').forEach((button) => {
@@ -44,7 +44,7 @@
                         return;
                     }
                     if (field.type === 'checkbox') {
-                        field.checked = field.name === 'activo';
+                        field.checked = ['activo', 'is_active'].includes(field.name);
                     } else if (field.type === 'file') {
                         field.value = '';
                     } else if (field.tagName === 'SELECT') {
@@ -66,7 +66,15 @@
             editorDialog.showModal();
         });
     });
-    if (editorDialog?.dataset.open) editorDialog.showModal();
+    if (editorDialog?.dataset.open) {
+        editorDialog.showModal();
+        const paramsToClear = editorDialog.dataset.clearQueryParams;
+        if (paramsToClear) {
+            const url = new URL(window.location.href);
+            paramsToClear.split(',').forEach((param) => url.searchParams.delete(param.trim()));
+            window.history.replaceState(window.history.state, '', url);
+        }
+    }
 
     if (deleteDialog) {
         const deleteForm = deleteDialog.querySelector('#crudDeleteForm');
@@ -141,6 +149,9 @@
         image.src = item.imagen || '';
         image.alt = item.imagen ? `Imagen de ${item.nombre}` : '';
         editLink.href = item.edit_url;
+        editLink.hidden = item.puede_editar === false;
+        availability.closest('.insumo-availability-control').hidden =
+            item.puede_cambiar_estado === false;
         availability.checked = item.activo;
         availability.setAttribute('aria-label', `${item.activo ? 'Desactivar' : 'Activar'} ${item.nombre}`);
         statusUrl = item.status_url;
@@ -202,7 +213,9 @@
                 const activeCount = Number(page?.dataset.activeCount || 0);
                 const nextCount = Math.max(0, activeCount + Number(result.activo) - Number(wasActive));
                 if (page) page.dataset.activeCount = String(nextCount);
-                const summary = page?.querySelector('.supplier-active-summary, .product-active-summary');
+                const summary = page?.querySelector(
+                    '.supplier-active-summary, .product-active-summary, .user-active-summary',
+                );
                 if (summary) {
                     const icon = summary.querySelector('i');
                     summary.replaceChildren(

@@ -662,18 +662,20 @@ class AccesoUsuarioTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'insumo-dashboard user-admin-page')
         self.assertContains(response, 'class="admin-page-heading"')
-        self.assertContains(response, 'admin-crud-workspace--single')
-        self.assertContains(response, 'class="admin-crud-main admin-crud-panel"')
+        self.assertContains(response, 'admin-crud-workspace')
+        self.assertContains(response, 'admin-crud-sidebar insumo-sidebar')
+        self.assertContains(response, 'class="admin-crud-main insumo-main-panel"')
+        self.assertContains(response, 'class="insumo-row insumo-row--record')
         self.assertContains(response, self.cliente.username)
         self.assertContains(response, self.cliente.email)
         self.assertContains(response, 'css/admin_crud.css')
         self.assertContains(response, '2 usuarios')
         self.assertContains(response, '2 usuarios activos')
-        self.assertContains(response, 'Rol actual')
+        self.assertContains(response, 'Sin rol asignado')
+        self.assertNotContains(response, 'Cambiar rol')
         self.assertNotContains(response, 'css/Lista_usuarios.css')
         self.assertEqual(response.content.count(b'css/admin_panel.css'), 1)
         self.assertEqual(response.content.count(b'css/admin_crud.css'), 1)
-        self.assertNotContains(response, '</article>')
         self.assertNotContains(response, 'class="empty-state"')
 
     def test_registro_rechaza_nombres_con_simbolos_y_telefono_no_numerico(self):
@@ -900,9 +902,127 @@ class GestionRolesUsuariosTests(TestCase):
         self.assertContains(response, 'id="roleDeleteDialog"')
         self.assertContains(response, 'insumo-category-dialog insumo-delete-dialog')
         self.assertContains(response, f'data-role-delete-id="{rol.pk}"')
-        self.assertContains(response, 'js/admin_crud.js?v=5')
+        self.assertContains(response, 'js/admin_crud.js?v=8')
         self.assertNotContains(response, '<script>\n')
         self.assertNotContains(response, 'onclick="return confirm(')
+
+    def test_admin_crea_y_edita_usuarios_desde_el_crud(self):
+        rol = Group.objects.create(name='Cajero')
+        response = self.client.post(
+            reverse('Lista de usuarios'),
+            {
+                'accion': 'crear_usuario',
+                'username': 'gestionado',
+                'email': 'GESTIONADO@example.com',
+                'telefono': '3112345678',
+                'rol': rol.pk,
+                'is_active': 'on',
+            },
+        )
+
+        self.assertRedirects(response, reverse('Lista de usuarios'))
+        usuario = Usuario.objects.get(username='gestionado')
+        self.assertEqual(usuario.email, 'gestionado@example.com')
+        self.assertFalse(usuario.has_usable_password())
+        self.assertEqual(list(usuario.groups.all()), [rol])
+        self.assertTrue(usuario.is_active)
+        self.assertFalse(usuario.is_staff)
+
+        nuevo_rol = Group.objects.create(name='Inventario')
+        response = self.client.post(
+            reverse('Lista de usuarios'),
+            {
+                'accion': 'editar_usuario',
+                'usuario_id': usuario.pk,
+                'username': 'usuario_actualizado',
+                'email': 'actualizado@example.com',
+                'telefono': '3112345678',
+                'rol': nuevo_rol.pk,
+            },
+        )
+
+        self.assertRedirects(response, reverse('Lista de usuarios'))
+        usuario.refresh_from_db()
+        self.assertEqual(usuario.username, 'usuario_actualizado')
+        self.assertEqual(usuario.email, 'actualizado@example.com')
+        self.assertEqual(list(usuario.groups.all()), [nuevo_rol])
+        self.assertFalse(usuario.is_active)
+
+    def test_formulario_editar_usuario_no_se_reabre_al_recargar_y_solo_muestra_campos_permitidos(self):
+        response_crear = self.client.get(
+            reverse('Lista de usuarios'),
+            {'modal': 'crear'},
+        )
+        self.assertTrue(response_crear.context['form']['is_active'].value())
+        self.assertContains(response_crear, 'crud-editor-availability user-editor-availability')
+        self.assertContains(response_crear, 'insumo-availability-control')
+        self.assertContains(response_crear, 'Usuario activo')
+        self.assertContains(response_crear, 'Usuario inactivo')
+
+        self.usuario.is_active = False
+        self.usuario.save(update_fields=['is_active'])
+        response = self.client.get(
+            reverse('Lista de usuarios'),
+            {'editar_usuario': self.usuario.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['form']['is_active'].value())
+        self.assertContains(
+            response,
+            'data-clear-query-params="editar_usuario,modal"',
+        )
+        self.assertContains(response, 'name="username"')
+        self.assertContains(response, 'name="email"')
+        self.assertContains(response, 'name="telefono"')
+        self.assertContains(response, 'name="rol"')
+        self.assertNotContains(response, 'name="password1"')
+        self.assertNotContains(response, 'name="password2"')
+        self.assertNotContains(response, 'name="first_name"')
+        self.assertNotContains(response, 'name="last_name"')
+        self.assertNotContains(response, 'data-user-role-select')
+
+    def test_admin_activa_desactiva_y_elimina_usuarios(self):
+        respuesta = self.client.post(
+            reverse('cambiar_estado_usuario', args=[self.usuario.pk]),
+            {'activo': 'false'},
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertFalse(respuesta.json()['activo'])
+        self.usuario.refresh_from_db()
+        self.assertFalse(self.usuario.is_active)
+
+        respuesta = self.client.post(
+            reverse('cambiar_estado_usuario', args=[self.usuario.pk]),
+            {'activo': 'true'},
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.json()['activo'])
+        self.usuario.refresh_from_db()
+        self.assertTrue(self.usuario.is_active)
+
+        respuesta = self.client.post(
+            reverse('eliminar_usuario', args=[self.usuario.pk]),
+        )
+
+        self.assertRedirects(respuesta, reverse('Lista de usuarios'))
+        self.assertFalse(Usuario.objects.filter(pk=self.usuario.pk).exists())
+
+    def test_admin_no_puede_desactivarse_ni_eliminarse(self):
+        respuesta_estado = self.client.post(
+            reverse('cambiar_estado_usuario', args=[self.administrador.pk]),
+            {'activo': 'false'},
+        )
+        respuesta_eliminar = self.client.post(
+            reverse('eliminar_usuario', args=[self.administrador.pk]),
+        )
+
+        self.assertEqual(respuesta_estado.status_code, 403)
+        self.assertEqual(respuesta_eliminar.status_code, 403)
+        self.administrador.refresh_from_db()
+        self.assertTrue(self.administrador.is_active)
 
     def test_admin_asigna_cambia_y_quita_el_rol_de_un_usuario(self):
         rol_anterior = Group.objects.create(name='Cajero')
@@ -911,16 +1031,26 @@ class GestionRolesUsuariosTests(TestCase):
 
         response = self.client.get(reverse('Lista de usuarios'))
         self.assertContains(response, 'Cajero')
-        self.assertContains(response, 'Cambiar rol')
+        self.assertNotContains(response, 'Cambiar rol')
+        self.assertNotContains(response, 'data-user-role-select')
+
+        response = self.client.get(
+            reverse('Lista de usuarios'),
+            {'editar_usuario': self.usuario.pk},
+        )
+        self.assertContains(response, 'name="rol"')
         self.assertContains(response, f'<option value="{rol_anterior.pk}" selected')
-        self.assertContains(response, 'disabled')
-        self.assertContains(response, 'No puedes cambiar tu propio rol.')
-        self.assertContains(response, 'data-user-role-save hidden')
-        self.assertContains(response, 'js/lista_usuarios.js?v=2')
 
         response = self.client.post(
             reverse('Lista de usuarios'),
-            {'usuario_id': self.usuario.pk, 'rol': rol_nuevo.pk},
+            {
+                'accion': 'editar_usuario',
+                'usuario_id': self.usuario.pk,
+                'username': self.usuario.username,
+                'email': self.usuario.email,
+                'telefono': self.usuario.telefono,
+                'rol': rol_nuevo.pk,
+            },
         )
         self.assertRedirects(response, reverse('Lista de usuarios'))
         self.assertEqual(list(self.usuario.groups.all()), [rol_nuevo])
