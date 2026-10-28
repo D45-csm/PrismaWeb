@@ -7,6 +7,7 @@ class Usuario(AbstractUser):
     recovery_code_hash = models.CharField(max_length=128, blank=True, default='')
     email_recovery_code_hash = models.CharField(max_length=128, blank=True, default='')
     email_recovery_code_expires_at = models.DateTimeField(blank=True, null=True)
+    admin_recovery_code_sent_at = models.DateTimeField(blank=True, null=True)
     recovery_code_attempts = models.PositiveSmallIntegerField(default=0)
     recovery_code_locked_until = models.DateTimeField(blank=True, null=True)
     recovery_reset_grant_hash = models.CharField(max_length=128, blank=True, default='')
