@@ -1,7 +1,7 @@
 {% extends 'base_prisma.html' %}
 {% load static %}
 
-{% block title %}Verificar código - Prisma{% endblock %}
+{% block title %}{% if admin_recovery %}Verificar acceso administrativo{% else %}Verificar código{% endif %} - Prisma{% endblock %}
 {% block body_attrs %} class="auth-page"{% endblock %}
 
 {% block content %}
@@ -9,15 +9,29 @@
         <div class="auth-image">
             <div class="auth-image-overlay"></div>
             <div class="auth-image-text">
-                <h2>Un paso más</h2>
-                <p>Usa el código de verificación que enviamos a tu correo.</p>
+                <h2>{% if admin_recovery %}Un paso seguro{% else %}Un paso más{% endif %}</h2>
+                <p>{% if admin_recovery %}Verificaremos tu identidad antes de restablecer el acceso administrativo.{% else %}Usa el código de verificación que enviamos a tu correo.{% endif %}</p>
             </div>
         </div>
         <div class="auth-form-container customer-auth-panel">
             <div class="auth-logo">
                 <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
             </div>
-            {% if codigo %}
+            {% if email_link %}
+                <h2>Verificando tu código</h2>
+                <p class="auth-subtitle" data-email-link-status role="status">
+                    Un momento, estamos comprobando tu código para que puedas crear una contraseña nueva.
+                </p>
+                <form method="post" action="{% url 'recuperar_codigo' %}" data-email-recovery-link hidden>
+                    {% csrf_token %}
+                    <input type="hidden" name="recovery_email">
+                    <input type="hidden" name="code">
+                </form>
+                <div class="auth-switch">
+                    <p><a href="{% url 'recuperar' %}">¿No continúa? Solicita un código nuevo</a></p>
+                </div>
+                <script src="{% static 'js/email_recovery_link.js' %}" defer></script>
+            {% elif codigo %}
                 <h2>Guarda este código</h2>
                 <p class="auth-subtitle">
                     Te lo mostramos aquí para que lo copies y lo guardes con seguridad. Siempre puedes generar otro desde esta misma pantalla si lo pierdes.
@@ -45,9 +59,9 @@
                     </button>
                 </form>
             {% else %}
-                <h2>Ingresa tu código</h2>
+                <h2>{% if admin_recovery %}Confirma tu correo{% else %}Ingresa tu código{% endif %}</h2>
                 <p class="auth-subtitle">
-                    Escribe el código de 8 dígitos que enviamos a tu correo. Vence en 10 minutos y solo se puede usar una vez.
+                    {% if admin_recovery %}Escribe el código de 8 dígitos enviado al correo de tu cuenta administrativa. Vence en 10 minutos y se usa una sola vez.{% else %}Escribe el código de 8 dígitos que enviamos a tu correo. Vence en 10 minutos y solo se puede usar una vez.{% endif %}
                 </p>
 
                 <form method="post" action="">
@@ -70,9 +84,15 @@
             {% endif %}
 
             <div class="auth-switch">
-                <p><a href="{% url 'recuperar' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver a recuperar la cuenta</a></p>
-                <p><a href="{% url 'login' %}">Volver al inicio de sesión</a></p>
+                {% if admin_recovery %}
+                    <p><a href="{% url 'admin_recuperar' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Solicitar otro código</a></p>
+                    <p><a href="{% url 'admin_login' %}">Volver al acceso administrativo</a></p>
+                {% else %}
+                    <p><a href="{% url 'recuperar' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver a recuperar la cuenta</a></p>
+                    <p><a href="{% url 'login' %}">Volver al inicio de sesión</a></p>
+                {% endif %}
             </div>
+            <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al inicio</a>
             {% if codigo %}<script src="{% static 'js/recovery_code.js' %}" defer></script>{% endif %}
         </div>
     </div>
