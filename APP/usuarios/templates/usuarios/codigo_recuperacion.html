@@ -86,7 +86,7 @@
             <div class="auth-switch">
                 {% if admin_recovery %}
                     <p><a href="{% url 'admin_recuperar' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Solicitar otro código</a></p>
-                    <p><a href="{% url 'admin_login' %}">Volver al acceso administrativo</a></p>
+                    <p><a href="{% url 'login' %}">Volver al inicio de sesión</a></p>
                 {% else %}
                     <p><a href="{% url 'recuperar' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver a recuperar la cuenta</a></p>
                     <p><a href="{% url 'login' %}">Volver al inicio de sesión</a></p>
