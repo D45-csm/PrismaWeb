@@ -8,7 +8,7 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from APP.usuarios.permissions import exigir_permiso
+from APP.usuarios.permissions import exigir_permiso, usuario_puede_entrar_panel
 from APP.proveedores.models import Proveedor
 
 from .forms import CategoriaInsumoForm, InsumoForm
@@ -16,7 +16,7 @@ from .models import CategoriaInsumo, Insumo
 
 
 def es_administrador(user):
-    return user.is_authenticated and (user.is_staff or user.is_superuser)
+    return usuario_puede_entrar_panel(user)
 
 
 def _get_posted_object(model, value):
@@ -25,8 +25,8 @@ def _get_posted_object(model, value):
     return get_object_or_404(model, pk=int(value))
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(es_administrador, login_url='login')
 @require_http_methods(['GET', 'POST'])
 def detalle_insumo(request, pk):
     exigir_permiso(
@@ -228,8 +228,8 @@ def _permiso_accion_insumo(accion):
     return permisos.get(accion, 'insumos.view_insumo')
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(es_administrador, login_url='login')
 def gestion_categorias(request):
     exigir_permiso(request, 'insumos.view_insumo')
     if request.method == 'POST':
