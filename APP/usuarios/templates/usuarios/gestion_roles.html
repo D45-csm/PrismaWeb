@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}Gestión de roles | Prisma{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/roles_admin.css' %}">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/roles_admin.css' %}?v=2">{% endblock %}
 {% block crud_page_class %}role-admin-page{% endblock %}
 
 {% block crud_header %}
@@ -25,7 +25,10 @@
                 <article class="role-list-item">
                     <div class="role-list-item__info">
                         <strong>{{ rol.name }}</strong>
-                        <span>{{ rol.usuarios_asignados }} usuario{{ rol.usuarios_asignados|pluralize:"s" }}</span>
+                        <span>
+                            {% if rol.estado_rol.is_active %}Activo{% else %}Desactivado{% endif %}
+                            · {{ rol.usuarios_asignados }} usuario{{ rol.usuarios_asignados|pluralize:"s" }}
+                        </span>
                     </div>
                     {% if rol.name|lower != 'cliente' %}
                         <div class="role-list-item__actions">
@@ -103,6 +106,20 @@
                 <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
                 {{ form.name }}
                 {% for error in form.name.errors %}<span class="admin-form-error">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="crud-editor-availability role-editor-availability">
+                <div>
+                    <label class="insumo-availability-control" for="{{ form.is_active.id_for_label }}">
+                        {{ form.is_active }}
+                        <span class="insumo-switch" aria-hidden="true"></span>
+                        <span class="role-editor-availability-state" aria-live="polite">
+                            <span class="is-active">Rol activo</span>
+                            <span class="is-inactive">Rol inactivo</span>
+                        </span>
+                    </label>
+                    <p>Los permisos de los roles inactivos no se aplican a sus usuarios.</p>
+                </div>
+                {% for error in form.is_active.errors %}<span class="admin-form-error">{{ error }}</span>{% endfor %}
             </div>
             <fieldset class="admin-form-field role-permissions">
                 <legend>{{ form.permissions.label }}</legend>
