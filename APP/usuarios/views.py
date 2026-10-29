@@ -1,7 +1,6 @@
 import secrets
 import logging
 import smtplib
-from email import policy as email_policy
 from datetime import timedelta
 from urllib.parse import urlencode
 
@@ -11,6 +10,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.hashers import check_password, make_password
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.core.cache import cache
 from django.core.mail import EmailMultiAlternatives
 from django.core.exceptions import PermissionDenied
 from django.db.models.deletion import ProtectedError
@@ -18,15 +18,16 @@ from django.http import Http404, JsonResponse
 from django.db import transaction
 from django.db.models import Count, F, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .forms import (
-    AdminLoginForm,
     CodigoRecuperacionForm,
     LoginForm,
     NuevaContrasenaForm,
@@ -41,7 +42,12 @@ from APP.insumos.models import Insumo
 from APP.productos.models import Producto
 from APP.reserva.models import Reserva
 from APP.ventas.models import DetalleVenta
-from .permissions import exigir_permiso, usuario_puede_acceder
+from .permissions import (
+    ROL_CLIENTE,
+    exigir_permiso,
+    usuario_puede_acceder,
+    usuario_puede_entrar_panel,
+)
 
 RECOVERY_CODE_MAX_ATTEMPTS = 5
 RECOVERY_CODE_LOCKOUT = timedelta(minutes=15)
@@ -50,34 +56,44 @@ RECOVERY_GRANT_TTL = timedelta(minutes=10)
 logger = logging.getLogger(__name__)
 
 
-class InlineImageEmailMultiAlternatives(EmailMultiAlternatives):
-    def __init__(self, *args, inline_image, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.inline_image = inline_image
-
-    def message(self, *, policy=email_policy.default):
-        message = super().message(policy=policy)
-        html_part = next(
-            (part for part in message.walk() if part.get_content_type() == 'text/html'),
-            None,
-        )
-        if html_part is None:
-            raise ValueError('El correo con logo debe incluir una alternativa HTML.')
-        html_part.add_related(
-            self.inline_image,
-            maintype='image',
-            subtype='png',
-            cid='<prisma-logo>',
-        )
-        return message
-
-
 def es_administrador(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
 
 
 def redireccion_post_login(user):
-    return 'perfil' if es_administrador(user) else 'base_cliente'
+    return 'perfil' if usuario_puede_entrar_panel(user) else 'base_cliente'
+
+
+def _login_rate_limit_keys(request, identifier):
+    ip_address = request.META.get('REMOTE_ADDR', 'unknown')
+    ip_hash = salted_hmac('APP.usuarios.login.ip', ip_address).hexdigest()
+    keys = [f'login:ip:{ip_hash}']
+    if identifier:
+        identifier_hash = salted_hmac(
+            'APP.usuarios.login.identifier',
+            f'{ip_address}:{identifier.casefold()}',
+        ).hexdigest()
+        keys.append(f'login:identity:{identifier_hash}')
+    return keys
+
+
+def _login_is_rate_limited(keys):
+    return (
+        cache.get(keys[0], 0) >= settings.LOGIN_RATE_LIMIT_IP_MAX_ATTEMPTS
+        or (
+            len(keys) > 1
+            and cache.get(keys[1], 0) >= settings.LOGIN_RATE_LIMIT_MAX_ATTEMPTS
+        )
+    )
+
+
+def _record_login_failure(keys):
+    for key in keys:
+        if not cache.add(key, 1, timeout=settings.LOGIN_RATE_LIMIT_WINDOW):
+            try:
+                cache.incr(key)
+            except ValueError:
+                cache.add(key, 1, timeout=settings.LOGIN_RATE_LIMIT_WINDOW)
 
 
 def _puede_cambiar_roles(request, usuario=None):
@@ -144,8 +160,8 @@ def _render_lista_usuarios(
     })
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(usuario_puede_entrar_panel, login_url='login')
 def lista_usuarios(request):
     exigir_permiso(request, 'usuarios.view_usuario')
     if request.method == 'POST':
@@ -239,8 +255,8 @@ def lista_usuarios(request):
     )
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(usuario_puede_entrar_panel, login_url='login')
 def detalle_usuario(request, pk):
     exigir_permiso(request, 'usuarios.view_usuario')
     usuario = get_object_or_404(Usuario.objects.prefetch_related('groups'), pk=pk)
@@ -270,8 +286,8 @@ def detalle_usuario(request, pk):
     })
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(usuario_puede_entrar_panel, login_url='login')
 @require_POST
 def cambiar_estado_usuario(request, pk):
     exigir_permiso(request, 'usuarios.change_usuario')
@@ -296,8 +312,8 @@ def cambiar_estado_usuario(request, pk):
     })
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(usuario_puede_entrar_panel, login_url='login')
 @require_POST
 def eliminar_usuario(request, pk):
     exigir_permiso(request, 'usuarios.delete_usuario')
@@ -330,8 +346,8 @@ def _render_gestion_roles(request, form=None, rol_actual=None):
     })
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(usuario_puede_entrar_panel, login_url='login')
 def gestion_roles(request):
     exigir_permiso(request, 'auth.view_group')
     if request.method == 'POST':
@@ -347,6 +363,9 @@ def gestion_roles(request):
                 if not rol_id.isdecimal() or len(rol_id) > 18:
                     raise Http404
                 rol_actual = get_object_or_404(Group, pk=int(rol_id))
+                if rol_actual.name.casefold() == ROL_CLIENTE.casefold():
+                    messages.error(request, f'El rol "{ROL_CLIENTE}" está protegido.')
+                    return redirect('gestion_roles')
             form = RolForm(request.POST, instance=rol_actual)
             if form.is_valid():
                 rol = form.save()
@@ -364,6 +383,9 @@ def gestion_roles(request):
             if not rol_id.isdecimal() or len(rol_id) > 18:
                 raise Http404
             rol = get_object_or_404(Group, pk=int(rol_id))
+            if rol.name.casefold() == ROL_CLIENTE.casefold():
+                messages.error(request, f'El rol "{ROL_CLIENTE}" no se puede eliminar.')
+                return redirect('gestion_roles')
             nombre_rol = rol.name
             rol.delete()
             messages.success(
@@ -380,6 +402,9 @@ def gestion_roles(request):
         if not edit_id.isdecimal() or len(edit_id) > 18:
             raise Http404
         rol_actual = get_object_or_404(Group, pk=int(edit_id))
+        if rol_actual.name.casefold() == ROL_CLIENTE.casefold():
+            messages.error(request, f'El rol "{ROL_CLIENTE}" está protegido.')
+            return redirect('gestion_roles')
     return _render_gestion_roles(request, rol_actual=rol_actual)
 
 
@@ -390,7 +415,10 @@ def registro_view(request):
     if request.method == 'POST':
         form = RegistroForm(request.POST)
         if form.is_valid():
-            usuario = form.save()
+            with transaction.atomic():
+                usuario = form.save()
+                rol_cliente, _ = Group.objects.get_or_create(name=ROL_CLIENTE)
+                usuario.groups.add(rol_cliente)
             login(
                 request,
                 usuario,
@@ -403,27 +431,64 @@ def registro_view(request):
     return render(request, 'usuarios/registro.html', {'form': form})
 
 
+@never_cache
 def login_view(request):
     if request.user.is_authenticated:
         return redirect(redireccion_post_login(request.user))
 
     next_url = request.POST.get('next') or request.GET.get('next', '')
     if request.method == 'POST':
+        identifier = request.POST.get('username', '').strip()[:254]
+        rate_limit_keys = _login_rate_limit_keys(request, identifier)
         form = LoginForm(request=request, data=request.POST)
+        if _login_is_rate_limited(rate_limit_keys):
+            wait_minutes = max(1, (settings.LOGIN_RATE_LIMIT_WINDOW + 59) // 60)
+            form.add_error(
+                None,
+                f'Demasiados intentos. Espera {wait_minutes} minutos e inténtalo de nuevo.',
+            )
+            return render(
+                request,
+                'usuarios/login.html',
+                {
+                    'form': form,
+                    'next': next_url,
+                    'next_is_recovery_code': (
+                        next_url.split('?', 1)[0]
+                        == reverse('codigo_recuperacion_cuenta')
+                    ),
+                },
+                status=429,
+            )
         if form.is_valid():
-            login(request, form.get_user())
-            if request.POST.get('remember_me') == 'on':
+            usuario = form.get_user()
+            cache.delete_many(rate_limit_keys)
+            login(request, usuario)
+            if (
+                not usuario_puede_entrar_panel(usuario)
+                and request.POST.get('remember_me') == 'on'
+            ):
                 request.session.set_expiry(settings.SESSION_COOKIE_AGE)
             else:
                 request.session.set_expiry(0)
-            messages.success(request, 'Inicio de sesión exitoso.')
+            messages.success(
+                request,
+                'Acceso administrativo concedido.'
+                if es_administrador(usuario)
+                else (
+                    'Acceso al panel concedido.'
+                    if usuario_puede_entrar_panel(usuario)
+                    else 'Inicio de sesión exitoso.'
+                ),
+            )
             if next_url and url_has_allowed_host_and_scheme(
                 next_url,
                 allowed_hosts={request.get_host()},
                 require_https=request.is_secure(),
             ):
                 return redirect(next_url)
-            return redirect('base_cliente')
+            return redirect(redireccion_post_login(usuario))
+        _record_login_failure(rate_limit_keys)
     else:
         form = LoginForm()
     return render(request, 'usuarios/login.html', {
@@ -435,26 +500,8 @@ def login_view(request):
     })
 
 
-def admin_login_view(request):
-    if es_administrador(request.user):
-        return redirect('perfil')
-
-    if request.method == 'POST':
-        form = AdminLoginForm(request=request, data=request.POST)
-        if form.is_valid():
-            login(request, form.get_user())
-            messages.success(request, 'Acceso administrativo concedido.')
-            return redirect('perfil')
-    else:
-        form = AdminLoginForm()
-    return render(
-        request,
-        'usuarios/login.html',
-        {
-            'form': form,
-            'admin_login': True,
-        },
-    )
+def legacy_admin_login_redirect(request):
+    return redirect('login')
 
 
 @require_http_methods(['GET', 'POST'])
@@ -572,12 +619,17 @@ def _recuperar_view(request, admin_only):
                     update_fields.append('admin_recovery_code_sent_at')
                 usuario.save(update_fields=update_fields)
                 try:
-                    logo_path = settings.BASE_DIR / 'static' / 'img' / 'logo_prisma_email.png'
                     if admin_only:
                         subject = 'Código seguro para tu acceso administrativo de Prisma'
                         text_template = 'usuarios/email/recuperar_contrasena_admin.txt'
                         html_template = 'usuarios/email/recuperar_contrasena_admin.html'
-                        email_context = {'usuario': usuario, 'codigo': codigo}
+                        email_context = {
+                            'usuario': usuario,
+                            'codigo': codigo,
+                            'logo_url': request.build_absolute_uri(
+                                static('img/logo_prisma.png')
+                            ),
+                        }
                     else:
                         subject = 'Código para restablecer tu contraseña de Prisma'
                         text_template = 'usuarios/email/recuperar_contrasena.txt'
@@ -585,16 +637,18 @@ def _recuperar_view(request, admin_only):
                         email_context = {
                             'usuario': usuario,
                             'codigo': codigo,
+                            'logo_url': request.build_absolute_uri(
+                                static('img/logo_prisma.png')
+                            ),
                             'email_link_url': request.build_absolute_uri(
                                 reverse('recuperar_codigo_email_link')
                             ) + '#' + urlencode({'email': usuario.email, 'code': codigo}),
                         }
-                    email = InlineImageEmailMultiAlternatives(
+                    email = EmailMultiAlternatives(
                         subject,
                         render_to_string(text_template, email_context),
                         settings.DEFAULT_FROM_EMAIL,
                         [usuario.email],
-                        inline_image=logo_path.read_bytes(),
                     )
                     email.attach_alternative(
                         render_to_string(html_template, email_context),
@@ -816,7 +870,7 @@ def _recuperar_nueva_contrasena_view(request, admin_only):
     """Save a password using the short-lived grant for the selected account type."""
     reset_prefix = 'admin_password_reset' if admin_only else 'password_reset'
     recovery_url = 'admin_recuperar' if admin_only else 'recuperar'
-    login_url = 'admin_login' if admin_only else 'login'
+    login_url = 'login'
     user_id = request.session.get(f'{reset_prefix}_user_id')
     nonce = request.session.get(f'{reset_prefix}_nonce')
     expires_at = request.session.get(f'{reset_prefix}_expires_at')
@@ -909,8 +963,8 @@ def logout_view(request):
     return redirect('base_cliente')
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(usuario_puede_entrar_panel, login_url='login')
 def profile_view(request):
     hoy = timezone.localdate()
     permisos = {
