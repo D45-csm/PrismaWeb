@@ -55,7 +55,7 @@
 
             <div class="auth-switch">
                 {% if admin_recovery %}
-                    <p><a href="{% url 'admin_login' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al acceso administrativo</a></p>
+                    <p><a href="{% url 'login' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio de sesión</a></p>
                 {% else %}
                     <p><a href="{% url 'login' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio de sesión</a></p>
                     <p>¿Prefieres ayuda personalizada? <a href="{% url 'contactos' %}">Contáctanos</a></p>
