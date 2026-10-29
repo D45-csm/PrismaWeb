@@ -12,11 +12,17 @@ from django.contrib.auth.forms import (
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 
-from .models import Usuario
+from .models import EstadoRol, Usuario
 from .permissions import ROL_CLIENTE
 
 
 class RolForm(forms.ModelForm):
+    is_active = forms.BooleanField(
+        required=False,
+        initial=True,
+        label='Rol activo',
+    )
+
     class Meta:
         model = Group
         fields = ['name', 'permissions']
@@ -33,6 +39,11 @@ class RolForm(forms.ModelForm):
             'permissions': forms.CheckboxSelectMultiple,
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['is_active'].initial = self.instance.estado_rol.is_active
+
     def clean_name(self):
         name = self.cleaned_data['name'].strip()
         if name.casefold() == ROL_CLIENTE.casefold():
@@ -40,6 +51,15 @@ class RolForm(forms.ModelForm):
                 f'"{ROL_CLIENTE}" es un rol reservado y no se puede crear ni renombrar.'
             )
         return name
+
+    def save(self, commit=True):
+        rol = super().save(commit=commit)
+        if commit:
+            EstadoRol.objects.update_or_create(
+                group=rol,
+                defaults={'is_active': self.cleaned_data['is_active']},
+            )
+        return rol
 
 
 class UsuarioAdminForm(forms.ModelForm):
@@ -86,7 +106,9 @@ class UsuarioAdminForm(forms.ModelForm):
             if self.instance.pk and self.instance.groups.count() == 1:
                 rol_actual = self.instance.groups.first()
             self.fields['rol'] = forms.ModelChoiceField(
-                queryset=Group.objects.order_by('name'),
+                queryset=Group.objects.filter(
+                    estado_rol__is_active=True,
+                ).order_by('name'),
                 required=False,
                 label='Rol',
                 initial=rol_actual,
