@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.core import mail
+from django.core.cache import cache
 from django.contrib.auth.models import Group, Permission
 from django.test import TestCase, override_settings
 from django.conf import settings
@@ -15,13 +16,14 @@ from django.utils import timezone
 from APP.insumos.models import CategoriaInsumo, Insumo
 from APP.proveedores.models import Proveedor
 
-from .forms import RegistroForm
+from .forms import RegistroForm, RolForm
 from .models import Usuario
 
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class AccesoUsuarioTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.cliente = Usuario.objects.create_user(
             username='cliente',
             email='cliente@example.com',
@@ -57,6 +59,29 @@ class AccesoUsuarioTests(TestCase):
         )
 
         self.assertRedirects(response, reverse('base_cliente'))
+
+    def test_login_bloquea_intentos_fallidos_repetidos(self):
+        for _ in range(settings.LOGIN_RATE_LIMIT_MAX_ATTEMPTS):
+            response = self.client.post(
+                reverse('login'),
+                {
+                    'username': self.cliente.email,
+                    'password': 'contrasena-incorrecta',
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': self.cliente.email,
+                'password': 'Clave-segura-2026!',
+            },
+        )
+
+        self.assertEqual(response.status_code, 429)
+        self.assertContains(response, 'Demasiados intentos', status_code=429)
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
 
     def test_cliente_puede_ingresar_con_usuario_correo_o_telefono(self):
         for identificador in (
@@ -115,7 +140,7 @@ class AccesoUsuarioTests(TestCase):
         self.assertNotContains(response, 'class="alert alert-success prisma-message"')
 
         response = self.client.post(
-            reverse('admin_login'),
+            reverse('login'),
             {
                 'username': self.administrador.email,
                 'password': 'Clave-segura-2026!',
@@ -187,26 +212,24 @@ class AccesoUsuarioTests(TestCase):
         self.assertRedirects(response, reverse('base_cliente'))
         self.assertTrue(self.client.session.get_expire_at_browser_close())
 
-    def test_login_muestra_recordarme_y_recuperacion_solo_para_cliente(self):
-        response_cliente = self.client.get(reverse('login'))
-        response_admin = self.client.get(reverse('admin_login'))
+    def test_login_unificado_muestra_seguridad_y_recuperacion_por_rol(self):
+        response = self.client.get(reverse('login'))
 
-        self.assertContains(response_cliente, 'Recordarme en este dispositivo')
-        self.assertContains(response_cliente, '¿Olvidaste tu contraseña?')
-        self.assertContains(response_cliente, 'correo o teléfono asociado')
-        self.assertContains(response_cliente, 'data-password-toggle')
-        self.assertContains(response_cliente, 'name="username"')
-        self.assertContains(response_cliente, 'name="password"')
-        self.assertContains(response_cliente, 'Recordarme en este dispositivo')
-        self.assertContains(response_cliente, 'logo_prisma.png')
-        self.assertNotContains(response_cliente, 'Google')
-        self.assertNotContains(response_cliente, 'google')
-        self.assertNotContains(response_cliente, 'Próximamente')
-        self.assertNotContains(response_admin, 'Código de recuperación')
-        self.assertNotContains(response_admin, 'Recordarme en este dispositivo')
-        self.assertContains(response_admin, '¿Olvidaste tu contraseña?')
-        self.assertContains(response_admin, reverse('admin_recuperar'))
-        self.assertNotContains(response_admin, 'data-password-toggle')
+        self.assertContains(response, 'Recordarme en este dispositivo')
+        self.assertContains(response, 'Correo, teléfono o nombre de usuario')
+        self.assertContains(response, 'data-password-toggle')
+        self.assertContains(response, 'name="username"')
+        self.assertContains(response, 'name="password"')
+        self.assertContains(response, 'logo_prisma.png')
+        self.assertContains(response, reverse('recuperar'))
+        self.assertContains(response, reverse('admin_recuperar'))
+        self.assertNotContains(response, 'Acceso para administración')
+        self.assertNotContains(response, 'Google')
+        self.assertNotContains(response, 'google')
+        self.assertNotContains(response, 'Próximamente')
+
+        response_admin_alias = self.client.get(reverse('admin_login'))
+        self.assertRedirects(response_admin_alias, reverse('login'))
 
         response_home = self.client.get(reverse('base_cliente'))
         self.assertNotContains(response_home, 'Código de recuperación')
@@ -277,10 +300,11 @@ class AccesoUsuarioTests(TestCase):
         self.assertIn('restablecer tu contraseña', mail.outbox[0].subject)
         codigo = re.search(r'\b[0-9]{8}\b', mail.outbox[0].body).group()
         self.assertEqual(mail.outbox[0].alternatives[0][1], 'text/html')
-        self.assertIn('cid:prisma-logo', mail.outbox[0].alternatives[0][0])
+        self.assertIn('Prisma', mail.outbox[0].alternatives[0][0])
         self.assertIn(codigo, mail.outbox[0].alternatives[0][0])
         html_body = unescape(mail.outbox[0].alternatives[0][0])
         self.assertIn('Continuar con mi código', html_body)
+        self.assertIn('logo_prisma.png', html_body)
         link_match = re.search(
             r'href="([^"]+/recuperar/codigo/continuar/#([^"]+))"',
             html_body,
@@ -294,10 +318,7 @@ class AccesoUsuarioTests(TestCase):
             part for part in mail.outbox[0].message(policy=email_policy.default).walk()
             if part.get_content_maintype() == 'image'
         ]
-        self.assertEqual(len(inline_images), 1)
-        self.assertEqual(inline_images[0]['Content-ID'], '<prisma-logo>')
-        self.assertEqual(inline_images[0].get_content_disposition(), 'inline')
-        self.assertIsNone(inline_images[0].get_filename())
+        self.assertEqual(len(inline_images), 0)
         self.assertNotIn('mantén presionado el código', html_body)
         self.cliente.refresh_from_db()
         self.assertTrue(check_password(codigo, self.cliente.email_recovery_code_hash))
@@ -347,8 +368,8 @@ class AccesoUsuarioTests(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
     def test_recuperacion_administrativa_envia_codigo_solo_al_correo_admin(self):
-        response = self.client.get(reverse('admin_login'))
-        self.assertContains(response, '¿Olvidaste tu contraseña?')
+        response = self.client.get(reverse('login'))
+        self.assertContains(response, reverse('admin_recuperar'))
 
         response = self.client.post(
             reverse('admin_recuperar'),
@@ -365,7 +386,8 @@ class AccesoUsuarioTests(TestCase):
         codigo = re.search(r'\b[0-9]{8}\b', mensaje.body).group()
         self.assertIn(codigo, html_body)
         self.assertIn('Acceso administrativo', html_body)
-        self.assertIn('cid:prisma-logo', html_body)
+        self.assertIn('Prisma', html_body)
+        self.assertIn('logo_prisma.png', html_body)
         self.assertNotIn('Continuar con mi código', html_body)
         self.assertEqual(self.client.session['admin_recovery_email'], self.administrador.email)
         self.assertNotIn('recovery_email', self.client.session)
@@ -396,7 +418,7 @@ class AccesoUsuarioTests(TestCase):
                 'new_password2': nueva_contrasena,
             },
         )
-        self.assertRedirects(response, reverse('admin_login'))
+        self.assertRedirects(response, reverse('login'))
         self.administrador.refresh_from_db()
         self.assertTrue(self.administrador.check_password(nueva_contrasena))
         self.assertEqual(self.administrador.recovery_reset_grant_hash, '')
@@ -618,30 +640,32 @@ class AccesoUsuarioTests(TestCase):
         self.assertEqual(self.administrador.recovery_code_hash, '')
 
     def test_rechaza_contrasena_incorrecta_y_accesos_cruzados(self):
-        for url_name, email in (
-            ('login', self.administrador.email),
-            ('admin_login', self.cliente.email),
-        ):
-            with self.subTest(url=url_name):
+        for email in (self.administrador.email, self.cliente.email):
+            with self.subTest(email=email):
                 response = self.client.post(
-                    reverse(url_name),
+                    reverse('login'),
                     {'username': email, 'password': 'incorrecta'},
                 )
                 self.assertEqual(response.status_code, 200)
                 self.assertFalse(response.context['form'].is_valid())
 
-    def test_cuentas_solo_entran_en_su_tipo_de_acceso(self):
+    def test_login_unificado_redirige_cada_rol_a_su_panel(self):
         response_cliente = self.client.post(
-            reverse('admin_login'),
+            reverse('login'),
             {'username': self.cliente.email, 'password': 'Clave-segura-2026!'},
         )
-        self.assertFalse(response_cliente.context['form'].is_valid())
+        self.assertRedirects(response_cliente, reverse('base_cliente'))
+        self.client.logout()
 
         response_admin = self.client.post(
             reverse('login'),
-            {'username': self.administrador.email, 'password': 'Clave-segura-2026!'},
+            {
+                'username': self.administrador.username.upper(),
+                'password': 'Clave-segura-2026!',
+            },
         )
-        self.assertFalse(response_admin.context['form'].is_valid())
+        self.assertRedirects(response_admin, reverse('perfil'))
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
 
     def test_cliente_sin_staff_no_puede_abrir_panel_ni_categorias(self):
         self.client.force_login(self.cliente)
@@ -651,7 +675,8 @@ class AccesoUsuarioTests(TestCase):
                 response = self.client.get(reverse(url_name))
                 self.assertRedirects(
                     response,
-                    f'{reverse("admin_login")}?next={reverse(url_name)}',
+                    f'{reverse("login")}?next={reverse(url_name)}',
+                    fetch_redirect_response=False,
                 )
 
     def test_lista_de_usuarios_usa_el_diseno_compartido_del_panel(self):
@@ -743,6 +768,9 @@ class AccesoUsuarioTests(TestCase):
         usuario = Usuario.objects.get(email='nueva@example.com')
         self.assertTrue(usuario.is_active)
         self.assertFalse(usuario.is_staff)
+        rol_cliente = Group.objects.get(name='Cliente')
+        self.assertEqual(list(usuario.groups.all()), [rol_cliente])
+        self.assertFalse(rol_cliente.permissions.exists())
         self.assertEqual(usuario.first_name, 'María José')
         self.assertEqual(usuario.last_name, 'García Luna')
         self.assertEqual(usuario.username, 'mariajose.garcialuna')
@@ -752,6 +780,9 @@ class AccesoUsuarioTests(TestCase):
             self.client.session['_auth_user_id'],
             str(usuario.pk),
         )
+        response = self.client.get(reverse('gestion_insumos'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response['Location'])
 
     def test_registro_no_muestra_codigo_y_permite_cerrar_sesion_desde_inicio(self):
         response = self.client.post(
@@ -816,13 +847,15 @@ class GestionCategoriasInsumosTests(TestCase):
     def test_admin_inicia_sesion_en_acceso_privado(self):
         self.client.logout()
         response = self.client.post(
-            reverse('admin_login'),
+            reverse('login'),
             {
                 'username': self.administrador.email,
                 'password': 'Clave-segura-2026!',
+                'remember_me': 'on',
             },
         )
         self.assertRedirects(response, reverse('perfil'))
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
 
     def test_admin_crea_categoria_y_busca_insumos_sin_filtrar_por_categoria(self):
         response = self.client.post(
@@ -905,6 +938,27 @@ class GestionRolesUsuariosTests(TestCase):
         self.assertContains(response, 'js/admin_crud.js?v=8')
         self.assertNotContains(response, '<script>\n')
         self.assertNotContains(response, 'onclick="return confirm(')
+
+    def test_rol_cliente_no_se_puede_editar_eliminar_ni_convertir_en_rol_privilegiado(self):
+        rol_cliente = Group.objects.get(name='Cliente')
+        self.assertFalse(RolForm(data={
+            'name': 'Cliente',
+            'permissions': [],
+        }).is_valid())
+
+        response = self.client.get(
+            reverse('gestion_roles'),
+            {'editar_rol': rol_cliente.pk},
+        )
+        self.assertRedirects(response, reverse('gestion_roles'))
+
+        response = self.client.post(
+            reverse('gestion_roles'),
+            {'accion': 'eliminar_rol', 'rol_id': rol_cliente.pk},
+        )
+        self.assertRedirects(response, reverse('gestion_roles'))
+        self.assertTrue(Group.objects.filter(pk=rol_cliente.pk).exists())
+        self.assertFalse(rol_cliente.permissions.exists())
 
     def test_admin_crea_y_edita_usuarios_desde_el_crud(self):
         rol = Group.objects.create(name='Cajero')
@@ -1129,7 +1183,8 @@ class GestionRolesUsuariosTests(TestCase):
                 response = self.client.get(url)
                 self.assertRedirects(
                     response,
-                    f'{reverse("admin_login")}?next={url}',
+                    f'{reverse("login")}?next={url}',
+                    fetch_redirect_response=False,
                 )
 
         response = self.client.post(
@@ -1138,7 +1193,8 @@ class GestionRolesUsuariosTests(TestCase):
         )
         self.assertRedirects(
             response,
-            f'{reverse("admin_login")}?next={users_url}',
+            f'{reverse("login")}?next={users_url}',
+            fetch_redirect_response=False,
         )
 
 
@@ -1149,7 +1205,6 @@ class PermisosPorRolTests(TestCase):
             email='gestor@example.com',
             telefono='3001234567',
             password='Clave-segura-2026!',
-            is_staff=True,
         )
         self.rol = Group.objects.create(name='Gestor de productos')
         permisos_productos = Permission.objects.filter(
@@ -1159,6 +1214,22 @@ class PermisosPorRolTests(TestCase):
         self.rol.permissions.set(permisos_productos)
         self.usuario.groups.add(self.rol)
         self.client.force_login(self.usuario)
+
+    def test_usuario_con_rol_sin_is_staff_inicia_sesion_y_solo_accede_a_sus_modulos(self):
+        self.client.logout()
+        response = self.client.post(
+            reverse('login'),
+            {
+                'username': self.usuario.email,
+                'password': 'Clave-segura-2026!',
+            },
+        )
+
+        self.assertRedirects(response, reverse('perfil'))
+        self.assertEqual(self.client.get(reverse('lista_productos')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('gestion_proveedores')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('gestion_insumos')).status_code, 403)
+        self.assertEqual(self.client.get(reverse('Lista de usuarios')).status_code, 403)
 
     def test_rol_de_productos_no_abre_otros_cruds_y_paneles_quedan_bloqueados(self):
         self.assertEqual(

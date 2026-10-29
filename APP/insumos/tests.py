@@ -211,7 +211,8 @@ class GestionInsumosTests(TestCase):
 
         self.assertRedirects(
             response,
-            f'{reverse("admin_login")}?next={reverse("detalle_insumo", args=[self.insumo.pk])}',
+            f'{reverse("login")}?next={reverse("detalle_insumo", args=[self.insumo.pk])}',
+            fetch_redirect_response=False,
         )
         response = self.client.post(
             reverse('detalle_insumo', args=[self.insumo.pk]),
@@ -393,7 +394,8 @@ class GestionInsumosTests(TestCase):
 
         self.assertRedirects(
             response,
-            f'{reverse("admin_login")}?next={self.url}',
+            f'{reverse("login")}?next={self.url}',
+            fetch_redirect_response=False,
         )
 
     def test_eliminar_insumo_requiere_un_id_valido(self):

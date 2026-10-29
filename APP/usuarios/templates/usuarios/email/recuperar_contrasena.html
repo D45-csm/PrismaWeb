@@ -4,54 +4,105 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Recupera tu cuenta Prisma</title>
+    <style>
+        @media only screen and (max-width: 480px) {
+            .email-shell { padding: 24px 12px !important; }
+            .email-content { padding: 8px 20px 28px !important; }
+            .email-title { font-size: 21px !important; }
+            .email-code { font-size: 27px !important; letter-spacing: 5px !important; }
+            .email-action { padding: 14px 22px !important; }
+        }
+    </style>
 </head>
-<body style="margin:0; padding:0; background-color:#f5f1f5; color:#332b32; font-family:Arial, Helvetica, sans-serif;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f5f1f5; padding:32px 12px;">
+<body style="margin:0; padding:0; background-color:#f4f6f9; color:#1e293b; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing:antialiased;">
+    <table class="email-shell" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f4f6f9; padding:40px 16px;">
         <tr>
             <td align="center">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px; background-color:#ffffff; border:1px solid #eee7ed; border-radius:18px; overflow:hidden;">
+                <!-- Tarjeta principal -->
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:540px; background-color:#ffffff; border:1px solid #e2e8f0; border-radius:18px; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.04);">
+                    
+                    <!-- Barra arcoíris Prisma superior -->
                     <tr>
-                        <td style="height:5px; background-color:#b0197e; font-size:0; line-height:0;">&nbsp;</td>
+                        <td style="height:6px; background:linear-gradient(90deg, #e63227 0%, #f47b20 17%, #f7d417 34%, #7ab648 51%, #0f9b8e 68%, #2f6fd0 85%, #b0197e 100%); line-height:6px; font-size:0;">&nbsp;</td>
                     </tr>
+
+                    <!-- Logo alojado en el sitio: no se añade como archivo adjunto -->
                     <tr>
-                        <td align="center" style="padding:28px 20px 16px;">
-                            <img src="cid:prisma-logo" width="84" height="84" alt="Prisma, el arte del postre" style="display:block; width:84px; height:84px; max-width:100%; border:0; border-radius:50%;">
-                            <p style="margin:14px 0 0; color:#b0197e; font-size:13px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">Prisma · El arte del postre</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding:8px 24px 28px;">
-                            <h1 style="margin:0 0 16px; color:#332b32; font-size:23px; line-height:1.3; text-align:center;">Hola {{ usuario.get_full_name|default:usuario.username }}, recuperemos tu acceso</h1>
-                            <p style="margin:0 0 12px; color:#625963; font-size:16px; line-height:1.65;">Recibimos una solicitud para cambiar la contraseña de tu cuenta Prisma. Usa este código para continuar:</p>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:18px 0 8px;">
+                        <td align="center" style="padding:36px 28px 18px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
                                     <td align="center">
-                                        <a href="{{ email_link_url }}" style="display:inline-block; padding:14px 24px; border-radius:10px; background-color:#9e176f; color:#ffffff; font-size:16px; font-weight:bold; text-decoration:none;">Continuar con mi código</a>
+                                        <div style="display:inline-block; padding:3px; background:linear-gradient(135deg, #e63227, #f7d417, #0f9b8e, #b0197e); border-radius:50%;">
+                                            <div style="background-color:#ffffff; width:64px; height:64px; border-radius:50%; text-align:center; line-height:64px;">
+                                                <img src="{{ 'logo_prisma.png' }}" width="64" height="64" alt="Logo de Prisma" style="display:block; width:64px; height:64px; max-width:100%; border:0; border-radius:50%; object-fit:cover;">
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
-                            </table>
-                            <p style="margin:0 0 18px; color:#625963; font-size:13px; line-height:1.5; text-align:center;">Toca el botón y verificaremos el código; no hace falta copiarlo.</p>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:22px 0;">
                                 <tr>
-                                    <td align="center" style="padding:20px 12px; border:1px solid #f0d7e8; border-radius:14px; background-color:#fff8fc;">
-                                        <span style="color:#9e176f; font-size:30px; font-weight:bold; letter-spacing:6px; line-height:1.3; -webkit-user-select:all; user-select:all;">{{ codigo }}</span>
+                                    <td align="center" style="padding-top:14px;">
+                                        <span style="display:inline-block; font-size:12px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:#0f172a;">Prisma · El arte del postre</span>
                                     </td>
                                 </tr>
                             </table>
-                            <p style="margin:0 0 18px; color:#625963; font-size:15px; line-height:1.65;">Si lo prefieres, también puedes escribirlo manualmente en la página de recuperación.</p>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 22px;">
-                                <tr>
-                                    <td style="padding:14px 16px; border-left:3px solid #b0197e; border-radius:4px; background-color:#faf6f9; color:#625963; font-size:14px; line-height:1.6;">
-                                        Por seguridad, vence en <strong style="color:#332b32;">10 minutos</strong> y solo se puede usar una vez. Si no pediste este cambio, puedes ignorar este mensaje; tu contraseña seguirá igual.
-                                    </td>
-                                </tr>
-                            </table>
-                            <p style="margin:0; color:#625963; font-size:15px; line-height:1.65;">Gracias por ser parte de Prisma.<br><strong style="color:#9e176f;">Con cariño, el equipo Prisma</strong></p>
                         </td>
                     </tr>
+
+                    <!-- Contenido principal -->
                     <tr>
-                        <td align="center" style="padding:16px 24px; border-top:1px solid #f0eaf0; color:#8a8089; font-size:12px; line-height:1.5;">
-                            Este mensaje fue enviado para proteger el acceso a tu cuenta.
+                        <td class="email-content" style="padding:8px 36px 36px;">
+                            <h1 class="email-title" style="margin:0 0 14px; color:#0f172a; font-size:24px; font-weight:700; line-height:1.3; text-align:center;">Hola {{ usuario.get_full_name|default:usuario.username }}, recuperemos tu acceso</h1>
+                            
+                            <p style="margin:0 0 24px; color:#475569; font-size:15px; line-height:1.65; text-align:center;">
+                                Recibimos una solicitud para restablecer la contraseña de tu cuenta. Puedes ingresar de inmediato con el botón o copiar tu código de seguridad:
+                            </p>
+
+                            <!-- Botón de acceso directo en un clic -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 20px;">
+                                <tr>
+                                    <td align="center">
+                                        <a class="email-action" href="{{ email_link_url }}" target="_blank" style="display:inline-block; padding:15px 36px; border-radius:12px; background:linear-gradient(135deg, #e63227, #b0197e); color:#ffffff; font-size:15px; font-weight:700; text-decoration:none; box-shadow:0 6px 18px rgba(176,25,126,0.28); letter-spacing:0.3px;">
+                                            Continuar con mi código &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin:0 0 24px; color:#64748b; font-size:13px; line-height:1.5; text-align:center;">
+                                Toca el botón para verificar automáticamente sin tener que escribirlo.
+                            </p>
+
+                            <!-- Caja del código de verificación -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 24px;">
+                                <tr>
+                                    <td align="center" style="padding:22px 16px; background-color:#f8fafc; border:1.5px solid #e2e8f0; border-radius:14px;">
+                                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#64748b; margin-bottom:6px;">Tu código de verificación</div>
+                                        <div class="email-code" style="color:#0f172a; font-size:32px; font-weight:800; letter-spacing:8px; font-family:'Courier New', Courier, monospace; line-height:1.2; -webkit-user-select:all; user-select:all;">{{ codigo }}</div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Nota de seguridad -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 26px;">
+                                <tr>
+                                    <td style="padding:14px 18px; border-left:3px solid #0f9b8e; background-color:#f0fdfa; border-radius:0 10px 10px 0; color:#134e4a; font-size:13px; line-height:1.6;">
+                                        <strong>Seguridad:</strong> Este código vence en <strong>10 minutos</strong> y es de uso único. Si no solicitaste este cambio, puedes ignorar este mensaje; tu contraseña seguirá protegida.
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin:0; color:#475569; font-size:14px; line-height:1.6; text-align:center;">
+                                Gracias por ser parte de Prisma.<br>
+                                <strong style="color:#0f172a;">Con cariño, el equipo de Pastelería Prisma</strong>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Pie del correo -->
+                    <tr>
+                        <td align="center" style="padding:20px 28px; background-color:#f8fafc; border-top:1px solid #e2e8f0; color:#94a3b8; font-size:12px; line-height:1.5;">
+                            Prisma · El arte del postre &bull; Tibasosa, Boyacá<br>
+                            Este mensaje se envió de forma segura para proteger tu cuenta.
                         </td>
                     </tr>
                 </table>

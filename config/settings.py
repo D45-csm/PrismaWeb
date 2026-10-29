@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 from pathlib import Path
 import os
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,16 +21,88 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 
+def _env_bool(name, default):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {'1', 'true', 'yes', 'on'}:
+        return True
+    if normalized in {'0', 'false', 'no', 'off'}:
+        return False
+    raise ImproperlyConfigured(f'{name} debe ser un valor booleano.')
+
+
+def _env_list(name, default=''):
+    value = os.getenv(name, default)
+    return [item.strip() for item in value.split(',') if item.strip()]
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5yhb5$ma8h*zsd@d^do_o@0zf+9gxc$&2)f!u$*&hsq%&4v75e'
+DEBUG = _env_bool('DJANGO_DEBUG', True)
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '').strip()
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            'Configura DJANGO_SECRET_KEY antes de ejecutar con DJANGO_DEBUG=false.'
+        )
+    SECRET_KEY = 'django-insecure-local-development-key-do-not-use-in-production'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+ALLOWED_HOSTS = _env_list(
+    'DJANGO_ALLOWED_HOSTS',
+    'localhost,127.0.0.1,[::1]' if DEBUG else '',
+)
+if not DEBUG and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured(
+        'Configura DJANGO_ALLOWED_HOSTS antes de ejecutar en producción.'
+    )
 
-ALLOWED_HOSTS = []
+CSRF_TRUSTED_ORIGINS = _env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
+SECURE_SSL_REDIRECT = _env_bool('DJANGO_SECURE_SSL_REDIRECT', not DEBUG)
+SESSION_COOKIE_SECURE = _env_bool('DJANGO_SESSION_COOKIE_SECURE', not DEBUG)
+CSRF_COOKIE_SECURE = _env_bool('DJANGO_CSRF_COOKIE_SECURE', not DEBUG)
+SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool(
+    'DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS',
+    False,
+)
+SECURE_HSTS_PRELOAD = _env_bool('DJANGO_SECURE_HSTS_PRELOAD', False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
+
+CACHE_BACKEND = os.getenv('DJANGO_CACHE_BACKEND', '').strip()
+CACHE_LOCATION = os.getenv('DJANGO_CACHE_LOCATION', '').strip()
+if not DEBUG and (
+    not CACHE_BACKEND
+    or not CACHE_LOCATION
+    or 'locmem' in CACHE_BACKEND.lower()
+    or 'dummy' in CACHE_BACKEND.lower()
+):
+    raise ImproperlyConfigured(
+        'Configura una caché compartida con DJANGO_CACHE_BACKEND y '
+        'DJANGO_CACHE_LOCATION antes de ejecutar en producción.'
+    )
+CACHES = {
+    'default': {
+        'BACKEND': CACHE_BACKEND
+        or 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': CACHE_LOCATION or 'prisma-web-local',
+    },
+}
+
+LOGIN_RATE_LIMIT_MAX_ATTEMPTS = int(os.getenv('LOGIN_RATE_LIMIT_MAX_ATTEMPTS', '5'))
+LOGIN_RATE_LIMIT_IP_MAX_ATTEMPTS = int(
+    os.getenv('LOGIN_RATE_LIMIT_IP_MAX_ATTEMPTS', '20')
+)
+LOGIN_RATE_LIMIT_WINDOW = int(os.getenv('LOGIN_RATE_LIMIT_WINDOW', '900'))
+if min(
+    LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
+    LOGIN_RATE_LIMIT_IP_MAX_ATTEMPTS,
+    LOGIN_RATE_LIMIT_WINDOW,
+) < 1:
+    raise ImproperlyConfigured('Los límites de acceso deben ser mayores que cero.')
 
 
 # Application definition

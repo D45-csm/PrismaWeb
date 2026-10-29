@@ -67,7 +67,7 @@
             </form>
 
             <div class="auth-switch">
-                <p><a href="{% if admin_recovery %}{% url 'admin_login' %}{% else %}{% url 'login' %}{% endif %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio de sesión</a></p>
+                <p><a href="{% url 'login' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Volver al inicio de sesión</a></p>
             </div>
             <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left" aria-hidden="true"></i> Volver al inicio</a>
         </div>

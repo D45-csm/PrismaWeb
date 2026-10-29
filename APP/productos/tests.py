@@ -446,7 +446,7 @@ class ProductoSeguridadTests(TestCase):
                 response = self.client.get(reverse(nombre_ruta, args=args))
                 self.assertRedirects(
                     response,
-                    f"{reverse('admin_login')}?next={reverse(nombre_ruta, args=args)}",
+                    f"{reverse('login')}?next={reverse(nombre_ruta, args=args)}",
                     fetch_redirect_response=False,
                 )
 

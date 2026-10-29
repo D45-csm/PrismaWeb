@@ -7,13 +7,13 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST, require_http_methods
 
-from APP.usuarios.permissions import exigir_permiso
+from APP.usuarios.permissions import exigir_permiso, usuario_puede_entrar_panel
 from .forms import CategoriaProductoForm, ProductoForm
 from .models import CategoriaProducto, Producto, DEFAULT_PRODUCT_IMAGE
 
 
 def es_administrador(user):
-    return user.is_authenticated and (user.is_staff or user.is_superuser)
+    return usuario_puede_entrar_panel(user)
 
 
 def _nombres_imagenes(producto):
@@ -110,8 +110,8 @@ def _render_admin_gestion(
     })
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(es_administrador, login_url='login')
 @require_http_methods(['GET', 'POST'])
 def gestionar_categoria_producto(request):
     if request.method == 'GET':
@@ -256,8 +256,8 @@ def temporada_view(request):
 
 
 # 2. CREAR PRODUCTO
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(es_administrador, login_url='login')
 @require_http_methods(['GET', 'POST'])
 def crear_producto(request):
     exigir_permiso(request, 'productos.view_producto')
@@ -277,8 +277,8 @@ def crear_producto(request):
 
 
 # 3. EDITAR PRODUCTO
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(es_administrador, login_url='login')
 @require_http_methods(['GET', 'POST'])
 def editar_producto(request, id):
     exigir_permiso(request, 'productos.view_producto')
@@ -318,8 +318,8 @@ def editar_producto(request, id):
     )
 
 
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(es_administrador, login_url='login')
 @require_http_methods(['GET', 'POST'])
 def detalle_producto(request, id):
     exigir_permiso(
@@ -356,8 +356,8 @@ def detalle_producto(request, id):
 
 
 # 4. ELIMINAR PRODUCTO
-@login_required(login_url='admin_login')
-@user_passes_test(es_administrador, login_url='admin_login')
+@login_required(login_url='login')
+@user_passes_test(es_administrador, login_url='login')
 @require_POST
 def eliminar_producto(request, id):
     exigir_permiso(request, 'productos.delete_producto')
