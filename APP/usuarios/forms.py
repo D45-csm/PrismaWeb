@@ -13,6 +13,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 
 from .models import Usuario
+from .permissions import ROL_CLIENTE
 
 
 class RolForm(forms.ModelForm):
@@ -31,6 +32,14 @@ class RolForm(forms.ModelForm):
             }),
             'permissions': forms.CheckboxSelectMultiple,
         }
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if name.casefold() == ROL_CLIENTE.casefold():
+            raise ValidationError(
+                f'"{ROL_CLIENTE}" es un rol reservado y no se puede crear ni renombrar.'
+            )
+        return name
 
 
 class UsuarioAdminForm(forms.ModelForm):
@@ -124,11 +133,11 @@ class UsuarioAdminForm(forms.ModelForm):
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(
-        label='Correo electrónico o teléfono',
+        label='Correo, teléfono o nombre de usuario',
         max_length=254,
         widget=forms.TextInput(attrs={
             'autocomplete': 'username',
-            'placeholder': 'Tu correo o teléfono',
+            'placeholder': 'Tu correo, teléfono o usuario',
             'autofocus': True,
         }),
     )
@@ -150,8 +159,6 @@ class LoginForm(AuthenticationForm):
                 users = Usuario.objects.filter(
                     email__iexact=identifier,
                     is_active=True,
-                    is_staff=False,
-                    is_superuser=False,
                 )
             elif re.fullmatch(r'[0-9]{10}', identifier):
                 users = Usuario.objects.filter(
@@ -165,8 +172,6 @@ class LoginForm(AuthenticationForm):
                 users = Usuario.objects.filter(
                     username__iexact=identifier,
                     is_active=True,
-                    is_staff=False,
-                    is_superuser=False,
                 )
         except ValidationError:
             self.add_error('username', 'Ingresa un usuario, correo o teléfono válido.')
@@ -185,54 +190,6 @@ class LoginForm(AuthenticationForm):
             raise self.get_invalid_login_error()
         self.confirm_login_allowed(self.user_cache)
         return self.cleaned_data
-
-    def confirm_login_allowed(self, user):
-        super().confirm_login_allowed(user)
-        if user.is_staff or user.is_superuser:
-            raise ValidationError(
-                'Esta cuenta usa el acceso administrativo.',
-                code='staff_account',
-            )
-
-
-class CorreoAuthenticationForm(AuthenticationForm):
-    username = forms.EmailField(
-        label='Correo electrónico',
-        widget=forms.EmailInput(attrs={
-            'autocomplete': 'email',
-            'placeholder': 'tu@correo.com',
-        }),
-    )
-
-    def clean(self):
-        email = self.cleaned_data.get('username')
-        password = self.cleaned_data.get('password')
-        if email and password:
-            users = list(
-                Usuario.objects.filter(email__iexact=email, is_active=True)[:2]
-            )
-            if len(users) != 1:
-                raise self.get_invalid_login_error()
-
-            self.user_cache = authenticate(
-                self.request,
-                username=users[0].get_username(),
-                password=password,
-            )
-            if self.user_cache is None:
-                raise self.get_invalid_login_error()
-            self.confirm_login_allowed(self.user_cache)
-        return self.cleaned_data
-
-
-class AdminLoginForm(CorreoAuthenticationForm):
-    def confirm_login_allowed(self, user):
-        super().confirm_login_allowed(user)
-        if not (user.is_staff or user.is_superuser):
-            raise ValidationError(
-                'Esta cuenta no tiene permisos administrativos.',
-                code='not_staff',
-            )
 
 
 class RecuperarPasswordForm(forms.Form):
