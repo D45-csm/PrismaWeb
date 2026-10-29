@@ -232,7 +232,10 @@ def lista_usuarios(request):
         if rol_id:
             if not rol_id.isdecimal() or len(rol_id) > 18:
                 raise Http404
-            rol = Group.objects.filter(pk=int(rol_id)).first()
+            rol = Group.objects.filter(
+                pk=int(rol_id),
+                estado_rol__is_active=True,
+            ).first()
             if rol is None:
                 raise Http404
             usuario.groups.set([rol])
@@ -336,7 +339,7 @@ def eliminar_usuario(request, pk):
 def _render_gestion_roles(request, form=None, rol_actual=None):
     roles = Group.objects.annotate(
         usuarios_asignados=Count('user'),
-    ).order_by('name')
+    ).select_related('estado_rol').order_by('name')
     return render(request, 'usuarios/gestion_roles.html', {
         'roles': roles,
         'total_roles': Group.objects.count(),
@@ -368,7 +371,33 @@ def gestion_roles(request):
                     return redirect('gestion_roles')
             form = RolForm(request.POST, instance=rol_actual)
             if form.is_valid():
-                rol = form.save()
+                if (
+                    rol_actual
+                    and rol_actual.estado_rol.is_active
+                    and not form.cleaned_data['is_active']
+                    and (
+                        not usuario_puede_entrar_panel(
+                            request.user,
+                            excluding_group_id=rol_actual.pk,
+                        )
+                        or not usuario_puede_acceder(
+                            request.user,
+                            'auth.change_group',
+                            excluding_group_id=rol_actual.pk,
+                        )
+                    )
+                ):
+                    form.add_error(
+                        'is_active',
+                        'No puedes desactivar el rol porque perderías el acceso para administrarlo.',
+                    )
+                    return _render_gestion_roles(
+                        request,
+                        form=form,
+                        rol_actual=rol_actual,
+                    )
+                with transaction.atomic():
+                    rol = form.save()
                 messages.success(
                     request,
                     f'Rol "{rol.name}" '
@@ -422,7 +451,7 @@ def registro_view(request):
             login(
                 request,
                 usuario,
-                backend='django.contrib.auth.backends.ModelBackend',
+                backend=settings.AUTHENTICATION_BACKENDS[0],
             )
             messages.success(request, 'Tu cuenta Prisma está lista. ¡Bienvenido!')
             return redirect('base_cliente')
