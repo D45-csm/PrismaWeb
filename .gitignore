@@ -120,3 +120,10 @@ media/productos/*
 # **/migrations/**
 # !**/migrations
 # !**/migrations/__init__.py
+# Dependencias de Node.js
+node_modules/
+
+# Copias locales y archivos temporales
+.git_accidental_respaldo/
+PrismaWeb/
+Nueva carpeta/
