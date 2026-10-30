@@ -31,6 +31,7 @@ from .forms import (
     CodigoRecuperacionForm,
     LoginForm,
     NuevaContrasenaForm,
+    PerfilForm,
     RecuperarPasswordForm,
     RegistroForm,
     RolForm,
@@ -990,6 +991,26 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'Has cerrado sesión correctamente.')
     return redirect('base_cliente')
+
+
+@login_required(login_url='login')
+@user_passes_test(usuario_puede_entrar_panel, login_url='login')
+@require_http_methods(['GET', 'POST'])
+def editar_perfil_view(request):
+    if request.method == 'POST':
+        perfil_form = PerfilForm(request.POST, instance=request.user)
+        if request.POST.get('form_type') != 'profile':
+            messages.error(request, 'No se pudo identificar el formulario enviado.')
+        elif perfil_form.is_valid():
+            perfil_form.save()
+            messages.success(request, 'Tus datos de perfil se actualizaron correctamente.')
+            return redirect('editar_perfil')
+    else:
+        perfil_form = PerfilForm(instance=request.user)
+
+    return render(request, 'usuarios/editar_perfil.html', {
+        'perfil_form': perfil_form,
+    })
 
 
 @login_required(login_url='login')
