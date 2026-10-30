@@ -153,6 +153,78 @@ class UsuarioAdminForm(forms.ModelForm):
         return usuario
 
 
+class PerfilForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = ['username', 'last_name', 'email', 'telefono']
+        labels = {
+            'username': 'Nombre de usuario',
+            'last_name': 'Apellido',
+            'email': 'Correo electrónico',
+            'telefono': 'Teléfono',
+        }
+        widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'admin-form-input',
+                'autocomplete': 'username',
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'admin-form-input',
+                'autocomplete': 'family-name',
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'admin-form-input',
+                'autocomplete': 'email',
+            }),
+            'telefono': forms.TextInput(attrs={
+                'class': 'admin-form-input',
+                'autocomplete': 'tel',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{10}',
+                'maxlength': '10',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['last_name'].required = False
+        self.fields['email'].required = True
+
+    def clean_username(self):
+        username = self.cleaned_data['username'].strip()
+        duplicados = Usuario.objects.filter(
+            username__iexact=username,
+        ).exclude(pk=self.instance.pk)
+        if duplicados.exists():
+            raise ValidationError('Ya existe una cuenta con este nombre de usuario.')
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        duplicados = Usuario.objects.filter(email__iexact=email).exclude(
+            pk=self.instance.pk,
+        )
+        if duplicados.exists():
+            raise ValidationError('Ya existe una cuenta con este correo.')
+        return email
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data['telefono'].strip()
+        if not re.fullmatch(r'[0-9]{10}', telefono):
+            raise ValidationError(
+                'Ingresa un teléfono de 10 dígitos, sin espacios ni símbolos.'
+            )
+        if not (self.instance.is_staff or self.instance.is_superuser):
+            duplicados = Usuario.objects.filter(
+                telefono=telefono,
+                is_staff=False,
+                is_superuser=False,
+            ).exclude(pk=self.instance.pk)
+            if duplicados.exists():
+                raise ValidationError('Ya existe una cuenta con este teléfono.')
+        return telefono
+
+
 class LoginForm(AuthenticationForm):
     username = forms.CharField(
         label='Correo, teléfono o nombre de usuario',
