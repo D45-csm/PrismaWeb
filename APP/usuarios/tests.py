@@ -16,7 +16,7 @@ from django.utils import timezone
 from APP.insumos.models import CategoriaInsumo, Insumo
 from APP.proveedores.models import Proveedor
 
-from .forms import RegistroForm, RolForm, UsuarioAdminForm
+from .forms import PerfilForm, RegistroForm, RolForm, UsuarioAdminForm
 from .models import Usuario
 from .permissions import usuario_puede_acceder, usuario_puede_entrar_panel
 
@@ -60,6 +60,61 @@ class AccesoUsuarioTests(TestCase):
         )
 
         self.assertRedirects(response, reverse('base_cliente'))
+
+    def test_perfil_admin_actualiza_datos_personales(self):
+        self.client.force_login(self.administrador)
+
+        response = self.client.post(
+            reverse('editar_perfil'),
+            {
+                'form_type': 'profile',
+                'username': 'daniel_acosta',
+                'last_name': '',
+                'email': 'daniel@example.com',
+                'telefono': '3017654321',
+            },
+        )
+
+        self.assertRedirects(response, reverse('editar_perfil'))
+        self.administrador.refresh_from_db()
+        self.assertEqual(self.administrador.username, 'daniel_acosta')
+        self.assertEqual(self.administrador.last_name, '')
+        self.assertEqual(self.administrador.email, 'daniel@example.com')
+        self.assertEqual(self.administrador.telefono, '3017654321')
+
+    def test_editar_perfil_enlaza_a_recuperacion_de_contrasena(self):
+        self.client.force_login(self.administrador)
+
+        response = self.client.get(reverse('editar_perfil'))
+
+        self.assertContains(response, reverse('admin_recuperar'))
+        self.assertNotContains(response, 'old_password')
+        self.assertEqual(
+            self.client.get(reverse('admin_recuperar')).status_code,
+            200,
+        )
+
+    def test_perfil_admin_rechaza_nombre_de_usuario_duplicado_sin_distinguir_mayusculas(self):
+        self.client.force_login(self.administrador)
+
+        response = self.client.post(
+            reverse('editar_perfil'),
+            {
+                'form_type': 'profile',
+                'username': self.cliente.username.upper(),
+                'last_name': '',
+                'email': self.administrador.email,
+                'telefono': self.administrador.telefono,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'Ya existe una cuenta con este nombre de usuario.',
+        )
+        self.administrador.refresh_from_db()
+        self.assertEqual(self.administrador.username, 'admin')
 
     def test_login_bloquea_intentos_fallidos_repetidos(self):
         for _ in range(settings.LOGIN_RATE_LIMIT_MAX_ATTEMPTS):
