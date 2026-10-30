@@ -30,18 +30,28 @@
         {% if user.is_authenticated %}
 
         <!-- Usuario autenticado -->
-        <li class="nav-item">
-          <p class="nav-user">
-            Bienvenido, {{ user.username }}
-          </p>
-        </li>
-
-        <!-- Cerrar sesión -->
-        <li class="nav-item">
-          <form method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button class="nav-link border-0 bg-transparent" type="submit">Cerrar sesión</button>
-          </form>
+        <li class="nav-item nav-account">
+          <details class="nav-account-menu">
+            <summary>
+              <i class="fa-regular fa-user" aria-hidden="true"></i>
+              <span>{{ user.username }}</span>
+              <i class="fa-solid fa-chevron-down nav-account-chevron" aria-hidden="true"></i>
+            </summary>
+            <div class="nav-account-dropdown">
+              <p class="nav-account-name">{{ user.get_full_name|default:user.username }}</p>
+              <a href="{% url 'editar_perfil' %}">
+                <i class="fa-regular fa-id-card" aria-hidden="true"></i>
+                Editar perfil
+              </a>
+              <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit">
+                  <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                  Cerrar sesión
+                </button>
+              </form>
+            </div>
+          </details>
         </li>
 
         {% else %}

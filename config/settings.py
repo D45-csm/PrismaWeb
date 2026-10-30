@@ -129,6 +129,9 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
+AUTHENTICATION_BACKENDS = [
+    'APP.usuarios.backends.BackendRolesActivos',
+]
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'base_cliente'
 LOGOUT_REDIRECT_URL = 'login'

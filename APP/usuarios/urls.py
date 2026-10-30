@@ -44,6 +44,7 @@ urlpatterns = [
         name='recuperar_nueva_contrasena',
     ),
     path('perfil/', views.profile_view, name='perfil'),
+    path('perfil/editar/', views.editar_perfil_view, name='editar_perfil'),
     path('Lista_usuarios/', views.lista_usuarios, name='Lista de usuarios'),
     path('Lista_usuarios/<int:pk>/detalle/', views.detalle_usuario, name='detalle_usuario'),
     path(

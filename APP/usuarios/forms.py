@@ -12,11 +12,17 @@ from django.contrib.auth.forms import (
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
 
-from .models import Usuario
+from .models import EstadoRol, Usuario
 from .permissions import ROL_CLIENTE
 
 
 class RolForm(forms.ModelForm):
+    is_active = forms.BooleanField(
+        required=False,
+        initial=True,
+        label='Rol activo',
+    )
+
     class Meta:
         model = Group
         fields = ['name', 'permissions']
@@ -33,6 +39,11 @@ class RolForm(forms.ModelForm):
             'permissions': forms.CheckboxSelectMultiple,
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['is_active'].initial = self.instance.estado_rol.is_active
+
     def clean_name(self):
         name = self.cleaned_data['name'].strip()
         if name.casefold() == ROL_CLIENTE.casefold():
@@ -40,6 +51,15 @@ class RolForm(forms.ModelForm):
                 f'"{ROL_CLIENTE}" es un rol reservado y no se puede crear ni renombrar.'
             )
         return name
+
+    def save(self, commit=True):
+        rol = super().save(commit=commit)
+        if commit:
+            EstadoRol.objects.update_or_create(
+                group=rol,
+                defaults={'is_active': self.cleaned_data['is_active']},
+            )
+        return rol
 
 
 class UsuarioAdminForm(forms.ModelForm):
@@ -86,7 +106,9 @@ class UsuarioAdminForm(forms.ModelForm):
             if self.instance.pk and self.instance.groups.count() == 1:
                 rol_actual = self.instance.groups.first()
             self.fields['rol'] = forms.ModelChoiceField(
-                queryset=Group.objects.order_by('name'),
+                queryset=Group.objects.filter(
+                    estado_rol__is_active=True,
+                ).order_by('name'),
                 required=False,
                 label='Rol',
                 initial=rol_actual,
@@ -129,6 +151,78 @@ class UsuarioAdminForm(forms.ModelForm):
             usuario.save()
             self.save_m2m()
         return usuario
+
+
+class PerfilForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = ['username', 'last_name', 'email', 'telefono']
+        labels = {
+            'username': 'Nombre de usuario',
+            'last_name': 'Apellido',
+            'email': 'Correo electrónico',
+            'telefono': 'Teléfono',
+        }
+        widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'admin-form-input',
+                'autocomplete': 'username',
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'admin-form-input',
+                'autocomplete': 'family-name',
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'admin-form-input',
+                'autocomplete': 'email',
+            }),
+            'telefono': forms.TextInput(attrs={
+                'class': 'admin-form-input',
+                'autocomplete': 'tel',
+                'inputmode': 'numeric',
+                'pattern': '[0-9]{10}',
+                'maxlength': '10',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['last_name'].required = False
+        self.fields['email'].required = True
+
+    def clean_username(self):
+        username = self.cleaned_data['username'].strip()
+        duplicados = Usuario.objects.filter(
+            username__iexact=username,
+        ).exclude(pk=self.instance.pk)
+        if duplicados.exists():
+            raise ValidationError('Ya existe una cuenta con este nombre de usuario.')
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip().lower()
+        duplicados = Usuario.objects.filter(email__iexact=email).exclude(
+            pk=self.instance.pk,
+        )
+        if duplicados.exists():
+            raise ValidationError('Ya existe una cuenta con este correo.')
+        return email
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data['telefono'].strip()
+        if not re.fullmatch(r'[0-9]{10}', telefono):
+            raise ValidationError(
+                'Ingresa un teléfono de 10 dígitos, sin espacios ni símbolos.'
+            )
+        if not (self.instance.is_staff or self.instance.is_superuser):
+            duplicados = Usuario.objects.filter(
+                telefono=telefono,
+                is_staff=False,
+                is_superuser=False,
+            ).exclude(pk=self.instance.pk)
+            if duplicados.exists():
+                raise ValidationError('Ya existe una cuenta con este teléfono.')
+        return telefono
 
 
 class LoginForm(AuthenticationForm):

@@ -16,8 +16,9 @@ from django.utils import timezone
 from APP.insumos.models import CategoriaInsumo, Insumo
 from APP.proveedores.models import Proveedor
 
-from .forms import RegistroForm, RolForm
+from .forms import PerfilForm, RegistroForm, RolForm, UsuarioAdminForm
 from .models import Usuario
+from .permissions import usuario_puede_acceder, usuario_puede_entrar_panel
 
 
 @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
@@ -59,6 +60,61 @@ class AccesoUsuarioTests(TestCase):
         )
 
         self.assertRedirects(response, reverse('base_cliente'))
+
+    def test_perfil_admin_actualiza_datos_personales(self):
+        self.client.force_login(self.administrador)
+
+        response = self.client.post(
+            reverse('editar_perfil'),
+            {
+                'form_type': 'profile',
+                'username': 'daniel_acosta',
+                'last_name': '',
+                'email': 'daniel@example.com',
+                'telefono': '3017654321',
+            },
+        )
+
+        self.assertRedirects(response, reverse('editar_perfil'))
+        self.administrador.refresh_from_db()
+        self.assertEqual(self.administrador.username, 'daniel_acosta')
+        self.assertEqual(self.administrador.last_name, '')
+        self.assertEqual(self.administrador.email, 'daniel@example.com')
+        self.assertEqual(self.administrador.telefono, '3017654321')
+
+    def test_editar_perfil_enlaza_a_recuperacion_de_contrasena(self):
+        self.client.force_login(self.administrador)
+
+        response = self.client.get(reverse('editar_perfil'))
+
+        self.assertContains(response, reverse('admin_recuperar'))
+        self.assertNotContains(response, 'old_password')
+        self.assertEqual(
+            self.client.get(reverse('admin_recuperar')).status_code,
+            200,
+        )
+
+    def test_perfil_admin_rechaza_nombre_de_usuario_duplicado_sin_distinguir_mayusculas(self):
+        self.client.force_login(self.administrador)
+
+        response = self.client.post(
+            reverse('editar_perfil'),
+            {
+                'form_type': 'profile',
+                'username': self.cliente.username.upper(),
+                'last_name': '',
+                'email': self.administrador.email,
+                'telefono': self.administrador.telefono,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'Ya existe una cuenta con este nombre de usuario.',
+        )
+        self.administrador.refresh_from_db()
+        self.assertEqual(self.administrador.username, 'admin')
 
     def test_login_bloquea_intentos_fallidos_repetidos(self):
         for _ in range(settings.LOGIN_RATE_LIMIT_MAX_ATTEMPTS):
@@ -939,6 +995,86 @@ class GestionRolesUsuariosTests(TestCase):
         self.assertNotContains(response, '<script>\n')
         self.assertNotContains(response, 'onclick="return confirm(')
 
+    def test_estado_de_rol_se_administra_desde_el_formulario_y_se_muestra_en_la_lista(self):
+        response = self.client.get(reverse('gestion_roles'))
+
+        self.assertContains(response, 'name="is_active"')
+        self.assertContains(response, 'Rol activo')
+        self.assertContains(response, 'Rol inactivo')
+
+        response = self.client.post(
+            reverse('gestion_roles'),
+            {
+                'accion': 'crear_rol',
+                'name': 'Rol temporal',
+                'permissions': [],
+                'is_active': 'on',
+            },
+        )
+
+        self.assertRedirects(response, reverse('gestion_roles'))
+        rol = Group.objects.get(name='Rol temporal')
+        self.assertTrue(rol.estado_rol.is_active)
+
+        response = self.client.post(
+            reverse('gestion_roles'),
+            {
+                'accion': 'editar_rol',
+                'rol_id': rol.pk,
+                'name': rol.name,
+                'permissions': [],
+            },
+        )
+
+        self.assertRedirects(response, reverse('gestion_roles'))
+        rol.estado_rol.refresh_from_db()
+        self.assertFalse(rol.estado_rol.is_active)
+
+        response = self.client.get(reverse('gestion_roles'))
+        self.assertContains(response, 'Desactivado')
+        self.assertEqual(response.content.count(b'name="is_active"'), 1)
+
+        response = self.client.get(
+            reverse('gestion_roles'),
+            {'editar_rol': rol.pk},
+        )
+        self.assertContains(response, 'name="is_active"')
+        self.assertNotContains(response, 'name="is_active" checked')
+
+    def test_no_se_puede_desactivar_el_ultimo_rol_que_da_acceso_a_gestion(self):
+        permissions = Permission.objects.filter(
+            content_type__app_label__in=['auth', 'productos'],
+            codename__in=[
+                'view_group',
+                'change_group',
+                'view_producto',
+            ],
+        )
+        rol = Group.objects.create(name='Administrador de roles')
+        rol.permissions.set(permissions)
+        usuario = Usuario.objects.create_user(
+            username='gestor_roles',
+            email='gestor_roles@example.com',
+            telefono='3005550101',
+            password='Clave-segura-2026!',
+        )
+        usuario.groups.add(rol)
+        self.client.force_login(usuario)
+
+        response = self.client.post(
+            reverse('gestion_roles'),
+            {
+                'accion': 'editar_rol',
+                'rol_id': rol.pk,
+                'name': rol.name,
+                'permissions': [permission.pk for permission in permissions],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'perderías el acceso para administrarlo')
+        self.assertTrue(rol.estado_rol.is_active)
+
     def test_rol_cliente_no_se_puede_editar_eliminar_ni_convertir_en_rol_privilegiado(self):
         rol_cliente = Group.objects.get(name='Cliente')
         self.assertFalse(RolForm(data={
@@ -1173,6 +1309,30 @@ class GestionRolesUsuariosTests(TestCase):
         self.assertFalse(Group.objects.filter(pk=rol.pk).exists())
         self.assertFalse(self.usuario.groups.exists())
 
+    def test_usuario_admin_solo_puede_asignar_roles_activos(self):
+        rol_inactivo = Group.objects.create(name='Rol suspendido')
+        rol_inactivo.estado_rol.is_active = False
+        rol_inactivo.estado_rol.save(update_fields=['is_active'])
+        form = UsuarioAdminForm(include_role=True)
+
+        self.assertNotIn(rol_inactivo, form.fields['rol'].queryset)
+
+        response = self.client.post(
+            reverse('Lista de usuarios'),
+            {
+                'accion': 'crear_usuario',
+                'username': 'usuario_con_rol_inactivo',
+                'email': 'usuario_inactivo@example.com',
+                'telefono': '3119876543',
+                'rol': rol_inactivo.pk,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            Usuario.objects.filter(username='usuario_con_rol_inactivo').exists()
+        )
+
     def test_cliente_no_puede_asignar_roles_ni_abrir_su_crud(self):
         self.client.force_login(self.usuario)
         roles_url = reverse('gestion_roles')
@@ -1266,6 +1426,20 @@ class PermisosPorRolTests(TestCase):
         self.assertContains(dashboard, 'Tu rol no tiene permiso para consultar reservas.')
         self.assertContains(dashboard, 'Tu rol no tiene permiso para consultar compras.')
         self.assertContains(dashboard, 'class="dashboard-section dashboard-module-blocked" id="inventario"')
+
+    def test_rol_inactivo_deja_de_conceder_permisos_en_el_sitio_y_en_django(self):
+        usuario_activo = Usuario.objects.get(pk=self.usuario.pk)
+        self.assertTrue(usuario_activo.has_perm('productos.view_producto'))
+
+        estado = self.rol.estado_rol
+        estado.is_active = False
+        estado.save(update_fields=['is_active'])
+        usuario = Usuario.objects.get(pk=self.usuario.pk)
+
+        self.assertFalse(usuario_puede_acceder(usuario, 'productos.view_producto'))
+        self.assertFalse(usuario_puede_entrar_panel(usuario))
+        self.assertFalse(usuario.has_perm('productos.view_producto'))
+        self.assertEqual(self.client.get(reverse('perfil')).status_code, 302)
 
     def test_permisos_de_producto_no_habilitan_operaciones_de_otros_modulos(self):
         proveedor = Proveedor.objects.create(nombre='Proveedor confidencial')
