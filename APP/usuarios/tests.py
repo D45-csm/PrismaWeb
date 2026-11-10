@@ -15,7 +15,10 @@ from APP.proveedores.models import Proveedor
 from .models import Usuario
 
 
-@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+@override_settings(
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+    DEFAULT_FROM_EMAIL='noreply@example.com',
+)
 class AccesoUsuarioTests(TestCase):
     def setUp(self):
         self.cliente = Usuario.objects.create_user(
@@ -274,6 +277,34 @@ class AccesoUsuarioTests(TestCase):
         self.cliente.refresh_from_db()
         self.assertTrue(check_password(codigo, self.cliente.email_recovery_code_hash))
         self.assertGreater(self.cliente.email_recovery_code_expires_at, timezone.now())
+
+    @override_settings(DEFAULT_FROM_EMAIL='', EMAIL_HOST_USER='remitente@example.com')
+    def test_recuperacion_usa_usuario_smtp_si_no_hay_remitente_predeterminado(self):
+        response = self.client.post(
+            reverse('recuperar'),
+            {'email': self.cliente.email},
+            follow=True,
+        )
+
+        self.assertContains(response, 'Ingresa tu código')
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, 'remitente@example.com')
+
+    @override_settings(DEFAULT_FROM_EMAIL='', EMAIL_HOST_USER='')
+    def test_recuperacion_muestra_error_si_no_hay_remitente_configurado(self):
+        response = self.client.post(
+            reverse('recuperar'),
+            {'email': self.cliente.email},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(any(
+            'El servicio de correo no está configurado' in str(message)
+            for message in response.context['messages']
+        ))
+        self.assertEqual(len(mail.outbox), 0)
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.email_recovery_code_hash, '')
 
     def test_recuperacion_no_revela_si_el_correo_no_existe(self):
         response = self.client.post(
