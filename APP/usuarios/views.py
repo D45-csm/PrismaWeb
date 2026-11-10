@@ -293,6 +293,21 @@ def recuperar_view(request):
                 is_superuser=False,
             ).order_by('pk').first()
             if usuario:
+                email_from = (
+                    settings.DEFAULT_FROM_EMAIL or settings.EMAIL_HOST_USER or ''
+                ).strip()
+                if not email_from:
+                    logger.error(
+                        'No se pudo enviar el código de recuperación: '
+                        'DEFAULT_FROM_EMAIL y EMAIL_HOST_USER están vacíos.'
+                    )
+                    messages.error(
+                        request,
+                        'El servicio de correo no está configurado. '
+                        'Contacta al administrador del sitio.',
+                    )
+                    return render(request, 'usuarios/recuperar.html', {'form': form})
+
                 codigo = f'{secrets.randbelow(100_000_000):08d}'
                 usuario.email_recovery_code_hash = make_password(codigo)
                 usuario.email_recovery_code_expires_at = timezone.now() + RECOVERY_CODE_TTL
@@ -315,11 +330,11 @@ def recuperar_view(request):
                             'usuarios/email/recuperar_contrasena.txt',
                             {'usuario': usuario, 'codigo': codigo},
                         ),
-                        settings.DEFAULT_FROM_EMAIL,
+                        email_from,
                         [usuario.email],
                         fail_silently=False,
                     )
-                except (OSError, smtplib.SMTPException):
+                except (OSError, smtplib.SMTPException, ValueError):
                     logger.exception('No se pudo enviar el código de recuperación.')
                     email_enviado = 0
 
