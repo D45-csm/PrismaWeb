@@ -1121,3 +1121,25 @@
         flex-direction: column;
     }
 }
+
+.reservation-admin-metric {
+    height: 100%;
+    padding: 18px;
+    border: 1px solid var(--admin-border);
+    border-radius: 14px;
+    background: var(--admin-white);
+    box-shadow: var(--admin-shadow);
+}
+.reservation-admin-metric span { display: block; margin-bottom: 5px; color: var(--admin-muted); font-size: .8rem; }
+.reservation-admin-metric strong { color: var(--admin-text); font-size: 1.45rem; }
+.reservation-admin-metric.is-payment strong { color: #a46c1d; }
+.reservation-admin-metric.is-confirmed strong { color: #25804f; }
+.reservation-admin-metric.is-total strong { color: var(--admin-primary); font-size: 1.2rem; }
+.reservation-admin-payment { display: inline-block; font-size: .82rem; font-weight: 800; white-space: nowrap; }
+.reservation-admin-payment.is-not-required { color: var(--admin-muted); }
+.reservation-admin-payment.is-paid { color: #25804f; }
+.reservation-admin-payment.is-pending { color: #a46c1d; }
+.reservation-admin-product { padding: 10px; border: 1px solid var(--admin-border); border-radius: 12px; background: #fcfafc; }
+#reservaProductosList.is-interactive .reservation-admin-product:not(.is-visible) { display: none; }
+.reservation-admin-total { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 11px; background: #faf4f9; color: var(--admin-muted); }
+.reservation-admin-total strong { color: var(--admin-primary); }
