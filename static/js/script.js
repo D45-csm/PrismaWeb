@@ -76,6 +76,30 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.remove(), 3000);
     };
 
+    const mostrarNotificacionCarrito = (titulo, mensaje, icono) => {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification cart-toast';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+
+        const icon = document.createElement('span');
+        icon.className = 'cart-toast-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.innerHTML = `<i class="fas ${icono}"></i>`;
+
+        const contenido = document.createElement('span');
+        contenido.className = 'cart-toast-content';
+        const encabezado = document.createElement('strong');
+        encabezado.textContent = titulo;
+        const detalle = document.createElement('span');
+        detalle.textContent = mensaje;
+        contenido.append(encabezado, detalle);
+
+        toast.append(icon, contenido);
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3600);
+    };
+
 
     const escapeHTML = (t) => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const capitalizar = (t) => t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
@@ -302,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
         actualizarContadorCarrito();
-        mostrarNotificacion(`✅ ${producto.nombre} agregado`);
+        mostrarNotificacionCarrito('¡Producto agregado al carrito!', producto.nombre, 'fa-check');
     };
 
     const agregarDesdeModal = () => {
@@ -311,24 +335,37 @@ document.addEventListener('DOMContentLoaded', () => {
         cerrarModal();
     };
 
-    const cambiarCantidad = (id, delta) => {
-        const item = carrito.find(i => i.id === id);
+    const cambiarCantidad = (id, delta, tamaño = 'personal') => {
+        const item = carrito.find(i => i.id === id && i.tamaño === tamaño);
         if (!item) return;
-        item.cantidad += delta;
-        if (item.cantidad <= 0) {
-            carrito = carrito.filter(i => i.id !== id);
+        if (item.cantidad + delta <= 0) {
+            eliminarItem(id, tamaño);
+            return;
         }
+        item.cantidad += delta;
         localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
         actualizarContadorCarrito();
         renderizarCarrito();
     };
 
-    const eliminarItem = (id) => {
-        carrito = carrito.filter(i => i.id !== id);
+    const eliminarItem = async (id, tamaño = 'personal') => {
+        const item = carrito.find(i => i.id === id && i.tamaño === tamaño);
+        if (!item) return;
+
+        const confirmado = await confirmarPrisma({
+            icono: 'fa-triangle-exclamation',
+            titulo: '¿Eliminar este postre?',
+            mensaje: `¿Estás seguro de eliminar <strong>${escapeHTML(item.nombre)}</strong> del carrito?`,
+            confirmar: 'Confirmar',
+            cancelar: 'Cancelar'
+        });
+        if (!confirmado) return;
+
+        carrito = carrito.filter(i => i !== item);
         localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
         actualizarContadorCarrito();
         renderizarCarrito();
-        mostrarNotificacion('🗑️ Producto eliminado');
+        mostrarNotificacionCarrito('¡Producto borrado correctamente!', item.nombre, 'fa-trash-can');
     };
 
     const renderizarCarrito = () => {
@@ -370,10 +407,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="item-size">Tamaño: ${item.tamaño}</p>
                         <p class="item-price">$${item.precio.toLocaleString('es-CO')}</p>
                         <div class="cart-item-actions">
-                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, -1)">−</button>
+                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, -1, '${escapeHTML(item.tamaño)}')" aria-label="Disminuir cantidad de ${escapeHTML(item.nombre)}">−</button>
                             <span>${item.cantidad}</span>
-                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, 1)">+</button>
-                            <button class="cart-item-remove" onclick="eliminarItem(${item.id})" title="Quitar"><i class="fas fa-trash"></i></button>
+                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, 1, '${escapeHTML(item.tamaño)}')" aria-label="Aumentar cantidad de ${escapeHTML(item.nombre)}">+</button>
+                            <button class="cart-item-remove" onclick="eliminarItem(${item.id}, '${escapeHTML(item.tamaño)}')" title="Quitar" aria-label="Eliminar ${escapeHTML(item.nombre)} del carrito"><i class="fas fa-trash" aria-hidden="true"></i></button>
                         </div>
                     </div>
                 </div>
