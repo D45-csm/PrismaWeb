@@ -178,14 +178,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <button type="button" class="pz-close" data-cancel aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
             <div class="pz-icon"><i class="fas fa-bag-shopping"></i></div>
             <h3 class="pz-title">Completa tu pedido</h3>
-            <p class="pz-text">Déjanos tus datos y la hora aproximada en que pasarás a recoger tu pedido en el local.</p>
+            <p class="pz-text">Déjanos tus datos para confirmar el pedido y coordinar el pago por WhatsApp.</p>
             <div class="pz-summary">
                 <span><i class="fas fa-cake-candles"></i>${totalPostres} ${totalPostres === 1 ? 'postre' : 'postres'}</span>
                 <strong>Total estimado: $${total.toLocaleString('es-CO')}</strong>
             </div>
             <div class="pz-field">
                 <label for="pzNombre">Tu nombre</label>
-                <input type="text" id="pzNombre" maxlength="100" autocomplete="name" required>
+                <input type="text" id="pzNombre" maxlength="100" autocomplete="name" required data-autofocus>
             </div>
             <div class="pz-field">
                 <label for="pzTelefono">Tu teléfono</label>
@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="pz-field">
                 <label for="pzHoraRecogida">¿A qué hora aproximada vendrás a recogerlo?</label>
-                <input type="time" id="pzHoraRecogida" required data-autofocus>
+                <input type="time" id="pzHoraRecogida" required>
             </div>
             <div class="pz-field">
                 <label for="pzNotasPedido">Nota para el pedido <small>(opcional)</small></label>
@@ -334,17 +334,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderizarCarrito = () => {
         const container = document.getElementById('cartItemsList');
         if (!container) return;
+        const botonPago = document.getElementById('proceedToPayment');
+        if (botonPago) botonPago.disabled = carrito.length === 0;
 
         if (carrito.length === 0) {
-            container.innerHTML = '<div class="empty-cart"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío 😢</p></div>';
+            container.innerHTML = `
+                <div class="empty-cart">
+                    <span class="empty-cart-icon"><i class="fas fa-bag-shopping" aria-hidden="true"></i></span>
+                    <span class="empty-cart-eyebrow">Aún no hay productos</span>
+                    <h3>Tu próxima elección te espera</h3>
+                    <p>Explora nuestros postres y agrega tus favoritos al carrito.</p>
+                    <a class="empty-cart-link" href="${escapeHTML(URLS.productos || '/productos/catalogo/')}">
+                        Explorar productos <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>`;
             document.getElementById('subtotal').textContent = '$0';
             document.getElementById('total').textContent = '$0';
+            document.getElementById('cartItemsCount').textContent = '0 productos';
+            document.getElementById('cartSummaryCount').textContent = '0 artículos';
+            const checkoutSection = document.getElementById('checkoutSection');
+            if (checkoutSection) checkoutSection.hidden = true;
             return;
         }
 
         let subtotal = 0;
+        let totalUnidades = 0;
         container.innerHTML = carrito.map(item => {
             subtotal += item.precio * item.cantidad;
+            totalUnidades += item.cantidad;
             return `
                 <div class="cart-item">
                     <img src="${imgUrl(item.img)}" alt="${item.nombre}">
@@ -365,14 +382,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('subtotal').textContent = '$' + subtotal.toLocaleString('es-CO');
         document.getElementById('total').textContent = '$' + subtotal.toLocaleString('es-CO');
+        const etiquetaUnidades = `${totalUnidades} ${totalUnidades === 1 ? 'artículo' : 'artículos'}`;
+        document.getElementById('cartItemsCount').textContent = `${totalUnidades} ${totalUnidades === 1 ? 'producto' : 'productos'}`;
+        document.getElementById('cartSummaryCount').textContent = etiquetaUnidades;
     };
 
-    const checkout = async () => {
+    const checkout = () => {
         if (carrito.length === 0) {
             mostrarNotificacion('🛒 Tu carrito está vacío');
             return;
         }
 
+        const dialog = document.getElementById('checkoutChoiceDialog');
+        if (dialog && !dialog.open) dialog.showModal();
+    };
+
+    const finalizarCheckout = async () => {
+        if (carrito.length === 0) return;
         const totalPostres = carrito.reduce((sum, i) => sum + i.cantidad, 0);
         const subtotal = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
         const total = subtotal;
@@ -390,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
             '━━━━━━━━━━━━━━',
             `👤 *Cliente:* ${capitalizar(datos.nombre)}`,
             `📱 *Teléfono:* ${datos.telefono}`,
+            '🛍️ *Pedido para llevar*',
             `🕒 *Hora aproximada de recogida en el local:* ${datos.horaRecogida}`,
             '',
             '🍰 *Productos del pedido*',
@@ -406,6 +433,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         mostrarNotificacion('📲 Abriendo WhatsApp para confirmar tu pedido…');
         window.open(`https://wa.me/573118689862?text=${encodeURIComponent(texto)}`, '_blank');
+    };
+
+    const activarCheckoutCarrito = () => {
+        const botonPago = document.getElementById('proceedToPayment');
+        const dialog = document.getElementById('checkoutChoiceDialog');
+        if (!botonPago || !dialog) return;
+
+        botonPago.addEventListener('click', checkout);
+        dialog.querySelector('[data-close-checkout]').addEventListener('click', () => dialog.close());
+        dialog.querySelectorAll('[data-checkout-choice]').forEach(opcion => {
+            opcion.addEventListener('click', () => {
+                const eleccion = opcion.dataset.checkoutChoice;
+                dialog.close();
+                if (eleccion === 'mesa') {
+                    window.location.assign(URLS.reservas || '/reserva/');
+                    return;
+                }
+                void finalizarCheckout();
+            });
+        });
     };
 
     // ============================================
@@ -706,6 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     construirMenuMovil();
+    activarCheckoutCarrito();
     window.toggleMobileMenu = () => {
         const nav = document.getElementById('navMenu');
         if (nav) setMenuMovil(!nav.classList.contains('mobile-open'));
