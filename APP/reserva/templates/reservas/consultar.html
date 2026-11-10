@@ -1,0 +1,49 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Consultar mi reserva | Prisma{% endblock %}
+{% block body_attrs %} class="reservation-lookup-page"{% endblock %}
+{% block content %}
+    {% include 'partials/header_cliente.html' with active='reservas' titles=True %}
+    <section class="reservation-subhero reservation-subhero--compact">
+        <div class="container reservation-subhero-content">
+            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma" class="reservation-brand-mark">
+            <div>
+                <span>Siempre cerca de ti</span>
+                <h1>Consulta tu reserva</h1>
+                <p>Encuentra los detalles y el estado de tu experiencia Prisma.</p>
+            </div>
+        </div>
+    </section>
+    <main class="reservation-page-content">
+        <div class="container reservation-lookup-layout">
+            <section class="reservation-panel reservation-lookup-card">
+                <div class="reservation-lookup-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="reservation-kicker">MIS RESERVAS</span>
+                <h2>Volvamos a tu reserva</h2>
+                <p>Ingresa el número de reserva y el teléfono que registraste. Usamos estos datos para proteger tu información.</p>
+                {% include 'partials/messages.html' %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="form-group-icon">
+                        <label for="reserva_id">Número de reserva</label>
+                        <input type="number" id="reserva_id" name="reserva_id" min="1" placeholder="Ej. 1024" required>
+                    </div>
+                    <div class="form-group-icon">
+                        <label for="telefono">Teléfono de contacto</label>
+                        <input type="tel" id="telefono" name="telefono" maxlength="30" placeholder="El mismo que usaste al reservar" required>
+                    </div>
+                    <button class="btn-primary btn-full" type="submit">Ver mi reserva <i class="fas fa-arrow-right"></i></button>
+                </form>
+                <a class="reservation-back-link" href="{% url 'reservas' %}">Crear una nueva reserva</a>
+            </section>
+            <aside class="reservation-lookup-aside">
+                <span class="reservation-kicker">FÁCIL Y SEGURO</span>
+                <h2>Tu plan está a solo un paso.</h2>
+                <p>Desde el detalle podrás revisar tus productos, ver si el pago fue verificado, editar o cancelar tu solicitud y contactarnos por WhatsApp.</p>
+                <div class="reservation-help"><i class="fas fa-lock"></i><span>Solo tú puedes consultar la reserva con su número y teléfono.</span></div>
+            </aside>
+        </div>
+    </main>
+    {% include 'partials/footer_cliente.html' %}
+{% endblock %}
