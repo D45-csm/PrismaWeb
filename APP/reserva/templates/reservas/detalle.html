@@ -1,0 +1,227 @@
+{% extends 'base_prisma.html' %}
+{% load static l10n %}
+
+{% block title %}Reserva #{{ reserva.pk }} | Prisma{% endblock %}
+{% block body_attrs %} class="reservation-detail-page"{% endblock %}
+{% block content %}
+    {% include 'partials/header_cliente.html' with active='reservas' titles=True %}
+    <section class="reservation-subhero">
+        <div class="container reservation-subhero-content">
+            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma" class="reservation-brand-mark">
+            <div>
+                <span>Tu experiencia Prisma</span>
+                <h1>Tu reserva, en un solo lugar</h1>
+                <p>Consulta el estado, los productos y los siguientes pasos.</p>
+            </div>
+        </div>
+    </section>
+
+    <main class="reservation-page-content">
+        <div class="container">
+            {% include 'partials/messages.html' %}
+            <div class="reservation-detail-grid">
+                <section class="reservation-panel reservation-overview">
+                    <div class="reservation-panel-heading">
+                        <div>
+                            <span class="reservation-kicker">RESERVA #{{ reserva.pk }}</span>
+                            <h2>Hola, {{ reserva.nombre_cliente }}</h2>
+                        </div>
+                        <span class="reservation-status reservation-status--{{ reserva.estado|slugify }}">{{ reserva.estado }}</span>
+                    </div>
+
+                    {% if reserva.tipo_reserva == 'Para llevar' %}
+                        <div class="reservation-payment-note{% if reserva.pago_confirmado %} is-paid{% endif %}">
+                            <span class="reservation-note-icon"><i class="fas {% if reserva.pago_confirmado %}fa-circle-check{% else %}fa-receipt{% endif %}"></i></span>
+                            <div>
+                                <strong>{% if reserva.pago_confirmado %}Pago verificado{% else %}Pago anticipado pendiente{% endif %}</strong>
+                                <p>
+                                    {% if reserva.pago_confirmado %}
+                                        Tu pago fue verificado por Prisma y el pedido está confirmado.
+                                    {% else %}
+                                        Coordina el pago y comparte el comprobante por WhatsApp. Confirmaremos el pedido cuando el equipo verifique el pago.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="reservation-payment-note is-table">
+                            <span class="reservation-note-icon"><i class="fas fa-utensils"></i></span>
+                            <div>
+                                <strong>Reserva de mesa sin prepago</strong>
+                                <p>No tienes que pagar ahora. Prisma confirmará la disponibilidad de la mesa.</p>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="reservation-facts">
+                        <div><span>Fecha</span><strong>{{ reserva.fecha_reserva|date:"d/m/Y" }}</strong></div>
+                        <div><span>Hora</span><strong>{{ reserva.hora|time:"H:i" }}</strong></div>
+                        <div><span>Modalidad</span><strong>{% if reserva.tipo_reserva == 'Mesa' %}Mesa{% else %}Para llevar{% endif %}</strong></div>
+                        {% if reserva.tipo_reserva == 'Mesa' %}
+                            <div><span>Personas</span><strong>{{ reserva.numero_personas }}</strong></div>
+                        {% endif %}
+                    </div>
+
+                    <div class="reservation-order">
+                        <div class="reservation-section-heading">
+                            <div><span class="reservation-kicker">TU PEDIDO</span><h3>Productos reservados</h3></div>
+                        </div>
+                        <ul class="reservation-line-list">
+                            {% for linea in reserva.lineas.all %}
+                                <li>
+                                    <span class="reservation-line-quantity">{{ linea.cantidad }}×</span>
+                                    <span class="reservation-line-name">{{ linea.nombre_producto }}</span>
+                                    <strong>${{ linea.subtotal|floatformat:0 }}</strong>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <div class="reservation-total-row"><span>Total estimado</span><strong>{{ reserva_total }} COP</strong></div>
+                    </div>
+
+                    {% if reserva.detalles %}
+                        <div class="reservation-instructions">
+                            <span>Indicaciones</span>
+                            <p>{{ reserva.detalles|linebreaksbr }}</p>
+                        </div>
+                    {% endif %}
+                    {% if reserva.asistencia %}
+                        <div class="reservation-instructions">
+                            <span>Asistencia</span>
+                            <p>{{ reserva.asistencia }}{% if reserva.fecha_asistencia %} · {{ reserva.fecha_asistencia|date:"d/m/Y H:i" }}{% endif %}</p>
+                        </div>
+                    {% endif %}
+
+                    {% if reserva.estado != 'Cancelada' and reserva.estado != 'Realizada' and reserva.estado != 'No asistió' %}
+                        <a class="reservation-whatsapp-button" href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-whatsapp" aria-hidden="true"></i>
+                            {% if reserva.tipo_reserva == 'Para llevar' and not reserva.pago_confirmado %}Coordinar pago por WhatsApp{% elif reserva.tipo_reserva == 'Mesa' %}Enviar solicitud por WhatsApp{% else %}Contactar por WhatsApp{% endif %}
+                        </a>
+                    {% endif %}
+                    <a class="reservation-back-link" href="{% url 'consultar_reserva' %}">Consultar otra reserva</a>
+                </section>
+
+                <aside class="reservation-side-column">
+                    <section class="reservation-panel reservation-next-steps">
+                        <span class="reservation-kicker">SIGUIENTE PASO</span>
+                        <h2>{% if reserva.tipo_reserva == 'Para llevar' and not reserva.pago_confirmado %}Completa tu pago{% elif reserva.tipo_reserva == 'Mesa' and reserva.estado == 'Pendiente' %}Espera nuestra confirmación{% else %}Tu reserva está al día{% endif %}</h2>
+                        <p>
+                            {% if reserva.tipo_reserva == 'Para llevar' and not reserva.pago_confirmado %}
+                                Escríbenos para conocer los medios de pago disponibles. No compartas información bancaria por este formulario.
+                            {% elif reserva.tipo_reserva == 'Mesa' and reserva.estado == 'Pendiente' %}
+                                Nuestro equipo revisará tu solicitud y se pondrá en contacto para confirmar la disponibilidad.
+                            {% else %}
+                                Puedes volver a consultar aquí cualquier cambio en el estado de tu reserva.
+                            {% endif %}
+                        </p>
+                        <div class="reservation-help">
+                            <i class="fas fa-heart"></i>
+                            <span>¿Necesitas ayuda? Nuestro equipo está listo para atenderte.</span>
+                        </div>
+                    </section>
+
+                    {% if reserva.estado == 'Pendiente' or reserva.estado == 'Pendiente de pago' or reserva.estado == 'Confirmada' %}
+                        <details class="reservation-panel reservation-edit">
+                            <summary><span><i class="fas fa-pen"></i> Modificar datos</span><i class="fas fa-chevron-down"></i></summary>
+                            <form id="reservaForm" data-reserva-ajax="false" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="editar">
+                                <div class="form-group-icon">
+                                    <label for="nombre">Nombre completo</label>
+                                    <input type="text" id="nombre" name="nombre" maxlength="100" value="{{ reserva.nombre_cliente }}" required>
+                                </div>
+                                <div class="form-group-icon">
+                                    <label for="telefono">Teléfono</label>
+                                    <input type="tel" id="telefono" name="telefono" maxlength="30" value="{{ reserva.telefono }}" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group-icon">
+                                        <label for="fecha">Fecha</label>
+                                        <input type="date" id="fecha" name="fecha" value="{{ reserva.fecha_reserva|date:'Y-m-d' }}" required>
+                                    </div>
+                                    <div class="form-group-icon">
+                                        <label for="hora">Hora</label>
+                                        <input type="time" id="hora" name="hora" value="{{ reserva.hora|time:'H:i' }}" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group-icon">
+                                        <label for="tipo_reserva">Modalidad</label>
+                                        <select id="tipo_reserva" name="tipo_reserva" required>
+                                            <option value="Mesa"{% if reserva.tipo_reserva == 'Mesa' %} selected{% endif %}>Con mesa</option>
+                                            <option value="Para llevar"{% if reserva.tipo_reserva == 'Para llevar' %} selected{% endif %}>Para llevar</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group-icon">
+                                        <label for="numero_personas">Número de personas</label>
+                                        <input type="number" id="numero_personas" name="numero_personas" min="1" max="50"
+                                               value="{{ reserva.numero_personas|default_if_none:'' }}">
+                                    </div>
+                                </div>
+                                <fieldset class="reserva-productos">
+                                    <legend class="visually-hidden">Productos de la reserva</legend>
+                                    <div class="reserva-productos-heading">
+                                        <div><span class="reserva-section-eyebrow">TU SELECCIÓN</span><h3>Productos</h3></div>
+                                        <span class="reserva-productos-cap">Hasta 5</span>
+                                    </div>
+                                    <div class="reserva-productos-list" id="reservaProductosList">
+                                        {% for slot in slots_editables %}
+                                            <article class="reserva-producto-card{% if slot.producto_id or forloop.first %} is-visible{% endif %}"
+                                                     data-reserva-producto-slot="{{ forloop.counter }}">
+                                                <div class="reserva-producto-card-heading">
+                                                    <span class="reserva-producto-index">{{ forloop.counter|stringformat:"02d" }}</span>
+                                                    <span>Producto <strong>{{ forloop.counter }}</strong></span>
+                                                    <button type="button" class="reserva-producto-remove" data-remove-reserva-producto
+                                                            aria-label="Quitar producto {{ forloop.counter }}">
+                                                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="reserva-producto-fields">
+                                                    <div class="form-group-icon">
+                                                        <label for="producto_id_{{ forloop.counter }}">Producto</label>
+                                                        <select id="producto_id_{{ forloop.counter }}" name="producto_id_{{ forloop.counter }}"
+                                                                {% if forloop.first %}required{% endif %}>
+                                                            <option value="">Elige producto</option>
+                                                            {% for producto in productos %}
+                                                                <option value="{{ producto.pk }}" data-price="{{ producto.precio|unlocalize }}"{% if producto.pk == slot.producto_id %} selected{% endif %}>{{ producto.nombre }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group-icon">
+                                                        <label for="cantidad_{{ forloop.counter }}">Cantidad</label>
+                                                        <input type="number" id="cantidad_{{ forloop.counter }}" name="cantidad_{{ forloop.counter }}"
+                                                               min="1" max="50" value="{{ slot.cantidad }}">
+                                                    </div>
+                                                </div>
+                                                <p class="reserva-producto-subtotal" data-reserva-line-total aria-live="polite"></p>
+                                            </article>
+                                        {% endfor %}
+                                    </div>
+                                    <button type="button" class="reserva-add-product" id="addReservaProducto" hidden>
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Añadir otro producto
+                                    </button>
+                                    <div class="reservation-total-preview">
+                                        <span>Total estimado</span>
+                                        <strong id="reservaTotalEstimate">{{ reserva_total }}</strong>
+                                        <small>El cambio de productos puede requerir un nuevo pago anticipado.</small>
+                                    </div>
+                                </fieldset>
+                                <div class="form-group-icon">
+                                    <label for="detalles">Indicaciones</label>
+                                    <textarea id="detalles" name="detalles" rows="3" maxlength="500">{{ reserva.detalles }}</textarea>
+                                </div>
+                                <button class="btn-primary btn-full" type="submit">Guardar cambios</button>
+                            </form>
+                        </details>
+                        <form class="reservation-cancel-form" method="post"
+                              onsubmit="return confirm('¿Confirmas que quieres cancelar esta reserva?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="cancelar">
+                            <button type="submit">Cancelar reserva</button>
+                        </form>
+                    {% endif %}
+                </aside>
+            </div>
+        </div>
+    </main>
+    {% include 'partials/footer_cliente.html' %}
+{% endblock %}
