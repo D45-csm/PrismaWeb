@@ -1,0 +1,67 @@
+{% extends 'base_admin.html' %}
+
+{% block title %}Editar perfil | Prisma{% endblock %}
+
+{% block content %}
+<section class="profile-editor">
+    <header class="profile-editor-heading">
+        <div>
+            <span class="dashboard-tag">TU CUENTA</span>
+            <h1>Editar perfil</h1>
+            <p>Actualiza tus datos personales y mantén segura tu cuenta.</p>
+        </div>
+        <a class="profile-back-link" href="{% url 'perfil' %}">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            Volver al panel
+        </a>
+    </header>
+
+    <section class="profile-editor-card" aria-labelledby="profile-data-title">
+        <div class="profile-editor-card-heading">
+            <span class="profile-editor-icon"><i class="fa-regular fa-user" aria-hidden="true"></i></span>
+            <div>
+                <h2 id="profile-data-title">Datos personales</h2>
+                <p>Usuario: <strong>{{ user.username }}</strong></p>
+            </div>
+        </div>
+
+        <form method="post" class="profile-editor-form">
+            {% csrf_token %}
+            <input type="hidden" name="form_type" value="profile">
+            {% if perfil_form.non_field_errors %}
+                <div class="admin-form-errors" role="alert">{{ perfil_form.non_field_errors }}</div>
+            {% endif %}
+            {% for field in perfil_form %}
+                <div class="admin-form-field">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {% for error in field.errors %}
+                        <span class="admin-form-error" role="alert">{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <div class="profile-editor-actions">
+                <button class="profile-submit-button" type="submit">
+                    <i class="fa-regular fa-floppy-disk" aria-hidden="true"></i>
+                    Guardar cambios
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="profile-editor-card" aria-labelledby="profile-password-title">
+        <div class="profile-editor-card-heading">
+            <span class="profile-editor-icon"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>
+            <div>
+                <h2 id="profile-password-title">Seguridad de la cuenta</h2>
+                <p>Continúa al proceso seguro para recuperar o actualizar tu contraseña.</p>
+            </div>
+        </div>
+
+        <a class="profile-submit-button" href="{% url 'admin_recuperar' %}">
+            <i class="fa-solid fa-key" aria-hidden="true"></i>
+            Ir a recuperar contraseña
+        </a>
+    </section>
+</section>
+{% endblock %}

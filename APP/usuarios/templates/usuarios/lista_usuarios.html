@@ -1,96 +1,202 @@
 {% extends 'base_crud.html' %}
 {% load static %}
 
-{% block title %}Lista de usuarios | Prisma{% endblock %}
+{% block title %}Gestión de usuarios | Prisma{% endblock %}
 {% block crud_page_class %}insumo-dashboard user-admin-page{% endblock %}
-{% block crud_layout_class %}admin-crud-workspace--single{% endblock %}
+{% block crud_page_attributes %}data-active-count="{{ usuarios_activos }}" data-active-label="usuarios activos" data-active-state="{{ estado }}"{% endblock %}
+
 {% block crud_header %}
     {% url 'perfil' as perfil_url %}
-    {% include 'partials/admin_page_heading.html' with eyebrow='DIRECTORIO PRISMA' title='Lista de usuarios' description='Consulta las cuentas registradas y administra los roles asignados.' summary_value=total_usuarios summary_label='usuarios' summary_icon='fa-solid fa-users' summary2_value=usuarios_activos summary2_label='usuarios activos' summary2_icon='fa-solid fa-circle-check' back_url=perfil_url back_label='Volver al panel' %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='GESTIÓN DE USUARIOS' title='Usuarios' description='Administra las cuentas registradas, sus datos de acceso y su estado.' summary_value=total_usuarios summary_label='usuarios' summary_icon='fa-solid fa-users' summary2_value=usuarios_activos summary2_label='usuarios activos' summary2_icon='fa-solid fa-circle-check' summary2_class='user-active-summary' back_url=perfil_url back_label='Volver al panel' %}
 {% endblock %}
 
-{% block crud_main_class %}admin-crud-panel{% endblock %}
+{% block crud_sidebar_class %}insumo-sidebar{% endblock %}
+{% block crud_sidebar %}
+    <div class="insumo-sidebar-heading">
+        <div>
+            <span class="insumo-eyebrow">DIRECTORIO</span>
+            <h2>Usuarios</h2>
+        </div>
+    </div>
+    <div class="insumo-category-list">
+        <a class="insumo-category-link{% if estado == 'activos' %} selected{% endif %}"
+           href="{% url 'Lista de usuarios' %}?estado=activos">
+            <span class="insumo-category-icon"><i class="fa-solid fa-circle-check"></i></span>
+            <span class="insumo-category-name">Activos</span>
+            <span class="insumo-category-count">{{ usuarios_activos }}</span>
+        </a>
+        <a class="insumo-category-link{% if estado == 'inactivos' %} selected{% endif %}"
+           href="{% url 'Lista de usuarios' %}?estado=inactivos">
+            <span class="insumo-category-icon"><i class="fa-solid fa-circle-pause"></i></span>
+            <span class="insumo-category-name">Desactivados</span>
+            <span class="insumo-category-count">{{ usuarios_inactivos }}</span>
+        </a>
+        <a class="insumo-category-link{% if estado == 'todos' %} selected{% endif %}"
+           href="{% url 'Lista de usuarios' %}?estado=todos">
+            <span class="insumo-category-icon"><i class="fa-solid fa-list"></i></span>
+            <span class="insumo-category-name">Todos</span>
+            <span class="insumo-category-count">{{ total_usuarios }}</span>
+        </a>
+    </div>
+{% endblock %}
+
+{% block crud_main_class %}insumo-main-panel{% endblock %}
 {% block crud_main %}
-    <section aria-labelledby="user-list-heading">
-        <div class="admin-crud-panel__heading">
-            <div>
-                <span class="admin-eyebrow">CUENTAS REGISTRADAS</span>
-                <h2 id="user-list-heading">Usuarios</h2>
-                <p>Asigna un rol a cada cuenta según los permisos que necesite.</p>
-            </div>
+    <div class="insumo-list-heading">
+        <div>
+            <span class="insumo-eyebrow">DIRECTORIO PRISMA</span>
+            <h2>Buscar usuarios</h2>
+            <p>Consulta y administra cuentas, roles y acceso al sistema.</p>
         </div>
-        <div class="admin-table-wrap">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Usuario</th>
-                        <th scope="col">Correo</th>
-                        <th scope="col">Teléfono</th>
-                        <th scope="col">Rol actual</th>
-                        {% if puede_cambiar_roles %}<th scope="col">Cambiar rol</th>{% endif %}
-                    </tr>
-                </thead>
-                <tbody>
-            {% for usuario in usuarios %}
-                    <tr>
-                        <td class="col-name">{{ usuario.username }}</td>
-                        <td>{{ usuario.email|default:"Sin correo registrado" }}</td>
-                        <td>{{ usuario.telefono|default:"No registrado" }}</td>
-                        <td>
-                            {% for rol in usuario.groups.all %}
-                                {{ rol.name }}{% if not forloop.last %}, {% endif %}
-                            {% empty %}
-                                <span class="empty-text">Sin rol asignado</span>
-                            {% endfor %}
-                        </td>
-                        {% if puede_cambiar_roles %}
-                            <td>
-                                <form method="post" class="user-role-form">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="usuario_id" value="{{ usuario.pk }}">
-                                    <label class="visually-hidden" for="rol-{{ usuario.pk }}">
-                                        Rol de {{ usuario.username }}
-                                    </label>
-                                    <select id="rol-{{ usuario.pk }}" name="rol"
-                                            data-user-role-select
-                                            {% if usuario.pk == usuario_actual_id %}disabled{% endif %}>
-                                        <option value="">Sin rol</option>
-                                        {% for rol in roles %}
-                                            <option value="{{ rol.pk }}"{% if usuario.groups.all|length == 1 and rol in usuario.groups.all %} selected{% endif %}>
-                                                {{ rol.name }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                    {% if usuario.pk == usuario_actual_id %}
-                                        <span class="user-role-note">No puedes cambiar tu propio rol.</span>
-                                    {% else %}
-                                        <button type="submit" class="admin-button admin-button-primary"
-                                                data-user-role-save hidden>
-                                            Guardar
-                                        </button>
-                                        <noscript>
-                                            <button type="submit" class="admin-button admin-button-primary">
-                                                Guardar
-                                            </button>
-                                        </noscript>
-                                    {% endif %}
-                                </form>
-                            </td>
+        {% if puede_agregar_usuarios %}
+            <button type="button" class="insumo-button insumo-button-primary"
+                    data-open-crud-editor data-create-url="{% url 'Lista de usuarios' %}"
+                    data-create-action="crear_usuario">
+                <i class="fa-solid fa-plus"></i> Crear usuario
+            </button>
+        {% endif %}
+    </div>
+    <form method="get" action="{% url 'Lista de usuarios' %}" class="insumo-filter-bar" role="search">
+        <label class="insumo-search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <span class="visually-hidden">Buscar usuarios</span>
+            <input type="search" name="q" value="{{ query }}"
+                   placeholder="Usuario, nombre, correo o teléfono">
+        </label>
+        <input type="hidden" name="estado" value="{{ estado }}">
+        <button type="submit" class="insumo-button insumo-button-filter">Buscar</button>
+        {% if query %}
+            <a class="insumo-clear-filter" href="{% url 'Lista de usuarios' %}?estado={{ estado }}">
+                Limpiar
+            </a>
+        {% endif %}
+    </form>
+    <div class="insumo-results-label">
+        <span>{{ usuarios|length }} resultado{{ usuarios|length|pluralize:"s" }}</span>
+        {% if query %}<span class="insumo-query-chip">“{{ query }}”</span>{% endif %}
+    </div>
+    <div class="insumo-list">
+        {% for usuario in usuarios %}
+            <article class="insumo-row insumo-row--record{% if not usuario.is_active %} insumo-row-inactive{% endif %}"
+                     data-crud-record-id="{{ usuario.pk }}"
+                     data-active-before-update="{{ usuario.is_active|yesno:'true,false' }}">
+                <span class="insumo-row-image" aria-hidden="true">
+                    <span><i class="fa-solid fa-user"></i></span>
+                </span>
+                <div class="insumo-row-info">
+                    <h3>
+                        <button type="button" class="insumo-row-select"
+                                data-crud-detail-url="{% url 'detalle_usuario' usuario.pk %}">
+                            {{ usuario.username }}
+                        </button>
+                    </h3>
+                    <p>@{{ usuario.username }}</p>
+                    <div class="insumo-row-meta">
+                        {% if usuario.email %}<span><i class="fa-regular fa-envelope"></i>{{ usuario.email }}</span>{% endif %}
+                        {% if usuario.telefono %}<span><i class="fa-solid fa-phone"></i>{{ usuario.telefono }}</span>{% endif %}
+                        <span>
+                            <i class="fa-solid fa-user-shield"></i>
+                            {% for rol in usuario.groups.all %}{{ rol.name }}{% if not forloop.last %}, {% endif %}{% empty %}Sin rol asignado{% endfor %}
+                        </span>
+                        <span class="insumo-status{% if not usuario.is_active %} inactive{% endif %}">
+                            {% if usuario.is_active %}Activo{% else %}Desactivado{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <details class="insumo-row-actions">
+                    <summary aria-label="Acciones para {{ usuario.username }}">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </summary>
+                    <div class="insumo-row-menu">
+                        {% if puede_cambiar_usuarios %}
+                            <a class="insumo-menu-action"
+                               href="{% url 'Lista de usuarios' %}?editar_usuario={{ usuario.pk }}">
+                                <i class="fa-regular fa-pen-to-square"></i> Editar usuario
+                            </a>
                         {% endif %}
-                    </tr>
-            {% empty %}
-                    <tr>
-                        <td class="admin-table-empty" colspan="{% if puede_cambiar_roles %}5{% else %}4{% endif %}">
-                            No hay usuarios registrados.
-                        </td>
-                    </tr>
+                        {% if puede_eliminar_usuarios and usuario.pk != usuario_actual_id %}
+                            <button type="button" class="insumo-menu-action danger"
+                                    data-crud-delete-url="{% url 'eliminar_usuario' usuario.pk %}"
+                                    data-crud-delete-name="{{ usuario.username }}">
+                                <i class="fa-regular fa-trash-can"></i> Eliminar usuario
+                            </button>
+                        {% endif %}
+                    </div>
+                </details>
+            </article>
+        {% empty %}
+            <div class="insumo-empty-state">
+                <span class="insumo-empty-icon"><i class="fa-solid fa-users"></i></span>
+                <h3>No encontramos usuarios</h3>
+                <p>{% if query %}Prueba con otra búsqueda o limpia los filtros.{% else %}Crea un usuario para comenzar.{% endif %}</p>
+            </div>
         {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
+    </div>
+{% endblock %}
+
+{% block crud_after_workspace %}
+    <dialog class="insumo-category-dialog admin-crud-editor-dialog" id="userEditorDialog"
+            data-open="{{ modal_open }}" data-clear-query-params="editar_usuario,modal"
+            aria-labelledby="userEditorTitle">
+        <form method="post" action="{% url 'Lista de usuarios' %}" class="insumo-editor-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="{% if modo_edicion %}editar_usuario{% else %}crear_usuario{% endif %}">
+            {% if modo_edicion %}<input type="hidden" name="usuario_id" value="{{ usuario_actual.pk }}">{% endif %}
+            <div class="insumo-category-dialog-header">
+                <div>
+                    <span class="insumo-eyebrow">{% if modo_edicion %}ACTUALIZAR CUENTA{% else %}NUEVO REGISTRO{% endif %}</span>
+                    <h2 id="userEditorTitle">{% if modo_edicion %}Editar usuario{% else %}Crear usuario{% endif %}</h2>
+                    <p class="crud-editor-description">
+                        {% if modo_edicion %}Actualiza los datos de acceso del usuario.{% else %}Registra una nueva cuenta de cliente. El usuario podrá establecer su contraseña mediante la recuperación de cuenta.{% endif %}
+                    </p>
+                </div>
+                <button type="button" class="insumo-dialog-close" data-close-crud-dialog aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            {% if form.non_field_errors %}
+                <div class="admin-form-errors" role="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+            {% for field in form %}
+                {% if field.name == 'is_active' %}
+                    <div class="crud-editor-availability user-editor-availability">
+                        <div>
+                            <label class="insumo-availability-control" for="{{ field.id_for_label }}">
+                                {{ field }}
+                                <span class="insumo-switch" aria-hidden="true"></span>
+                                <span class="user-editor-availability-state" aria-live="polite">
+                                    <span class="is-active">Usuario activo</span>
+                                    <span class="is-inactive">Usuario inactivo</span>
+                                </span>
+                            </label>
+                            <p>Las cuentas inactivas no podrán iniciar sesión.</p>
+                        </div>
+                        {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                    </div>
+                {% else %}
+                    <div class="insumo-field">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% for error in field.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <div class="insumo-dialog-actions">
+                <button type="button" class="insumo-button insumo-button-filter" data-close-crud-dialog>
+                    Cancelar
+                </button>
+                <button type="submit" class="insumo-button insumo-button-primary">
+                    <i class="fa-regular fa-floppy-disk"></i>
+                    {% if modo_edicion %}Guardar cambios{% else %}Crear usuario{% endif %}
+                </button>
+            </div>
+        </form>
+    </dialog>
+    {% include 'partials/admin_crud_dialogs.html' %}
+    <form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>
 {% endblock %}
 
 {% block extra_js %}
-    <script src="{% static 'js/lista_usuarios.js' %}?v=2" defer></script>
+    {{ block.super }}
+    <script src="{% static 'js/admin_crud.js' %}?v=8" defer></script>
 {% endblock %}

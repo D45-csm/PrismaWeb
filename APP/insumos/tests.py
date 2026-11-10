@@ -43,7 +43,7 @@ class GestionInsumosTests(TestCase):
         self.assertContains(response, 'class="admin-page-heading"')
         self.assertContains(response, 'insumo-active-summary')
         self.assertContains(response, 'css/admin_crud.css')
-        self.assertContains(response, 'js/admin_crud.js?v=5')
+        self.assertContains(response, 'js/admin_crud.js?v=8')
         self.assertContains(response, 'class="admin-crud-sidebar insumo-sidebar"')
         self.assertContains(response, 'class="admin-crud-main insumo-main-panel"')
         self.assertContains(response, f'action="{self.url}"')
@@ -211,7 +211,8 @@ class GestionInsumosTests(TestCase):
 
         self.assertRedirects(
             response,
-            f'{reverse("admin_login")}?next={reverse("detalle_insumo", args=[self.insumo.pk])}',
+            f'{reverse("login")}?next={reverse("detalle_insumo", args=[self.insumo.pk])}',
+            fetch_redirect_response=False,
         )
         response = self.client.post(
             reverse('detalle_insumo', args=[self.insumo.pk]),
@@ -393,7 +394,8 @@ class GestionInsumosTests(TestCase):
 
         self.assertRedirects(
             response,
-            f'{reverse("admin_login")}?next={self.url}',
+            f'{reverse("login")}?next={self.url}',
+            fetch_redirect_response=False,
         )
 
     def test_eliminar_insumo_requiere_un_id_valido(self):

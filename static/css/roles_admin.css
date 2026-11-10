@@ -59,6 +59,27 @@
     gap: 18px;
 }
 
+.role-editor-availability {
+    grid-column: 1 / -1;
+}
+
+.role-editor-availability-state {
+    min-width: 90px;
+}
+
+.role-editor-availability-state .is-active {
+    color: #27834b;
+}
+
+.role-editor-availability-state .is-inactive {
+    color: var(--admin-muted);
+}
+
+.role-editor-availability .insumo-availability-control input:checked ~ .role-editor-availability-state .is-inactive,
+.role-editor-availability .insumo-availability-control input:not(:checked) ~ .role-editor-availability-state .is-active {
+    display: none;
+}
+
 .role-permissions {
     min-width: 0;
     margin: 0;

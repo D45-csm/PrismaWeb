@@ -126,6 +126,101 @@
     padding: 8px 12px;
 }
 
+.navbar .navbar-nav .nav-account {
+    margin-left: auto;
+}
+
+.nav-account-menu {
+    position: relative;
+}
+
+.nav-account-menu summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    color: var(--admin-text);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    list-style: none;
+}
+
+.nav-account-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.nav-account-menu summary:hover,
+.nav-account-menu[open] summary {
+    background: var(--admin-primary-light);
+    color: var(--admin-primary-dark);
+}
+
+.nav-account-menu summary:focus-visible,
+.nav-account-dropdown a:focus-visible,
+.nav-account-dropdown button:focus-visible {
+    outline: 3px solid rgba(118, 82, 163, 0.3);
+    outline-offset: 3px;
+}
+
+.nav-account-chevron {
+    font-size: 11px;
+    transition: transform 0.2s ease;
+}
+
+.nav-account-menu[open] .nav-account-chevron {
+    transform: rotate(180deg);
+}
+
+.nav-account-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    width: 220px;
+    padding: 8px;
+    border: 1px solid var(--admin-border);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: var(--admin-shadow);
+}
+
+.nav-account-dropdown .nav-account-name {
+    overflow: hidden;
+    margin: 0;
+    padding: 9px 10px;
+    color: var(--admin-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nav-account-dropdown a,
+.nav-account-dropdown button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--admin-text);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    text-decoration: none;
+}
+
+.nav-account-dropdown a:hover,
+.nav-account-dropdown button:hover {
+    background: var(--admin-primary-light);
+    color: var(--admin-primary-dark);
+}
+
 /* Botón del menú móvil */
 
 .navbar .navbar-toggler {
@@ -722,6 +817,147 @@ a.dashboard-module-blocked {
         gap: 5px;
     }
 
+    .navbar .navbar-nav .nav-account {
+        margin-left: 0;
+    }
+
+    .nav-account-menu summary {
+        justify-content: flex-start;
+    }
+
+    .nav-account-dropdown {
+        position: static;
+        width: 100%;
+        margin-top: 6px;
+        box-shadow: none;
+    }
+}
+
+    .profile-editor {
+        width: min(100% - 32px, 920px);
+        margin: 0 auto;
+        padding: 38px 0 64px;
+    }
+
+    .profile-editor-heading {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .profile-editor-heading h1 {
+        margin: 8px 0;
+        color: var(--admin-text);
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        font-weight: 750;
+    }
+
+    .profile-editor-heading p,
+    .profile-editor-card-heading p {
+        margin: 0;
+        color: var(--admin-muted);
+    }
+
+    .profile-back-link {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border: 1px solid var(--admin-border);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--admin-primary-dark);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .profile-back-link:hover {
+        background: var(--admin-primary-light);
+    }
+
+    .profile-editor-card {
+        margin-top: 18px;
+        padding: clamp(20px, 4vw, 30px);
+        border: 1px solid var(--admin-border);
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: var(--admin-shadow);
+    }
+
+    .profile-editor-card-heading {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 24px;
+    }
+
+    .profile-editor-card-heading h2 {
+        margin: 0 0 4px;
+        color: var(--admin-text);
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    .profile-editor-icon {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        flex-shrink: 0;
+        place-items: center;
+        border-radius: 14px;
+        background: var(--admin-primary-light);
+        color: var(--admin-primary);
+        font-size: 18px;
+    }
+
+    .profile-editor-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px 20px;
+    }
+
+    .profile-editor-form .admin-form-errors,
+    .profile-editor-actions {
+        grid-column: 1 / -1;
+    }
+
+    .profile-editor-form .admin-form-field label {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--admin-text);
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .profile-submit-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        min-height: 44px;
+        padding: 10px 18px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--admin-primary);
+        color: #fff;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    .profile-submit-button:hover {
+        background: var(--admin-primary-dark);
+    }
+
+    .profile-submit-button:focus-visible,
+    .profile-back-link:focus-visible {
+        outline: 3px solid rgba(118, 82, 163, 0.3);
+        outline-offset: 3px;
+    }
+
+@media (max-width: 991px) {
     .navbar .navbar-nav .nav-link {
         display: block;
         padding: 12px 15px !important;
@@ -770,6 +1006,21 @@ a.dashboard-module-blocked {
 
     .section-heading h2 {
         font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .profile-editor {
+        padding-top: 26px;
+    }
+
+    .profile-editor-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .profile-editor-form {
+        grid-template-columns: 1fr;
     }
 }
 

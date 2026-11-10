@@ -3,6 +3,11 @@
 
 {% block title %}Prisma - El arte del postre{% endblock %}
 
+{% block extra_head %}
+    <!-- Preload de la imagen principal del Hero para renderizado inmediato sin retraso -->
+    <link rel="preload" as="image" href="{% static 'img/imagen_inicio.jpeg' %}" fetchpriority="high">
+{% endblock %}
+
 {% block content %}
     {% include 'partials/header_cliente.html' with active='inicio' %}
     <!-- Hero Section -->
@@ -30,7 +35,7 @@
             <div class="featured-grid">
                 <div class="featured-card">
                     <div class="featured-image">
-                        <img src="{% static 'img/manzana_verde.jpeg' %}" alt="Manzana Verde">
+                        <img src="{% static 'img/manzana_verde.jpeg' %}" alt="Manzana Verde" loading="lazy" decoding="async">
                     </div>
                     <div class="featured-info">
                         <h3>Manzana Verde</h3>
@@ -40,7 +45,7 @@
                 </div>
                 <div class="featured-card">
                     <div class="featured-image">
-                        <img src="{% static 'img/cafe_chocolate.jpeg' %}" alt="Café Chocolate">
+                        <img src="{% static 'img/cafe_chocolate.jpeg' %}" alt="Café Chocolate" loading="lazy" decoding="async">
                     </div>
                     <div class="featured-info">
                         <h3>Café Chocolate</h3>
@@ -50,7 +55,7 @@
                 </div>
                 <div class="featured-card">
                     <div class="featured-image">
-                        <img src="{% static 'img/fresa_chocolate.jpeg' %}" alt="Fresa Chocolate">
+                        <img src="{% static 'img/fresa_chocolate.jpeg' %}" alt="Fresa Chocolate" loading="lazy" decoding="async">
                     </div>
                     <div class="featured-info">
                         <h3>Fresa Chocolate</h3>

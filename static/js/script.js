@@ -42,19 +42,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     observadorRevelado.unobserve(entry.target);
                 }
             });
-        }, { threshold: 0.18, rootMargin: '0px 0px -40px 0px' });
+        }, { threshold: 0.02, rootMargin: '0px 0px 80px 0px' });
     }
     const observarRevelado = (elementos) => {
-        if (observadorRevelado) {
-            elementos.forEach(el => {
+        if (!elementos || !elementos.length) return;
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        elementos.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            if (rect.top < vh + 60 && rect.bottom > -60) {
+                el.classList.add('motion-reveal', 'animate-in', 'is-visible');
+            } else if (observadorRevelado) {
                 el.classList.add('motion-reveal');
                 observadorRevelado.observe(el);
-            });
-        } else {
-            elementos.forEach(el => {
+            } else {
                 el.classList.add('motion-reveal', 'animate-in', 'is-visible');
-            });
-        }
+            }
+        });
     };
 
     let carrito = JSON.parse(localStorage.getItem('prismaCarrito')) || [];
@@ -413,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!grid) return;
         grid.innerHTML = lista.map(p => `
             <div class="product-card">
-                <img src="${imgUrl(p.img)}" alt="${p.nombre}">
+                <img src="${imgUrl(p.img)}" alt="${p.nombre}" loading="lazy" decoding="async">
                 <div class="product-overlay">
                     <button class="btn-buy-now" onclick="abrirModal(${p.id})">
                         <i class="fas fa-cart-shopping"></i> Comprar Ahora
@@ -433,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!grid) return;
         grid.innerHTML = temporada.map(p => `
             <div class="seasonal-card">
-                <img src="${imgUrl(p.img)}" alt="${p.nombre}">
+                <img src="${imgUrl(p.img)}" alt="${p.nombre}" loading="lazy" decoding="async">
                 <div class="seasonal-body">
                     <h3>${p.nombre}</h3>
                     <p>${p.desc}</p>
@@ -466,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (animar) {
             img.style.opacity = 0;
-            setTimeout(mostrarSrc, 180);
+            setTimeout(mostrarSrc, 90);
         } else {
             mostrarSrc();
         }
@@ -591,10 +594,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicializar componentes según la página
     if (document.getElementById('productosGrid')) {
         renderProductos(productos);
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(e.target.value.toLowerCase()));
-            renderProductos(filtrados);
-        });
+        const sInput = document.getElementById('searchInput');
+        if (sInput) {
+            let searchDebounceTimer = null;
+            sInput.addEventListener('input', (e) => {
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(() => {
+                    const q = e.target.value.toLowerCase().trim();
+                    const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
+                    renderProductos(filtrados);
+                }, 50);
+            });
+        }
     }
 
     if (document.getElementById('temporadaGrid')) renderTemporada();
@@ -701,16 +712,62 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const activarTransicionesDePagina = () => {
+        const progress = document.getElementById('page-progress');
+        const prefetchedUrls = new Set();
+
+        const prefetch = (urlStr) => {
+            if (prefetchedUrls.has(urlStr)) return;
+            prefetchedUrls.add(urlStr);
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = urlStr;
+            link.as = 'document';
+            document.head.appendChild(link);
+        };
+
         const links = document.querySelectorAll('a[href]');
         links.forEach(link => {
-            if (!link.href || link.target === '_blank' || link.protocol === 'mailto:' || link.protocol === 'tel:') return;
+            const href = link.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:') ||
+                link.target === '_blank' || link.protocol === 'mailto:' || link.protocol === 'tel:') return;
+
+            link.addEventListener('pointerenter', () => {
+                try {
+                    const url = new URL(link.href, window.location.href);
+                    if (url.origin === window.location.origin) prefetch(url.href);
+                } catch (e) {}
+            }, { passive: true });
+
+            link.addEventListener('touchstart', () => {
+                try {
+                    const url = new URL(link.href, window.location.href);
+                    if (url.origin === window.location.origin) prefetch(url.href);
+                } catch (e) {}
+            }, { passive: true });
+
             link.addEventListener('click', (event) => {
-                const url = new URL(link.href, window.location.href);
-                if (url.origin !== window.location.origin) return;
-                if (event.defaultPrevented) return;
-                if (window.location.pathname === url.pathname && window.location.search === url.search) return;
-                document.body.classList.add('is-transitioning');
+                if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey) return;
+                try {
+                    const url = new URL(link.href, window.location.href);
+                    if (url.origin !== window.location.origin) return;
+                    if (window.location.pathname === url.pathname && window.location.search === url.search) return;
+
+                    if (progress) {
+                        progress.classList.remove('done');
+                        progress.classList.add('active');
+                    }
+                    document.body.classList.add('page-navigating');
+                } catch (e) {}
             });
+        });
+
+        window.addEventListener('pageshow', () => {
+            if (progress) {
+                progress.classList.remove('active');
+                progress.classList.add('done');
+                setTimeout(() => progress.classList.remove('done'), 300);
+            }
+            document.body.classList.remove('page-navigating');
         });
     };
     activarTransicionesDePagina();

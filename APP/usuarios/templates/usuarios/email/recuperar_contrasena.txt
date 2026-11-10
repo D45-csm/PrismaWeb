@@ -1,9 +1,14 @@
-Hola {{ usuario.get_full_name|default:usuario.username }},
+Hola {{ usuario.get_full_name|default:usuario.username }}:
 
-Recibimos una solicitud para restablecer la contraseña de tu cuenta Prisma.
-Ingresa este código en la página de recuperación de contraseña:
+Estamos aquí para ayudarte a recuperar el acceso a tu cuenta Prisma.
+Escribe este código en la página de recuperación para crear una contraseña nueva:
 
-{{ codigo }}
+  {{ codigo }}
 
-El código vence en 10 minutos y solo se puede usar una vez.
-Si no solicitaste este cambio, puedes ignorar este mensaje.
+También puedes tocar "Continuar con mi código" en el correo para verificarlo sin copiarlo.
+
+Por seguridad, el código vence en 10 minutos y solo se puede usar una vez.
+Si no pediste este cambio, no tienes que hacer nada: tu contraseña seguirá igual.
+
+Gracias por ser parte de Prisma,
+El equipo de Prisma
