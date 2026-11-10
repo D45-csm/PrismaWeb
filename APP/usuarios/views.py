@@ -598,6 +598,24 @@ def _recuperar_view(request, admin_only):
             if not admin_only:
                 request.session.pop('codigo_recuperacion_mostrar', None)
 
+            email_from = (
+                settings.DEFAULT_FROM_EMAIL or settings.EMAIL_HOST_USER or ''
+            ).strip()
+            if not email_from:
+                logger.error(
+                    'No se pudo enviar el código de recuperación: '
+                    'DEFAULT_FROM_EMAIL y EMAIL_HOST_USER están vacíos.'
+                )
+                messages.error(
+                    request,
+                    'El servicio de correo no está configurado. '
+                    'Contacta al administrador del sitio.',
+                )
+                return render(request, 'usuarios/recuperar.html', {
+                    'form': form,
+                    'admin_recovery': admin_only,
+                })
+
             usuario = _recovery_account_queryset(admin_only).filter(
                 email__iexact=email,
             ).order_by('pk').first()
@@ -677,7 +695,7 @@ def _recuperar_view(request, admin_only):
                     email = EmailMultiAlternatives(
                         subject,
                         render_to_string(text_template, email_context),
-                        settings.DEFAULT_FROM_EMAIL,
+                        email_from,
                         [usuario.email],
                     )
                     email.attach_alternative(
@@ -685,7 +703,7 @@ def _recuperar_view(request, admin_only):
                         'text/html',
                     )
                     email_enviado = email.send(fail_silently=False)
-                except (OSError, smtplib.SMTPException):
+                except (OSError, smtplib.SMTPException, ValueError):
                     logger.exception('No se pudo enviar el código de recuperación.')
                     email_enviado = 0
 
