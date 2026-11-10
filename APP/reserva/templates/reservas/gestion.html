@@ -1,0 +1,253 @@
+{% extends 'base_admin.html' %}
+{% load static l10n %}
+
+{% block title %}Gestión de reservas | Prisma{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <p class="text-uppercase text-secondary mb-1">Operación Prisma</p>
+            <h1 class="h2 mb-1">Gestión de reservas</h1>
+            <p class="text-secondary mb-0">Consulta solicitudes, organiza pedidos y registra asistencias.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="{% url 'perfil' %}">Volver al panel</a>
+    </div>
+
+    <div class="row g-3 mb-4 reservation-admin-metrics">
+        <div class="col-sm-6 col-xl-3"><div class="reservation-admin-metric"><span>Pendientes de mesa</span><strong>{{ total_pendientes }}</strong></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="reservation-admin-metric is-payment"><span>Pendientes de pago</span><strong>{{ total_pendientes_pago }}</strong></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="reservation-admin-metric is-confirmed"><span>Confirmadas</span><strong>{{ total_confirmadas }}</strong></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="reservation-admin-metric is-total"><span>Pagos verificados</span><strong>${{ total_recaudado|floatformat:0 }} COP</strong></div></div>
+    </div>
+
+    {% if puede_crear or reserva_editar %}
+        <section class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h2 class="h5 mb-0">{% if reserva_editar %}Editar reserva #{{ reserva_editar.pk }}{% else %}Registrar reserva manual{% endif %}</h2>
+            </div>
+            <div class="card-body">
+                <form id="reservaForm" data-reserva-ajax="false" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="{% if reserva_editar %}editar{% else %}crear{% endif %}">
+                    {% if reserva_editar %}<input type="hidden" name="reserva_id" value="{{ reserva_editar.pk }}">{% endif %}
+                    <div class="row g-3" id="reservaProductosList">
+                        <div class="col-md-6">
+                            <label class="form-label" for="nombre">Nombre del cliente</label>
+                            <input class="form-control" id="nombre" name="nombre" maxlength="100"
+                                   value="{{ reserva_editar.nombre_cliente|default:'' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="telefono">Teléfono</label>
+                            <input class="form-control" id="telefono" name="telefono" maxlength="30"
+                                   value="{{ reserva_editar.telefono|default:'' }}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="fecha">Fecha</label>
+                            <input class="form-control" type="date" id="fecha" name="fecha"
+                                   value="{{ reserva_editar.fecha_reserva|date:'Y-m-d' }}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="hora">Hora</label>
+                            <input class="form-control" type="time" id="hora" name="hora"
+                                   value="{{ reserva_editar.hora|time:'H:i' }}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="tipo_reserva">Modalidad</label>
+                            <select class="form-select" id="tipo_reserva" name="tipo_reserva" required>
+                                {% if not reserva_editar %}<option value="" selected disabled>Elige modalidad</option>{% endif %}
+                                <option value="Mesa"{% if reserva_editar.tipo_reserva == 'Mesa' %} selected{% endif %}>Con mesa</option>
+                                <option value="Para llevar"{% if reserva_editar.tipo_reserva == 'Para llevar' %} selected{% endif %}>Para llevar</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label" for="numero_personas">Número de personas</label>
+                            <input class="form-control" type="number" id="numero_personas" name="numero_personas"
+                                   min="1" max="50" value="{{ reserva_editar.numero_personas|default_if_none:'' }}">
+                        </div>
+                        {% for slot in slots_editables %}
+                            <div class="col-12 reservation-admin-product{% if slot.producto_id or forloop.first %} is-visible{% endif %}"
+                                 data-reserva-producto-slot="{{ forloop.counter }}">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-8">
+                                        <label class="form-label" for="producto_id_{{ forloop.counter }}">Producto {{ forloop.counter }}</label>
+                                        <select class="form-select" id="producto_id_{{ forloop.counter }}" name="producto_id_{{ forloop.counter }}"
+                                                {% if forloop.first %}required{% endif %}>
+                                            <option value="">Selecciona un producto</option>
+                                            {% for producto in productos %}
+                                                <option value="{{ producto.pk }}" data-price="{{ producto.precio|unlocalize }}"{% if producto.pk == slot.producto_id %} selected{% endif %}>{{ producto.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label" for="cantidad_{{ forloop.counter }}">Cantidad</label>
+                                        <input class="form-control" type="number" id="cantidad_{{ forloop.counter }}"
+                                               name="cantidad_{{ forloop.counter }}" min="1" max="50" value="{{ slot.cantidad }}">
+                                    </div>
+                                    <div class="col-md-1"><button type="button" class="btn btn-outline-secondary" data-remove-reserva-producto aria-label="Quitar producto {{ forloop.counter }}"><i class="fas fa-times"></i></button></div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="col-12">
+                            <button type="button" class="btn btn-outline-primary" id="addReservaProducto" hidden><i class="fas fa-plus"></i> Añadir otro producto</button>
+                            <div class="reservation-admin-total mt-3">Total estimado <strong id="reservaTotalEstimate">{% if reserva_editar %}{{ reserva_total }}{% else %}$0{% endif %}</strong></div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" for="detalles">Indicaciones</label>
+                            <textarea class="form-control" id="detalles" name="detalles" maxlength="500" rows="2">{{ reserva_editar.detalles }}</textarea>
+                        </div>
+                        <div class="col-12 d-flex gap-2">
+                            <button class="btn btn-primary" type="submit">{% if reserva_editar %}Guardar cambios{% else %}Crear reserva{% endif %}</button>
+                            {% if reserva_editar %}<a class="btn btn-outline-secondary" href="{% url 'gestion_reservas' %}">Cancelar edición</a>{% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="card shadow-sm">
+        <div class="card-header bg-white"><h2 class="h5 mb-0">Historial de reservas</h2></div>
+        <div class="card-body">
+            <form method="get" class="row g-2 align-items-end mb-3">
+                <div class="col-lg-3">
+                    <label class="form-label" for="q">Cliente o teléfono</label>
+                    <input class="form-control" id="q" name="q" value="{{ query }}">
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label" for="fecha_filtro">Fecha</label>
+                    <input class="form-control" type="date" id="fecha_filtro" name="fecha" value="{{ fecha_filtro }}">
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label" for="estado_filtro">Estado</label>
+                    <select class="form-select" id="estado_filtro" name="estado">
+                        <option value="">Todos</option>
+                        {% for valor, etiqueta in estados_reserva %}
+                            <option value="{{ valor }}"{% if estado_filtro == valor %} selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label" for="modalidad_filtro">Modalidad</label>
+                    <select class="form-select" id="modalidad_filtro" name="modalidad">
+                        <option value="">Todas</option>
+                        {% for valor, etiqueta in modalidades_reserva %}
+                            <option value="{{ valor }}"{% if modalidad_filtro == valor %} selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-3 d-flex gap-2">
+                    <button class="btn btn-primary" type="submit">Filtrar</button>
+                    <a class="btn btn-outline-secondary" href="{% url 'gestion_reservas' %}">Limpiar</a>
+                </div>
+            </form>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead><tr>
+                        <th>Cliente / productos</th><th>Fecha y hora</th><th>Modalidad</th>
+                        <th>Estado</th><th>Pago</th><th>Total</th><th>Asistencia</th><th>Alerta</th><th>Acciones</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for reserva in reservas %}
+                        <tr>
+                            <td>
+                                <strong>#{{ reserva.pk }} · {{ reserva.nombre_cliente }}</strong><br>
+                                <small>{{ reserva.telefono }} · {{ reserva.numero_personas|default:"" }} persona(s)</small>
+                                <ul class="mb-0">
+                                    {% for linea in reserva.lineas.all %}
+                                        <li>{{ linea.cantidad }} × {{ linea.nombre_producto }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% if reserva.detalles %}<small>{{ reserva.detalles }}</small>{% endif %}
+                            </td>
+                            <td>{{ reserva.fecha_reserva|date:"d/m/Y" }}<br>{{ reserva.hora|time:"H:i" }}</td>
+                            <td>{{ reserva.tipo_reserva }}</td>
+                            <td>
+                                {% if reserva.estado == 'Realizada' or reserva.estado == 'No asistió' %}
+                                    {{ reserva.estado }}
+                                {% elif puede_editar %}
+                                    <form method="post" class="d-flex gap-1"
+                                          onsubmit="return confirm('¿Confirmas el cambio de estado de esta reserva?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="estado">
+                                        <input type="hidden" name="reserva_id" value="{{ reserva.pk }}">
+                                        <select class="form-select form-select-sm" name="estado" aria-label="Estado de reserva {{ reserva.pk }}">
+                                            {% for valor, etiqueta in estados_reserva %}
+                                                {% if valor != 'Realizada' and valor != 'No asistió' %}
+                                                    {% if valor == reserva.estado or valor == 'Cancelada' or reserva.tipo_reserva == 'Mesa' and valor != 'Pendiente de pago' or reserva.tipo_reserva == 'Para llevar' and reserva.pago_confirmado and valor != 'Pendiente' and valor != 'Pendiente de pago' or reserva.tipo_reserva == 'Para llevar' and not reserva.pago_confirmado and valor == 'Pendiente de pago' %}
+                                                        <option value="{{ valor }}"{% if reserva.estado == valor %} selected{% endif %}>{{ etiqueta }}</option>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        <button class="btn btn-sm btn-outline-primary" type="submit">Guardar</button>
+                                    </form>
+                                {% else %}{{ reserva.estado }}{% endif %}
+                            </td>
+                            <td>
+                                {% if reserva.tipo_reserva == 'Mesa' %}
+                                    <span class="reservation-admin-payment is-not-required">Sin prepago</span>
+                                {% elif reserva.pago_confirmado %}
+                                    <span class="reservation-admin-payment is-paid"><i class="fas fa-circle-check"></i> Verificado</span>
+                                    {% if reserva.fecha_pago_confirmado %}<small class="d-block text-secondary">{{ reserva.fecha_pago_confirmado|date:"d/m/Y H:i" }}</small>{% endif %}
+                                {% else %}
+                                    <span class="reservation-admin-payment is-pending"><i class="fas fa-clock"></i> Pendiente</span>
+                                    {% if puede_editar and reserva.estado != 'Cancelada' and reserva.estado != 'Realizada' and reserva.estado != 'No asistió' %}
+                                        <form method="post" class="mt-2"
+                                              onsubmit="return confirm('Verifica el comprobante antes de confirmar el pago. ¿Deseas continuar?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="accion" value="confirmar_pago">
+                                            <input type="hidden" name="reserva_id" value="{{ reserva.pk }}">
+                                            <button class="btn btn-sm btn-success" type="submit"><i class="fas fa-check"></i> Verificar pago</button>
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td><strong>${{ reserva.total|floatformat:0 }}</strong></td>
+                            <td>
+                                {{ reserva.asistencia|default:"Sin registrar" }}
+                                {% if reserva.fecha_asistencia %}
+                                    <br><small>{{ reserva.fecha_asistencia|date:"d/m/Y H:i" }}</small>
+                                {% endif %}
+                                {% if puede_editar and reserva.estado != 'Cancelada' and reserva.estado != 'Pendiente' and reserva.estado != 'Pendiente de pago' %}
+                                    <form method="post" class="d-flex gap-1 mt-1">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="asistencia">
+                                        <input type="hidden" name="reserva_id" value="{{ reserva.pk }}">
+                                        <select class="form-select form-select-sm" name="asistencia" aria-label="Registrar asistencia {{ reserva.pk }}" required>
+                                            <option value="">Registrar</option>
+                                            {% for valor, etiqueta in opciones_asistencia %}
+                                                <option value="{{ valor }}"{% if reserva.asistencia == valor %} selected{% endif %}>{{ etiqueta }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button class="btn btn-sm btn-outline-primary" type="submit">Guardar</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if reserva.notificacion_consultada %}
+                                    Consultada
+                                {% else %}
+                                    Nueva
+                                    <a class="d-block" href="{% url 'consultar_notificacion_reserva' reserva.pk %}">Ver alerta</a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if puede_editar %}
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       href="{% url 'gestion_reservas' %}?editar={{ reserva.pk }}">Editar</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="9" class="text-center text-secondary py-4">No hay reservas que coincidan con los filtros.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/reserva_admin.js' %}?v=1" defer></script>
+{% endblock %}
