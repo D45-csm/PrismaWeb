@@ -613,65 +613,144 @@ document.addEventListener('DOMContentLoaded', () => {
 
     actualizarContadorCarrito();
 
+    const formatearCOP = (valor) => new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0,
+    }).format(valor);
+
     // Formularios
     const reservaForm = document.getElementById('reservaForm');
     if (reservaForm) {
-        const inputCantidad = document.getElementById('cantidad');
-        const selectPostre = document.getElementById('postre');
-        const summaryQty = document.getElementById('summaryQty');
-        const summaryPostre = document.getElementById('summaryPostre');
-        const btnMenos = document.getElementById('qtyMenos');
+        const reservaProductosList = document.getElementById('reservaProductosList');
+        const reservaProductoCards = [...reservaForm.querySelectorAll('[data-reserva-producto-slot]')];
+        const addReservaProducto = document.getElementById('addReservaProducto');
+        const reservaProductosHint = document.getElementById('reservaProductosHint');
+        if (reservaProductosList && reservaProductoCards.length) {
+            reservaProductosList.classList.add('is-interactive');
+            const actualizarProductosReserva = () => {
+                const visibles = reservaProductoCards.filter(card => card.classList.contains('is-visible'));
+                const seleccionados = visibles.filter(card => card.querySelector('select').value);
+                let totalEstimado = 0;
+                visibles.forEach(card => {
+                    const select = card.querySelector('select');
+                    const cantidad = Number(card.querySelector('input[type="number"]').value) || 0;
+                    const precio = Number(select.selectedOptions[0]?.dataset.price) || 0;
+                    const subtotal = precio * cantidad;
+                    totalEstimado += subtotal;
+                    const subtotalEl = card.querySelector('[data-reserva-line-total]');
+                    if (subtotalEl) {
+                        subtotalEl.textContent = select.value
+                            ? `${formatearCOP(precio)} c/u · ${formatearCOP(subtotal)}`
+                            : '';
+                    }
+                    select.required = seleccionados.length === 0 && card === visibles[0];
+                    const removeButton = card.querySelector('[data-remove-reserva-producto]');
+                    if (removeButton) removeButton.hidden = visibles.length === 1;
+                });
+                const totalEl = document.getElementById('reservaTotalEstimate');
+                if (totalEl) totalEl.textContent = formatearCOP(totalEstimado);
+                if (addReservaProducto) {
+                    const quedaEspacio = reservaProductoCards.some(card => !card.classList.contains('is-visible'));
+                    addReservaProducto.hidden = !quedaEspacio;
+                    addReservaProducto.disabled = !quedaEspacio;
+                }
+                if (reservaProductosHint) {
+                    const cantidad = seleccionados.length;
+                    reservaProductosHint.textContent = cantidad
+                        ? `${cantidad} producto${cantidad === 1 ? '' : 's'} en tu reserva.`
+                        : 'Elige al menos un producto para continuar.';
+                }
+            };
 
-        // Campo "¿Cómo quieres tu reserva?" (se agrega solo si la página aún no lo tiene)
-        let detalles = document.getElementById('detalles');
-        if (!detalles) {
-            const grupo = document.createElement('div');
-            grupo.className = 'form-group-icon detalles-group';
-            grupo.innerHTML = `
-                <label for="detalles"><i class="fas fa-pen-to-square"></i> ¿Cómo quieres tu reserva? <small>(opcional)</small></label>
-                <textarea id="detalles" name="detalles" rows="4" maxlength="500" placeholder="Cuéntanos los detalles: ocasión, mensaje en el postre, sabores, alergias, hora de entrega, si es para regalo…"></textarea>
-                <div class="pz-chips" id="detallesChips"></div>
-                <div class="pz-counter"><span id="detallesCount">0</span>/500</div>`;
-            const ancla = reservaForm.querySelector('.reservas-summary') || reservaForm.querySelector('[type="submit"]');
-            if (ancla && ancla.parentNode) ancla.parentNode.insertBefore(grupo, ancla);
-            else reservaForm.appendChild(grupo);
-            detalles = document.getElementById('detalles');
+            reservaProductoCards.forEach(card => {
+                const select = card.querySelector('select');
+                select.required = false;
+                select.addEventListener('change', actualizarProductosReserva);
+                card.querySelector('input[type="number"]').addEventListener('input', actualizarProductosReserva);
+                const removeButton = card.querySelector('[data-remove-reserva-producto]');
+                if (removeButton) {
+                    removeButton.addEventListener('click', () => {
+                        card.querySelector('select').value = '';
+                        card.querySelector('input[type="number"]').value = '1';
+                        card.classList.remove('is-visible');
+                        actualizarProductosReserva();
+                    });
+                }
+            });
+            if (addReservaProducto) {
+                addReservaProducto.hidden = false;
+                addReservaProducto.addEventListener('click', () => {
+                    const siguiente = reservaProductoCards.find(
+                        card => !card.classList.contains('is-visible'),
+                    );
+                    if (!siguiente) return;
+                    siguiente.classList.add('is-visible');
+                    actualizarProductosReserva();
+                    siguiente.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    siguiente.querySelector('select').focus({ preventScroll: true });
+                });
+            }
+            actualizarProductosReserva();
         }
-        activarDetalles(detalles, document.getElementById('detallesChips'), document.getElementById('detallesCount'));
-        const btnMas = document.getElementById('qtyMas');
 
-        const actualizarResumenReserva = () => {
-            if (!inputCantidad || !summaryQty) return;
-            let cantidad = parseInt(inputCantidad.value, 10);
-            if (isNaN(cantidad) || cantidad < 1) cantidad = 1;
-            if (cantidad > 50) cantidad = 50;
-            inputCantidad.value = cantidad;
-            summaryQty.textContent = cantidad;
-            if (summaryPostre) {
-                summaryPostre.textContent = selectPostre && selectPostre.value ? selectPostre.value : 'selecciona un postre';
+        const fechaReserva = document.getElementById('fecha');
+        const modalidadReserva = document.getElementById('tipo_reserva');
+        const numeroPersonas = document.getElementById('numero_personas');
+        if (fechaReserva) fechaReserva.min = hoyISO();
+        if (modalidadReserva && numeroPersonas) {
+            const actualizarPersonas = () => {
+                numeroPersonas.required = modalidadReserva.value === 'Mesa';
+            };
+            modalidadReserva.addEventListener('change', actualizarPersonas);
+            actualizarPersonas();
+        }
+
+        const mostrarConfirmacionReserva = async (resultado) => {
+            const esParaLlevar = resultado.reservation_type === 'Para llevar';
+            const titulo = esParaLlevar
+                ? 'Tu pedido quedó registrado'
+                : 'Recibimos tu solicitud de mesa';
+            const estado = esParaLlevar
+                ? 'Pendiente de pago. Prisma confirmará el pedido después de verificar el comprobante.'
+                : 'Pendiente de confirmación. Prisma te contactará para confirmar disponibilidad.';
+            const detalle = `
+                <div class="pz-rainbow"></div>
+                <div class="pz-icon"><i class="fas fa-check"></i></div>
+                <h3 class="pz-title">${escapeHTML(titulo)}</h3>
+                <p class="pz-text">${escapeHTML(resultado.message)}</p>
+                <div class="reserva-success-summary">
+                    <span>Reserva #${escapeHTML(resultado.reservation_id)}</span>
+                    <strong>Total estimado: ${escapeHTML(resultado.total)}</strong>
+                </div>
+                <p class="reserva-success-state">${escapeHTML(estado)}</p>
+                <a class="reserva-success-whatsapp" href="${escapeHTML(resultado.whatsapp_url)}"
+                   target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-whatsapp" aria-hidden="true"></i>
+                    ${esParaLlevar ? 'Coordinar pago por WhatsApp' : 'Enviar solicitud por WhatsApp'}
+                </a>
+                <div class="pz-actions">
+                    <button type="button" class="pz-btn pz-btn-ghost" data-cancel>Cerrar</button>
+                    <button type="button" class="pz-btn pz-btn-primary" data-accept data-autofocus>
+                        Ver mi reserva
+                    </button>
+                </div>`;
+            const continuar = await abrirModalPrisma({
+                claseExtra: 'reservation-success-dialog',
+                html: detalle,
+                alAceptar: () => true,
+            });
+            if (continuar && resultado.next_url) {
+                window.location.assign(resultado.next_url);
             }
         };
 
-        if (btnMenos) btnMenos.addEventListener('click', () => {
-            inputCantidad.value = Math.max(1, (parseInt(inputCantidad.value, 10) || 1) - 1);
-            actualizarResumenReserva();
-        });
-        if (btnMas) btnMas.addEventListener('click', () => {
-            inputCantidad.value = Math.min(50, (parseInt(inputCantidad.value, 10) || 1) + 1);
-            actualizarResumenReserva();
-        });
-        if (inputCantidad) inputCantidad.addEventListener('input', actualizarResumenReserva);
-        if (selectPostre) selectPostre.addEventListener('change', actualizarResumenReserva);
-        actualizarResumenReserva();
-        const fechaEntrega = document.getElementById('fecha');
-        if (fechaEntrega) fechaEntrega.min = hoyISO();
-
-        reservaForm.addEventListener('submit', async (e) => {
+        if (reservaForm.dataset.reservaAjax === 'true') reservaForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (reservaForm.dataset.submitted === 'true') return;
             if (!reservaForm.reportValidity()) return;
 
             const submitButton = reservaForm.querySelector('[type="submit"]');
-            const ventanaWhatsApp = window.open('about:blank', '_blank');
             if (submitButton) submitButton.disabled = true;
 
             try {
@@ -686,21 +765,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(resultado.error || 'No se pudo registrar la reserva.');
                 }
 
-                mostrarNotificacion(resultado.message);
-                if (ventanaWhatsApp) {
-                    ventanaWhatsApp.location.href = resultado.whatsapp_url;
-                } else {
-                    window.location.assign(resultado.whatsapp_url);
-                }
-                reservaForm.reset();
-                if (detalles) detalles.dispatchEvent(new Event('input'));
-                actualizarResumenReserva();
-                if (fechaEntrega) fechaEntrega.min = hoyISO();
+                reservaForm.dataset.submitted = 'true';
+                await mostrarConfirmacionReserva(resultado);
             } catch (error) {
-                if (ventanaWhatsApp) ventanaWhatsApp.close();
                 mostrarNotificacion(error.message || 'Ocurrió un error al enviar la reserva.');
             } finally {
-                if (submitButton) submitButton.disabled = false;
+                if (submitButton) {
+                    submitButton.disabled = reservaForm.dataset.submitted === 'true';
+                }
             }
         });
     }
