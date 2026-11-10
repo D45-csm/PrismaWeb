@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from urllib.parse import unquote
 
 from django.core import mail
 from django.test import TestCase, override_settings
@@ -104,3 +105,267 @@ class ReservaRelationsTests(TestCase):
         self.assertEqual(reserva.lineas.count(), 2)
         self.assertEqual(reserva.comprobantes.get(), comprobante)
         self.assertEqual(detalle_a.subtotal, Decimal('50000.00'))
+
+
+@override_settings(
+    EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
+    EMAIL_HOST_USER='sender@example.com',
+    EMAIL_HOST_PASSWORD='test-password',
+    DEFAULT_FROM_EMAIL='sender@example.com',
+    RESERVAS_EMAIL_DESTINO='reservas@example.com',
+)
+class ReservaWorkflowTests(TestCase):
+    def setUp(self):
+        categoria = CategoriaProducto.objects.create(nombre='Postres')
+        self.producto = Producto.objects.create(
+            categoria=categoria,
+            nombre='Cheesecake',
+            descripcion='Cheesecake artesanal',
+            precio=Decimal('25000.00'),
+        )
+
+    def datos_reserva(self):
+        return {
+            'nombre': 'Cliente Prisma',
+            'telefono': '311 868 9862',
+            'fecha': (date.today() + timedelta(days=2)).isoformat(),
+            'hora': '14:30',
+            'tipo_reserva': 'Mesa',
+            'numero_personas': '4',
+            'producto_id_1': str(self.producto.pk),
+            'cantidad_1': '2',
+            'detalles': 'Celebración familiar',
+        }
+
+    def test_public_reservation_and_lookup_pages_render(self):
+        response = self.client.get(reverse('reservas'))
+        lookup_response = self.client.get(reverse('consultar_reserva'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Crear reserva')
+        self.assertEqual(lookup_response.status_code, 200)
+        self.assertContains(lookup_response, 'Consulta tu reserva')
+
+    def test_public_reservation_saves_products_and_sends_notification(self):
+        response = self.client.post(
+            reverse('reservas'),
+            self.datos_reserva(),
+            HTTP_ACCEPT='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        reserva = Reserva.objects.get()
+        self.assertEqual(reserva.numero_personas, 4)
+        self.assertEqual(reserva.tipo_reserva, 'Mesa')
+        self.assertEqual(reserva.estado, 'Pendiente')
+        self.assertEqual(reserva.lineas.get().cantidad, 2)
+        self.assertIn(f'/reserva/consultar/{reserva.pk}/', response.json()['next_url'])
+        self.assertIn('SOLICITUD DE RESERVA DE MESA', unquote(response.json()['whatsapp_url']))
+        self.assertEqual(response.json()['reservation_id'], reserva.pk)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(f'Reserva #{reserva.pk}', mail.outbox[0].body)
+        detail_response = self.client.get(response.json()['next_url'])
+        self.assertContains(detail_response, 'Reserva de mesa sin prepago')
+        self.assertContains(detail_response, 'Enviar solicitud por WhatsApp')
+
+    def test_takeaway_reservation_requires_advance_payment_and_builds_whatsapp_summary(self):
+        data = self.datos_reserva()
+        data.update(tipo_reserva='Para llevar', numero_personas='')
+
+        response = self.client.post(
+            reverse('reservas'),
+            data,
+            HTTP_ACCEPT='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        reserva = Reserva.objects.get()
+        self.assertEqual(reserva.estado, 'Pendiente de pago')
+        self.assertFalse(reserva.pago_confirmado)
+        self.assertEqual(reserva.total, Decimal('50000.00'))
+        self.assertIn('pagar el total por anticipado', response.json()['message'])
+        self.assertIn('Total del pedido: $50.000 COP', unquote(response.json()['whatsapp_url']))
+        detail_response = self.client.get(response.json()['next_url'])
+        self.assertContains(detail_response, 'Pago anticipado pendiente')
+        self.assertContains(detail_response, 'Coordinar pago por WhatsApp')
+
+    def test_past_reservation_is_rejected(self):
+        datos = self.datos_reserva()
+        datos['fecha'] = (date.today() - timedelta(days=1)).isoformat()
+
+        response = self.client.post(
+            reverse('reservas'),
+            datos,
+            HTTP_ACCEPT='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Reserva.objects.count(), 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_customer_can_update_and_cancel_with_reservation_id_and_phone(self):
+        reserva = Reserva.objects.create(
+            nombre_cliente='Cliente Prisma',
+            telefono='311 868 9862',
+            fecha_reserva=date.today() + timedelta(days=2),
+            hora='14:30',
+            numero_personas=4,
+            tipo_reserva='Mesa',
+        )
+        DetalleReserva.objects.create(
+            reserva=reserva,
+            producto=self.producto,
+            nombre_producto=self.producto.nombre,
+            cantidad=1,
+            precio_unitario=self.producto.precio,
+        )
+
+        lookup = self.client.post(reverse('consultar_reserva'), {
+            'reserva_id': str(reserva.pk),
+            'telefono': '3118689862',
+        })
+        self.assertRedirects(
+            lookup,
+            reverse('reserva_cliente', args=[reserva.pk]),
+        )
+        detail_response = self.client.get(
+            reverse('reserva_cliente', args=[reserva.pk]),
+        )
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, 'Tu reserva, en un solo lugar')
+        datos = self.datos_reserva()
+        datos['accion'] = 'editar'
+        datos['cantidad_1'] = '3'
+        updated = self.client.post(
+            reverse('reserva_cliente', args=[reserva.pk]),
+            datos,
+        )
+        self.assertRedirects(
+            updated,
+            reverse('reserva_cliente', args=[reserva.pk]),
+        )
+        reserva.refresh_from_db()
+        self.assertEqual(reserva.lineas.get().cantidad, 3)
+
+        cancelled = self.client.post(
+            reverse('reserva_cliente', args=[reserva.pk]),
+            {'accion': 'cancelar'},
+        )
+        self.assertRedirects(
+            cancelled,
+            reverse('reserva_cliente', args=[reserva.pk]),
+        )
+        reserva.refresh_from_db()
+        self.assertEqual(reserva.estado, 'Cancelada')
+
+    def test_admin_can_create_reservation_and_register_attendance(self):
+        from APP.usuarios.models import Usuario
+
+        admin = Usuario.objects.create_superuser(
+            username='reservas-admin',
+            email='admin@example.com',
+            password='test-password',
+            telefono='3118689862',
+        )
+        self.client.force_login(admin)
+        dashboard_response = self.client.get(reverse('gestion_reservas'))
+        self.assertEqual(dashboard_response.status_code, 200)
+        self.assertContains(dashboard_response, 'Historial de reservas')
+
+        create_response = self.client.post(
+            reverse('gestion_reservas'),
+            {'accion': 'crear', **self.datos_reserva()},
+        )
+        self.assertRedirects(create_response, reverse('gestion_reservas'))
+        reserva = Reserva.objects.get()
+        confirm_response = self.client.post(
+            reverse('gestion_reservas'),
+            {
+                'accion': 'estado',
+                'reserva_id': str(reserva.pk),
+                'estado': 'Confirmada',
+            },
+        )
+        self.assertRedirects(confirm_response, reverse('gestion_reservas'))
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn('confirmada', mail.outbox[1].subject)
+
+        attendance_response = self.client.post(
+            reverse('gestion_reservas'),
+            {
+                'accion': 'asistencia',
+                'reserva_id': str(reserva.pk),
+                'asistencia': 'Asistió',
+            },
+        )
+
+        self.assertRedirects(attendance_response, reverse('gestion_reservas'))
+        reserva.refresh_from_db()
+        self.assertEqual(reserva.asistencia, 'Asistió')
+        self.assertEqual(reserva.estado, 'Realizada')
+        self.assertIsNotNone(reserva.fecha_asistencia)
+        self.assertFalse(reserva.notificacion_consultada)
+        self.assertIn(
+            reverse('consultar_notificacion_reserva', args=[reserva.pk]),
+            mail.outbox[0].body,
+        )
+
+        notification_response = self.client.get(
+            reverse('consultar_notificacion_reserva', args=[reserva.pk]),
+        )
+        self.assertRedirects(
+            notification_response,
+            f'{reverse("gestion_reservas")}?q=311%20868%209862',
+        )
+        reserva.refresh_from_db()
+        self.assertTrue(reserva.notificacion_consultada)
+
+    def test_admin_must_verify_takeaway_payment_before_confirming(self):
+        from APP.usuarios.models import Usuario
+
+        admin = Usuario.objects.create_superuser(
+            username='payment-admin',
+            email='payment-admin@example.com',
+            password='test-password',
+            telefono='3118689862',
+        )
+        self.client.force_login(admin)
+        data = self.datos_reserva()
+        data.update(tipo_reserva='Para llevar', numero_personas='')
+        self.client.post(reverse('gestion_reservas'), {'accion': 'crear', **data})
+        reserva = Reserva.objects.get()
+
+        self.client.post(
+            reverse('gestion_reservas'),
+            {'accion': 'estado', 'reserva_id': str(reserva.pk), 'estado': 'Confirmada'},
+        )
+        reserva.refresh_from_db()
+        self.assertEqual(reserva.estado, 'Pendiente de pago')
+        self.assertFalse(reserva.pago_confirmado)
+
+        response = self.client.post(
+            reverse('gestion_reservas'),
+            {'accion': 'confirmar_pago', 'reserva_id': str(reserva.pk)},
+        )
+
+        self.assertRedirects(response, reverse('gestion_reservas'))
+        reserva.refresh_from_db()
+        self.assertTrue(reserva.pago_confirmado)
+        self.assertIsNotNone(reserva.fecha_pago_confirmado)
+        self.assertEqual(reserva.estado, 'Confirmada')
+        self.assertEqual(len(mail.outbox), 2)
+
+        edit_data = self.datos_reserva()
+        edit_data.update(
+            accion='editar',
+            reserva_id=str(reserva.pk),
+            tipo_reserva='Para llevar',
+            numero_personas='',
+            cantidad_1='3',
+        )
+        self.client.post(reverse('gestion_reservas'), edit_data)
+        reserva.refresh_from_db()
+        self.assertEqual(reserva.estado, 'Pendiente de pago')
+        self.assertFalse(reserva.pago_confirmado)
+        self.assertIsNone(reserva.fecha_pago_confirmado)
+        self.assertEqual(reserva.total, Decimal('75000.00'))
