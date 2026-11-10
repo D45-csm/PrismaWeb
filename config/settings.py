@@ -11,21 +11,98 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
+
+
+def _env_bool(name, default):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {'1', 'true', 'yes', 'on'}:
+        return True
+    if normalized in {'0', 'false', 'no', 'off'}:
+        return False
+    raise ImproperlyConfigured(f'{name} debe ser un valor booleano.')
+
+
+def _env_list(name, default=''):
+    value = os.getenv(name, default)
+    return [item.strip() for item in value.split(',') if item.strip()]
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5yhb5$ma8h*zsd@d^do_o@0zf+9gxc$&2)f!u$*&hsq%&4v75e'
+DEBUG = _env_bool('DJANGO_DEBUG', True)
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '').strip()
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            'Configura DJANGO_SECRET_KEY antes de ejecutar con DJANGO_DEBUG=false.'
+        )
+    SECRET_KEY = 'django-insecure-local-development-key-do-not-use-in-production'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+ALLOWED_HOSTS = _env_list(
+    'DJANGO_ALLOWED_HOSTS',
+    'localhost,127.0.0.1,[::1]' if DEBUG else '',
+)
+if not DEBUG and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured(
+        'Configura DJANGO_ALLOWED_HOSTS antes de ejecutar en producción.'
+    )
 
-ALLOWED_HOSTS = []
+CSRF_TRUSTED_ORIGINS = _env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
+SECURE_SSL_REDIRECT = _env_bool('DJANGO_SECURE_SSL_REDIRECT', not DEBUG)
+SESSION_COOKIE_SECURE = _env_bool('DJANGO_SESSION_COOKIE_SECURE', not DEBUG)
+CSRF_COOKIE_SECURE = _env_bool('DJANGO_CSRF_COOKIE_SECURE', not DEBUG)
+SECURE_HSTS_SECONDS = int(os.getenv('DJANGO_SECURE_HSTS_SECONDS', '0'))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool(
+    'DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS',
+    False,
+)
+SECURE_HSTS_PRELOAD = _env_bool('DJANGO_SECURE_HSTS_PRELOAD', False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
+
+CACHE_BACKEND = os.getenv('DJANGO_CACHE_BACKEND', '').strip()
+CACHE_LOCATION = os.getenv('DJANGO_CACHE_LOCATION', '').strip()
+if not DEBUG and (
+    not CACHE_BACKEND
+    or not CACHE_LOCATION
+    or 'locmem' in CACHE_BACKEND.lower()
+    or 'dummy' in CACHE_BACKEND.lower()
+):
+    raise ImproperlyConfigured(
+        'Configura una caché compartida con DJANGO_CACHE_BACKEND y '
+        'DJANGO_CACHE_LOCATION antes de ejecutar en producción.'
+    )
+CACHES = {
+    'default': {
+        'BACKEND': CACHE_BACKEND
+        or 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': CACHE_LOCATION or 'prisma-web-local',
+    },
+}
+
+LOGIN_RATE_LIMIT_MAX_ATTEMPTS = int(os.getenv('LOGIN_RATE_LIMIT_MAX_ATTEMPTS', '5'))
+LOGIN_RATE_LIMIT_IP_MAX_ATTEMPTS = int(
+    os.getenv('LOGIN_RATE_LIMIT_IP_MAX_ATTEMPTS', '20')
+)
+LOGIN_RATE_LIMIT_WINDOW = int(os.getenv('LOGIN_RATE_LIMIT_WINDOW', '900'))
+if min(
+    LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
+    LOGIN_RATE_LIMIT_IP_MAX_ATTEMPTS,
+    LOGIN_RATE_LIMIT_WINDOW,
+) < 1:
+    raise ImproperlyConfigured('Los límites de acceso deben ser mayores que cero.')
 
 
 # Application definition
@@ -52,6 +129,9 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
+AUTHENTICATION_BACKENDS = [
+    'APP.usuarios.backends.BackendRolesActivos',
+]
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'base_cliente'
 LOGOUT_REDIRECT_URL = 'login'
@@ -131,17 +211,29 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+# Email: configura estas variables en .env localmente y en el entorno del
+# servidor al desplegar (para Gmail, usa una contraseña de aplicación).
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'true').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# Tiempo (en segundos) que un enlace de "recuperar contraseña" sigue siendo
+# válido. 1 hora: suficiente para revisar el correo, corto por seguridad.
+PASSWORD_RESET_TIMEOUT = 60 * 60
+RESERVAS_EMAIL_DESTINO = os.getenv(
+    'RESERVAS_EMAIL_DESTINO',
+    'juansebastiangirataguarin12@gmail.com',
+)
+RESERVAS_WHATSAPP_DESTINO = os.getenv('RESERVAS_WHATSAPP_DESTINO', '573118689862')

@@ -1,0 +1,18 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Contraseña actualizada - Prisma{% endblock %}
+{% block body_attrs %} class="auth-page"{% endblock %}
+
+{% block content %}
+    <div class="auth-container customer-auth-container customer-recovery-container">
+        <div class="auth-form-container customer-auth-panel">
+            <div class="auth-logo">
+                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
+            </div>
+            <h2>Contraseña actualizada</h2>
+            <p class="auth-subtitle">Tu nueva contraseña quedó guardada. Ya puedes ingresar a tu cuenta.</p>
+            <a href="{% url 'login' %}" class="btn-primary btn-full">Iniciar sesión</a>
+        </div>
+    </div>
+{% endblock %}

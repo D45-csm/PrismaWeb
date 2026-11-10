@@ -1,73 +1,78 @@
-<!DOCTYPE html>
+{% extends 'base_prisma.html' %}
 {% load static %}
-<html lang="es">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Prisma</title>
-    <link rel="stylesheet" href="{% static 'css/login.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
+{% block title %}Iniciar sesión - Prisma{% endblock %}
+{% block body_attrs %} class="auth-page"{% endblock %}
 
-<body class="auth-page">
-    <div class="auth-container">
+{% block content %}
+    <div class="auth-container customer-auth-container">
         <div class="auth-image">
             <div class="auth-image-overlay"></div>
             <div class="auth-image-text">
                 <h2>Bienvenido a Prisma</h2>
-                <p>Donde Cada Sabor Cuenta Una Historia</p>
+                <p>Un acceso seguro para nuestros clientes y equipo autorizado</p>
             </div>
         </div>
-        <div class="auth-form-container">
+
+        <div class="auth-form-container customer-auth-panel">
             <div class="auth-logo">
-                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
+                <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo">
             </div>
-            <h2>Iniciar Sesión</h2>
-            <p class="auth-subtitle">Accede a tu cuenta para hacer pedidos</p>
-            <p class="auth-hint" id="authHint" style="display:none;"></p>
+            <h2>Iniciar sesión</h2>
+            <p class="auth-subtitle">
+                {% if next_is_recovery_code %}
+                    Inicia sesión y te llevaremos a generar o renovar tu código de recuperación.
+                {% else %}
+                    Ingresa con el correo, teléfono o nombre de usuario de tu cuenta.
+                {% endif %}
+            </p>
 
-            {% if form.non_field_errors %}
-            <div class="auth-alert">
-                {{ form.non_field_errors|striptags }}
-            </div>
-            {% endif %}
-
-            <form meid="loginForm" method="post" action="{% url 'login' %}" novalidate data-backend="django">
+            <form method="post" action="">
                 {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="form-error" role="alert">{{ form.non_field_errors }}</div>
+                {% endif %}
 
                 <div class="form-group">
-                    <label for="{{ form.username.id_for_label }}">Usuario</label>
-                    <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
-                        class="{% if form.username.errors %}input-error{% endif %}" placeholder="Tu usuario"
-                        value="{{ form.username.value|default_if_none:'' }}">
-                    {% if form.username.errors %}
-                    <div class="form-error">{{ form.username.errors|striptags }}</div>
-                    {% endif %}
+                    <label for="{{ form.username.id_for_label }}">Correo, teléfono o nombre de usuario</label>
+                    {{ form.username }}
+                    {% for error in form.username.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                 </div>
 
                 <div class="form-group">
                     <label for="{{ form.password.id_for_label }}">Contraseña</label>
-                    <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
-                        class="{% if form.password.errors %}input-error{% endif %}" placeholder="••••••••">
-                    {% if form.password.errors %}
-                    <div class="form-error">{{ form.password.errors|striptags }}</div>
-                    {% endif %}
+                    <div class="customer-password-control">
+                        {{ form.password }}
+                        <button
+                            type="button"
+                            class="customer-password-toggle"
+                            data-password-toggle
+                            aria-controls="{{ form.password.id_for_label }}"
+                            aria-label="Mostrar contraseña"
+                            aria-pressed="false"
+                        ><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                    </div>
+                    {% for error in form.password.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
                 </div>
 
-                <button type="submit" class="btn-primary btn-full">Ingresar</button>
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                <div class="customer-login-form-options">
+                    <label class="remember-me" for="rememberMe">
+                        <input type="checkbox" id="rememberMe" name="remember_me">
+                        <span>Recordarme en este dispositivo</span>
+                    </label>
+                </div>
+                <button type="submit" class="btn-primary btn-full">Iniciar sesión</button>
             </form>
 
-            <p class="auth-switch">
-                ¿No tienes cuenta? <a href="{% url 'registro' %}">Regístrate aquí</a>
-            </p>
-            <a href="{% url 'base_cliente' %}" class="back-home">
-                <i class="fas fa-arrow-left"></i> Volver al inicio
-            </a>
+            <div class="auth-switch">
+                <p><a href="{% url 'recuperar' %}">¿Olvidaste tu contraseña? Recuperación para clientes</a></p>
+                <p><a href="{% url 'admin_recuperar' %}">Recuperación para administradores</a></p>
+                <p>¿No tienes cuenta? <a href="{% url 'registro' %}">Regístrate aquí</a></p>
+            </div>
+
+            <a href="{% url 'base_cliente' %}" class="back-home"><i class="fas fa-arrow-left"></i> Volver al inicio</a>
         </div>
     </div>
-
-    <script src="{% static 'script.js' %}"></script>
-</body>
-
-</html>
+    <script src="{% static 'js/customer_login.js' %}?v=3" defer></script>
+{% endblock %}

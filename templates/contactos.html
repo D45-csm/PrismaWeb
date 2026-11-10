@@ -1,0 +1,149 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Contactos - Prisma{% endblock %}
+{% block body_attrs %} class="contact-page"{% endblock %}
+
+{% block content %}
+    {% include 'partials/header_cliente.html' with active='contactos' %}
+
+    <!-- Contact Hero -->
+    <section class="contact-hero">
+        <div class="reservas-blob blob-a"></div>
+        <div class="reservas-blob blob-b"></div>
+        <div class="container contact-hero-content">
+            <span class="reservas-eyebrow"><i class="fas fa-comments"></i> Hablemos</span>
+            <h1 class="animate-fade-up">Contáctanos</h1>
+            <p class="animate-fade-up delay-1">Estamos aquí para endulzar tu día</p>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section">
+        <div class="container">
+            <div class="contact-hub">
+                <div class="contact-panel">
+                    <span class="contact-panel-eyebrow"><i class="fas fa-location-dot"></i> Estamos cerca de ti</span>
+                    <h2>Visítanos en Tibasosa</h2>
+                    <div class="contact-info-list">
+                        <div class="info-item">
+                            <span class="info-icon"><i class="fas fa-map-marker-alt" aria-hidden="true"></i></span>
+                            <p>
+                                <strong>Dirección</strong>
+                                <a href="https://maps.app.goo.gl/MkcuMJTPRKyRcEWt6?g_st=ic"
+                                   target="_blank" rel="noopener noreferrer">
+                                    Cr 10 # 3-65, Tibasosa, Boyacá
+                                    <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                                </a>
+                            </p>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon"><i class="fas fa-clock" aria-hidden="true"></i></span>
+                            <p><strong>Horario</strong><span>Lunes a domingo, 9:00 a. m. – 8:00 p. m.</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Mapa Google Maps interactivo mejorado -->
+                    <div class="contact-map-wrapper">
+                        <div class="contact-map-header">
+                            <div class="contact-map-header-title">
+                                <span class="map-badge-live"></span>
+                                <strong>Ubicación de Prisma</strong>
+                                <small>Tibasosa, Boyacá</small>
+                            </div>
+                            <span class="contact-map-badge"><i class="fas fa-store"></i> Punto de venta</span>
+                        </div>
+                        <div class="contact-map-container">
+                            <iframe
+                                src="https://maps.google.com/maps?q=Cr%2010%20%23%203-65,%20Tibasosa,%20Boyac%C3%A1&t=&z=16&ie=UTF8&iwloc=&output=embed"
+                                width="100%"
+                                height="100%"
+                                style="border:0;"
+                                allowfullscreen=""
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"
+                                title="Ubicación de Pastelería Prisma en Tibasosa, Boyacá"
+                                aria-label="Mapa interactivo de Google con la ubicación de Prisma en Tibasosa"
+                            ></iframe>
+                        </div>
+                        <div class="contact-map-actions">
+                            <a href="https://maps.app.goo.gl/MkcuMJTPRKyRcEWt6?g_st=ic"
+                               target="_blank" rel="noopener noreferrer"
+                               class="contact-map-btn primary">
+                                <i class="fas fa-diamond-turn-right"></i>
+                                <span>Cómo llegar en Maps</span>
+                            </a>
+                            <button type="button" class="contact-map-btn secondary" onclick="copiarDireccionPrisma()">
+                                <i class="fas fa-copy"></i>
+                                <span>Copiar dirección</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-channel-column">
+                    <section class="contact-channel-section" aria-labelledby="contact-channels-title">
+                        <span class="contact-panel-eyebrow"><i class="fas fa-comment-dots"></i> Hablemos</span>
+                        <h2 id="contact-channels-title">Estamos para atenderte</h2>
+                        <div class="contact-grid">
+                            <a href="https://wa.me/573118689862" target="_blank" rel="noopener noreferrer"
+                               class="contact-card whatsapp" aria-label="Contactar a Prisma por WhatsApp">
+                                <span class="card-icon"><i class="fab fa-whatsapp" aria-hidden="true"></i></span>
+                                <h3>WhatsApp</h3>
+                                <p>+57 311 868 9862</p>
+                                <span class="contact-card-action">Escríbenos <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></span>
+                            </a>
+                            <a href="https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=juansebastiangirataguarin12%40gmail.com&amp;su=Consulta%20para%20Prisma"
+                               target="_blank" rel="noopener noreferrer" class="contact-card email"
+                               aria-label="Redactar un correo para Prisma en Gmail">
+                                <span class="card-icon"><i class="fas fa-envelope" aria-hidden="true"></i></span>
+                                <h3>Correo electrónico</h3>
+                                <p>juansebastiangirataguarin12@gmail.com</p>
+                                <span class="contact-card-action">Redactar correo en Gmail <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></span>
+                            </a>
+                        </div>
+                    </section>
+
+                    <section class="social-channel-section" aria-labelledby="social-channels-title">
+                        <span class="contact-panel-eyebrow"><i class="fas fa-share-nodes"></i> Redes Sociales</span>
+                        <h2 id="social-channels-title">Síguenos en redes sociales</h2>
+                        <div class="contact-grid social-contact-grid">
+                            <a href="https://www.instagram.com/prisma_pasteleria1/" target="_blank"
+                               rel="noopener noreferrer" class="contact-card instagram">
+                                <span class="card-icon"><i class="fab fa-instagram" aria-hidden="true"></i></span>
+                                <h3>Instagram</h3>
+                                <p>@prisma_pasteleria1</p>
+                            </a>
+                            <a href="https://www.tiktok.com/@pasteleriaprisma" target="_blank" rel="noopener noreferrer" class="contact-card tiktok">
+                                <span class="card-icon"><i class="fab fa-tiktok" aria-hidden="true"></i></span>
+                                <h3>TikTok</h3>
+                                <p>@pasteleriaprisma</p>
+                            </a>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {% include 'partials/footer_cliente.html' %}
+
+    <script>
+        function copiarDireccionPrisma() {
+            const dir = "Cr 10 # 3-65, Tibasosa, Boyacá";
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(dir).then(() => {
+                    if (window.mostrarNotificacion) {
+                        window.mostrarNotificacion("📋 Dirección copiada al portapapeles");
+                    } else {
+                        alert("📋 Dirección copiada: " + dir);
+                    }
+                }).catch(() => {
+                    window.open("https://maps.app.goo.gl/MkcuMJTPRKyRcEWt6?g_st=ic", "_blank");
+                });
+            } else {
+                window.open("https://maps.app.goo.gl/MkcuMJTPRKyRcEWt6?g_st=ic", "_blank");
+            }
+        }
+    </script>
+{% endblock %}

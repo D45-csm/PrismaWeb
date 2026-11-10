@@ -17,8 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path , include
 from django.views.generic import TemplateView
+from django.conf import settings
+from django.conf.urls.static import static
 urlpatterns = [
-    path('', TemplateView.as_view(template_name='base_cliente.html'), name='base_cliente'),
+    path('', TemplateView.as_view(template_name='index.html'), name='base_cliente'),
+    path('contacto/', TemplateView.as_view(template_name='contactos.html'), name='contactos'),
     path('admin/', admin.site.urls),
     path('usuarios/', include('APP.usuarios.urls')),
     path('respaldo/', include('APP.respaldo.urls')),
@@ -32,3 +35,6 @@ urlpatterns = [
     path('carrito/', include('APP.carrito.urls')),
     path('insumos/', include('APP.insumos.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

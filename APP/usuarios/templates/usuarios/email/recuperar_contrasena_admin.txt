@@ -1,0 +1,10 @@
+Hola {{ usuario.get_full_name|default:usuario.username }},
+
+Recibimos una solicitud para restablecer tu acceso administrativo a Prisma.
+
+Tu código de verificación es: {{ codigo }}
+
+Vence en 10 minutos, solo se puede usar una vez y se bloquea temporalmente tras varios intentos fallidos. Si no solicitaste este cambio, ignora este mensaje; tu contraseña no cambiará.
+
+Con cuidado,
+El equipo Prisma
