@@ -64,7 +64,7 @@ class ReservaSubmissionTests(TestCase):
         detalle = reserva.lineas.get()
         self.assertEqual(detalle.nombre_producto, 'Café Chocolate')
         self.assertEqual(detalle.cantidad, 2)
-        self.assertEqual(detalle.precio_unitario, Decimal('28000'))
+        self.assertEqual(detalle.precio_unitario, Decimal('15000'))
         self.assertEqual(reserva.hora, None)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['reservas@example.com'])
@@ -181,7 +181,10 @@ class ReservaWorkflowTests(TestCase):
         lookup_response = self.client.get(reverse('consultar_reserva'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Crear reserva')
+        self.assertContains(response, 'Planea tu visita')
+        self.assertContains(response, 'name="hora"')
+        self.assertContains(response, 'Elige tu postre')
+        self.assertContains(response, f'href="{reverse("productos")}#productosGrid"')
         self.assertEqual(lookup_response.status_code, 200)
         self.assertContains(lookup_response, 'Consulta tu reserva')
 
