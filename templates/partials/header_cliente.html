@@ -2,7 +2,7 @@
 <header id="header" class="luxury-header luxury-header--customer{% if active == 'inicio' %} luxury-header--hero{% endif %}">
     <div class="container header-container">
         <a class="logo luxury-logo" href="{% url 'base_cliente' %}" aria-label="Prisma, inicio">
-            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
+            <img src="{% static 'img/logo_prisma_header.png' %}" alt="Prisma">
         </a>
 
         {% if active == 'inicio' %}
@@ -27,9 +27,6 @@
         </nav>
 
         <div class="header-actions">
-            <a href="{% url 'reservas' %}" class="header-action-btn" title="Notificaciones de reserva" aria-label="Notificaciones">
-                <i class="far fa-bell"></i>
-            </a>
             <a href="{% url 'carrito' %}" class="btn-cart header-action-btn" aria-label="Ver carrito">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="cart-count">0</span>
