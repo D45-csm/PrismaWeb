@@ -1,0 +1,96 @@
+{% extends 'base_crud.html' %}
+{% load static %}
+
+{% block title %}Operaciones con recetas | Prisma{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/recetas.css' %}?v=3">{% endblock %}
+{% block crud_page_class %}recipe-admin-page{% endblock %}
+
+{% block crud_header %}
+    {% url 'lista_recetas' as recetas_url %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='PRODUCCIÓN PRISMA' title='Operaciones con recetas' description='Selecciona cuántas preparaciones realizar y descuenta sus ingredientes del inventario.' summary_value=resumen_recetas|length summary_label='recetas activas' summary_icon='fa-solid fa-kitchen-set' back_url=perfil_url back_label='Volver al panel' action_url=recetas_url action_label='Gestionar recetas' action_icon='fa-solid fa-book-open' %}
+{% endblock %}
+
+{% block crud_layout_class %}admin-crud-workspace--single{% endblock %}
+{% block crud_main_class %}insumo-main-panel{% endblock %}
+{% block crud_main %}
+    <div class="insumo-list-heading">
+        <div>
+            <span class="insumo-eyebrow">CONTROL DE PRODUCCIÓN</span>
+            <h2>Preparaciones disponibles</h2>
+            <p>El límite se calcula con el stock actual de todos los insumos vinculados.</p>
+        </div>
+    </div>
+    <div class="recipe-operation-list">
+        {% for item in resumen_recetas %}
+            <article class="recipe-operation-card" data-recipe-operation
+                     data-recipe-max="{{ item.maximo }}">
+                <div class="recipe-operation-heading">
+                    <div>
+                        <span class="insumo-eyebrow">RECETA</span>
+                        <h3>{{ item.receta.nombre }}</h3>
+                        <p>{{ item.receta.descripcion|default:"Sin descripción" }}</p>
+                    </div>
+                    <div class="recipe-limit" aria-live="polite">
+                        <span>Cantidad límite</span>
+                        <strong data-recipe-limit>{{ item.maximo }}</strong>
+                        <small>{% if item.maximo == 1 %}preparación posible{% else %}preparaciones posibles{% endif %}</small>
+                    </div>
+                </div>
+                <div class="recipe-operation-ingredients">
+                    <h4>Insumos vinculados y stock disponible</h4>
+                    <ul>
+                        {% for ingredient in item.ingredientes %}
+                            <li>
+                                <span>{{ ingredient.nombre }} <small>({{ ingredient.cantidad|floatformat:-3 }} {{ ingredient.unidad }} por receta)</small></span>
+                                <strong>{{ ingredient.stock|floatformat:-3 }} {{ ingredient.unidad }}</strong>
+                            </li>
+                        {% empty %}
+                            <li class="recipe-no-ingredients">Esta receta no tiene insumos vinculados.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% if puede_operar %}
+                    <form method="post" action="{% url 'realizar_operacion_receta' item.receta.pk %}"
+                          class="recipe-operation-form">
+                        {% csrf_token %}
+                        <div class="recipe-quantity-control">
+                            <span>Preparaciones a realizar</span>
+                            <div class="recipe-stepper">
+                                <button type="button" data-recipe-decrement aria-label="Restar una preparación"
+                                        {% if item.maximo < 1 %}disabled{% endif %}>−</button>
+                                <input type="number" name="veces" value="{% if item.maximo %}1{% else %}0{% endif %}"
+                                       min="{% if item.maximo %}1{% else %}0{% endif %}" max="{{ item.maximo }}"
+                                       data-recipe-quantity aria-label="Cantidad de preparaciones"
+                                       {% if item.maximo < 1 %}disabled{% endif %}>
+                                <button type="button" data-recipe-increment aria-label="Sumar una preparación"
+                                        {% if item.maximo < 1 %}disabled{% endif %}>+</button>
+                            </div>
+                        </div>
+                        <button type="submit" class="insumo-button insumo-button-primary recipe-operate-button"
+                                {% if item.maximo < 1 %}disabled{% endif %}>
+                            <i class="fa-solid fa-kitchen-set"></i>
+                            {% if item.maximo %}Realizar receta{% else %}Sin stock suficiente{% endif %}
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="recipe-readonly-message">Tu rol permite consultar el stock, pero no realizar operaciones.</p>
+                {% endif %}
+            </article>
+        {% empty %}
+            <div class="insumo-empty-state">
+                <span class="insumo-empty-icon"><i class="fa-solid fa-kitchen-set"></i></span>
+                <h3>No hay recetas activas</h3>
+                <p>Activa o crea una receta para poder realizar operaciones.</p>
+                <a class="insumo-button insumo-button-primary" href="{% url 'lista_recetas' %}">
+                    Gestionar recetas
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'js/recetas_operaciones.js' %}?v=1" defer></script>
+{% endblock %}
