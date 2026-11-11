@@ -29,6 +29,9 @@
                         <div>
                             <h2>Resumen del pedido</h2>
                         </div>
+                        <button class="cart-summary-clear" id="clearCartButton" type="button" onclick="vaciarCarrito()" aria-label="Vaciar carrito" title="Vaciar carrito" hidden>
+                            <i class="fas fa-trash-can" aria-hidden="true"></i>
+                        </button>
                     </div>
                     <p class="cart-summary-count" id="cartSummaryCount">0 artículos</p>
                     <div class="summary-row">
@@ -50,27 +53,4 @@
         </div>
     </main>
 
-    <dialog class="checkout-choice-dialog" id="checkoutChoiceDialog" aria-labelledby="checkoutChoiceTitle">
-        <div class="checkout-dialog-content">
-            <button class="checkout-dialog-close" type="button" data-close-checkout aria-label="Cerrar">
-                <i class="fas fa-xmark" aria-hidden="true"></i>
-            </button>
-            <span class="checkout-eyebrow">Tu pedido Prisma</span>
-            <h2 id="checkoutChoiceTitle">¿Cómo deseas continuar?</h2>
-            <p>Elige si quieres reservar una mesa o pedir para llevar.</p>
-            <div class="checkout-dialog-options">
-                <button class="checkout-option" type="button" data-checkout-choice="mesa">
-                    <i class="fas fa-chair" aria-hidden="true"></i>
-                    <span><strong>Reservar una mesa</strong><small>Elige fecha y horario</small></span>
-                    <i class="fas fa-arrow-right checkout-option-arrow" aria-hidden="true"></i>
-                </button>
-                <button class="checkout-option" type="button" data-checkout-choice="llevar">
-                    <i class="fas fa-bag-shopping" aria-hidden="true"></i>
-                    <span><strong>Para llevar</strong><small>Recoger en el local</small></span>
-                    <i class="fas fa-arrow-right checkout-option-arrow" aria-hidden="true"></i>
-                </button>
-            </div>
-            <p class="checkout-payment-note">El pago del pedido para llevar se coordina por WhatsApp.</p>
-        </div>
-    </dialog>
 {% endblock %}

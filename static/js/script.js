@@ -76,16 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.remove(), 3000);
     };
 
-    const mostrarNotificacionCarrito = (titulo, mensaje, icono) => {
+    const mostrarNotificacionCarrito = (titulo, mensaje) => {
         const toast = document.createElement('div');
         toast.className = 'toast-notification cart-toast';
         toast.setAttribute('role', 'status');
         toast.setAttribute('aria-live', 'polite');
-
-        const icon = document.createElement('span');
-        icon.className = 'cart-toast-icon';
-        icon.setAttribute('aria-hidden', 'true');
-        icon.innerHTML = `<i class="fas ${icono}"></i>`;
 
         const contenido = document.createElement('span');
         contenido.className = 'cart-toast-content';
@@ -95,7 +90,36 @@ document.addEventListener('DOMContentLoaded', () => {
         detalle.textContent = mensaje;
         contenido.append(encabezado, detalle);
 
-        toast.append(icon, contenido);
+        toast.append(contenido);
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3600);
+    };
+
+    const mostrarAccesoCarrito = () => {
+        const toast = document.createElement('div');
+        toast.className = 'cart-toast-action';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+
+        const link = document.createElement('a');
+        link.className = 'cart-toast-action-link';
+        link.href = URLS.carrito || '/carrito/';
+        link.setAttribute('aria-label', `Ir al carrito, ${carrito.reduce((sum, item) => sum + item.cantidad, 0)} productos`);
+
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-cart-shopping';
+        icon.setAttribute('aria-hidden', 'true');
+
+        const label = document.createElement('span');
+        label.textContent = 'Ir al carrito';
+
+        const count = document.createElement('span');
+        count.className = 'cart-toast-action-count';
+        count.textContent = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+        count.setAttribute('aria-hidden', 'true');
+
+        link.append(icon, label, count);
+        toast.append(link);
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3600);
     };
@@ -115,6 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const previo = document.activeElement;
         const overlay = document.createElement('div');
         overlay.className = 'pz-overlay';
+        if (claseExtra.split(/\s+/).includes('cart-clear-confirmation')) {
+            overlay.classList.add('cart-clear-overlay');
+        }
         overlay.innerHTML = `<div class="pz-dialog ${claseExtra}" role="dialog" aria-modal="true">${html}</div>`;
         document.body.appendChild(overlay);
         document.body.style.overflow = 'hidden';
@@ -148,9 +175,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const confirmarPrisma = ({ icono = 'fa-circle-question', inicial = '', titulo, mensaje, confirmar = 'Aceptar', cancelar = 'Cancelar' }) =>
+    const confirmarPrisma = ({ icono = 'fa-circle-question', inicial = '', titulo, mensaje, confirmar = 'Aceptar', cancelar = 'Cancelar', claseExtra = '' }) =>
         abrirModalPrisma({
-            claseExtra: 'pz-confirm',
+            claseExtra: `pz-confirm ${claseExtra}`,
             html: `
                 <div class="pz-rainbow"></div>
                 <div class="pz-icon">${inicial ? `<span>${escapeHTML(inicial)}</span>` : `<i class="fas ${icono}"></i>`}</div>
@@ -193,60 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         actualizar();
     };
-
-    // ---------- Datos de contacto para finalizar un pedido ----------
-    const pedirDatosPedido = ({ totalPostres, total }) => abrirModalPrisma({
-        claseExtra: 'pz-pedido',
-        html: `
-            <div class="pz-rainbow"></div>
-            <button type="button" class="pz-close" data-cancel aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
-            <div class="pz-icon"><i class="fas fa-bag-shopping"></i></div>
-            <h3 class="pz-title">Completa tu pedido</h3>
-            <p class="pz-text">Déjanos tus datos para confirmar el pedido y coordinar el pago por WhatsApp.</p>
-            <div class="pz-summary">
-                <span><i class="fas fa-cake-candles"></i>${totalPostres} ${totalPostres === 1 ? 'postre' : 'postres'}</span>
-                <strong>Total estimado: $${total.toLocaleString('es-CO')}</strong>
-            </div>
-            <div class="pz-field">
-                <label for="pzNombre">Tu nombre</label>
-                <input type="text" id="pzNombre" maxlength="100" autocomplete="name" required data-autofocus>
-            </div>
-            <div class="pz-field">
-                <label for="pzTelefono">Tu teléfono</label>
-                <input type="tel" id="pzTelefono" maxlength="30" autocomplete="tel" required>
-            </div>
-            <div class="pz-field">
-                <label for="pzHoraRecogida">¿A qué hora aproximada vendrás a recogerlo?</label>
-                <input type="time" id="pzHoraRecogida" required>
-            </div>
-            <div class="pz-field">
-                <label for="pzNotasPedido">Nota para el pedido <small>(opcional)</small></label>
-                <textarea id="pzNotasPedido" rows="3" maxlength="300" placeholder="Alguna indicación para preparar tu pedido"></textarea>
-            </div>
-            <p class="pz-error" id="pzPedidoError" role="alert" hidden></p>
-            <div class="pz-actions">
-                <button type="button" class="pz-btn pz-btn-ghost" data-cancel>Cancelar</button>
-                <button type="button" class="pz-btn pz-btn-primary" data-accept><i class="fab fa-whatsapp"></i> Enviar pedido</button>
-            </div>`,
-        alAceptar: (dlg) => {
-            const nombre = dlg.querySelector('#pzNombre').value.trim();
-            const telefono = dlg.querySelector('#pzTelefono').value.trim();
-            const horaRecogida = dlg.querySelector('#pzHoraRecogida').value;
-            const error = dlg.querySelector('#pzPedidoError');
-            if (!nombre || !telefono || !horaRecogida) {
-                error.textContent = 'Completa tu nombre, teléfono y hora de recogida.';
-                error.hidden = false;
-                dlg.querySelector(!nombre ? '#pzNombre' : !telefono ? '#pzTelefono' : '#pzHoraRecogida').focus();
-                return false;
-            }
-            return {
-                nombre,
-                telefono,
-                horaRecogida,
-                notas: dlg.querySelector('#pzNotasPedido').value.trim(),
-            };
-        }
-    });
 
     // ---------- Menú móvil (se construye solo, sirve para todas las páginas) ----------
     let setMenuMovil = () => {};
@@ -326,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
         actualizarContadorCarrito();
-        mostrarNotificacionCarrito('¡Producto agregado al carrito!', producto.nombre, 'fa-check');
+        mostrarAccesoCarrito();
     };
 
     const agregarDesdeModal = () => {
@@ -353,11 +326,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!item) return;
 
         const confirmado = await confirmarPrisma({
-            icono: 'fa-triangle-exclamation',
-            titulo: '¿Eliminar este postre?',
-            mensaje: `¿Estás seguro de eliminar <strong>${escapeHTML(item.nombre)}</strong> del carrito?`,
-            confirmar: 'Confirmar',
-            cancelar: 'Cancelar'
+            icono: 'fa-trash-can',
+            titulo: '¿Eliminar producto?',
+            mensaje: `¿Estás seguro de que quieres eliminar <strong>${escapeHTML(item.nombre)}</strong> del carrito? Esta acción no se puede deshacer.`,
+            confirmar: 'Eliminar producto',
+            cancelar: 'Cancelar',
+            claseExtra: 'cart-clear-confirmation'
         });
         if (!confirmado) return;
 
@@ -365,7 +339,27 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
         actualizarContadorCarrito();
         renderizarCarrito();
-        mostrarNotificacionCarrito('¡Producto borrado correctamente!', item.nombre, 'fa-trash-can');
+        mostrarNotificacionCarrito('¡Producto eliminado!', `${item.nombre} se eliminó del carrito`);
+    };
+
+    const vaciarCarrito = async () => {
+        if (carrito.length === 0) return;
+
+        const confirmado = await confirmarPrisma({
+            icono: 'fa-trash-can',
+            titulo: 'Vaciar carrito',
+            mensaje: '¿Estás seguro de que quieres eliminar todos los productos del carrito? Esta acción no se puede deshacer.',
+            confirmar: 'Vaciar carrito',
+            cancelar: 'Cancelar',
+            claseExtra: 'cart-clear-confirmation'
+        });
+        if (!confirmado) return;
+
+        carrito = [];
+        localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
+        actualizarContadorCarrito();
+        renderizarCarrito();
+        mostrarNotificacionCarrito('Carrito vaciado', 'Se eliminaron todos los productos.');
     };
 
     const renderizarCarrito = () => {
@@ -373,6 +367,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!container) return;
         const botonPago = document.getElementById('proceedToPayment');
         if (botonPago) botonPago.disabled = carrito.length === 0;
+        const botonVaciar = document.getElementById('clearCartButton');
+        if (botonVaciar) botonVaciar.hidden = carrito.length === 0;
 
         if (carrito.length === 0) {
             container.innerHTML = `
@@ -399,12 +395,17 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = carrito.map(item => {
             subtotal += item.precio * item.cantidad;
             totalUnidades += item.cantidad;
+            const detalleTamaño = item.tamaño !== 'personal'
+                ? `<p class="item-size">Tamaño: ${escapeHTML(item.tamaño)}</p>`
+                : '';
             return `
                 <div class="cart-item">
                     <img src="${imgUrl(item.img)}" alt="${item.nombre}">
                     <div class="cart-item-info">
-                        <h4>${item.nombre}</h4>
-                        <p class="item-size">Tamaño: ${item.tamaño}</p>
+                        <div class="cart-item-details">
+                            <h4>${escapeHTML(item.nombre)}</h4>
+                            ${detalleTamaño}
+                        </div>
                         <p class="item-price">$${item.precio.toLocaleString('es-CO')}</p>
                         <div class="cart-item-actions">
                             <button class="qty-btn" onclick="cambiarCantidad(${item.id}, -1, '${escapeHTML(item.tamaño)}')" aria-label="Disminuir cantidad de ${escapeHTML(item.nombre)}">−</button>
@@ -425,71 +426,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const checkout = () => {
-        if (carrito.length === 0) {
-            mostrarNotificacion('🛒 Tu carrito está vacío');
-            return;
-        }
-
-        const dialog = document.getElementById('checkoutChoiceDialog');
-        if (dialog && !dialog.open) dialog.showModal();
-    };
-
-    const finalizarCheckout = async () => {
         if (carrito.length === 0) return;
-        const totalPostres = carrito.reduce((sum, i) => sum + i.cantidad, 0);
-        const subtotal = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
-        const total = subtotal;
-        const fmt = (n) => '$' + n.toLocaleString('es-CO');
-
-        const datos = await pedirDatosPedido({ totalPostres, total });
-        if (!datos) return;
-
-        const lineas = carrito.map((i, n) =>
-            `${n + 1}. ${i.nombre} (${capitalizar(i.tamaño)}) ×${i.cantidad} — ${fmt(i.precio * i.cantidad)}`
-        ).join('\n');
-
-        const texto = [
-            '🌈 *PEDIDO · PRISMA*',
-            '━━━━━━━━━━━━━━',
-            `👤 *Cliente:* ${capitalizar(datos.nombre)}`,
-            `📱 *Teléfono:* ${datos.telefono}`,
-            '🛍️ *Pedido para llevar*',
-            `🕒 *Hora aproximada de recogida en el local:* ${datos.horaRecogida}`,
-            '',
-            '🍰 *Productos del pedido*',
-            lineas,
-            '',
-            `🔢 Total de postres: ${totalPostres}`,
-            `💰 *Total estimado: ${fmt(total)}*`,
-            '',
-            '📝 *Nota para el pedido*',
-            datos.notas || 'Sin indicaciones especiales.',
-            '━━━━━━━━━━━━━━',
-            'Quedo atento(a) a la confirmación de mi pedido. ¡Gracias! 🙌'
-        ].join('\n');
-
-        mostrarNotificacion('📲 Abriendo WhatsApp para confirmar tu pedido…');
-        window.open(`https://wa.me/573118689862?text=${encodeURIComponent(texto)}`, '_blank');
-    };
-
-    const activarCheckoutCarrito = () => {
-        const botonPago = document.getElementById('proceedToPayment');
-        const dialog = document.getElementById('checkoutChoiceDialog');
-        if (!botonPago || !dialog) return;
-
-        botonPago.addEventListener('click', checkout);
-        dialog.querySelector('[data-close-checkout]').addEventListener('click', () => dialog.close());
-        dialog.querySelectorAll('[data-checkout-choice]').forEach(opcion => {
-            opcion.addEventListener('click', () => {
-                const eleccion = opcion.dataset.checkoutChoice;
-                dialog.close();
-                if (eleccion === 'mesa') {
-                    window.location.assign(URLS.reservas || '/reserva/');
-                    return;
-                }
-                void finalizarCheckout();
-            });
-        });
+        window.location.assign(URLS.reservas || '/reserva/');
     };
 
     // ============================================
@@ -790,7 +728,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     construirMenuMovil();
-    activarCheckoutCarrito();
+    const botonPago = document.getElementById('proceedToPayment');
+    if (botonPago) botonPago.addEventListener('click', checkout);
     window.toggleMobileMenu = () => {
         const nav = document.getElementById('navMenu');
         if (nav) setMenuMovil(!nav.classList.contains('mobile-open'));
@@ -862,6 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.agregarDesdeModal = agregarDesdeModal;
     window.cambiarCantidad = cambiarCantidad;
     window.eliminarItem = eliminarItem;
+    window.vaciarCarrito = vaciarCarrito;
     window.checkout = checkout;
     window.abrirModal = abrirModal;
     window.cerrarModal = cerrarModal;
