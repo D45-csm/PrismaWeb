@@ -894,6 +894,7 @@ class AccesoUsuarioTests(TestCase):
 
         self.assertRedirects(response, reverse('base_cliente'))
         self.assertContains(response, 'Tu cuenta Prisma está lista. ¡Bienvenido!')
+        self.assertContains(response, 'María José García Luna')
         self.assertNotContains(response, 'Guarda tu código')
         self.assertNotIn('codigo_recuperacion_mostrar', self.client.session)
         usuario = Usuario.objects.get(email='nueva@example.com')
