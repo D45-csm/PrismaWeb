@@ -60,6 +60,73 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const carousel = document.getElementById('homeCarousel');
+    if (carousel) {
+        const slides = [...carousel.querySelectorAll('.hero-slide')];
+        const dots = [...carousel.querySelectorAll('.hero-carousel-dot')];
+        let currentSlide = 0;
+        let timer = null;
+        let isPaused = false;
+
+        const showSlide = (nextSlide) => {
+            currentSlide = (nextSlide + slides.length) % slides.length;
+            slides.forEach((slide, index) => {
+                const isActive = index === currentSlide;
+                slide.classList.toggle('is-active', isActive);
+                slide.setAttribute('aria-hidden', String(!isActive));
+            });
+            dots.forEach((dot, index) => {
+                const isActive = index === currentSlide;
+                dot.classList.toggle('is-active', isActive);
+                dot.setAttribute('aria-pressed', String(isActive));
+            });
+        };
+
+        const stopAutoplay = () => {
+            window.clearInterval(timer);
+            timer = null;
+        };
+        const startAutoplay = () => {
+            stopAutoplay();
+            if (!isPaused && !prefersReducedMotion && !document.hidden && slides.length > 1) {
+                timer = window.setInterval(() => showSlide(currentSlide + 1), 6500);
+            }
+        };
+
+        carousel.querySelectorAll('[data-carousel-direction]').forEach((button) => {
+            button.addEventListener('click', () => {
+                showSlide(currentSlide + Number(button.dataset.carouselDirection));
+                startAutoplay();
+            });
+        });
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                showSlide(index);
+                startAutoplay();
+            });
+        });
+        carousel.addEventListener('mouseenter', () => {
+            isPaused = true;
+            stopAutoplay();
+        });
+        carousel.addEventListener('mouseleave', () => {
+            isPaused = false;
+            startAutoplay();
+        });
+        carousel.addEventListener('focusin', () => {
+            isPaused = true;
+            stopAutoplay();
+        });
+        carousel.addEventListener('focusout', (event) => {
+            if (!carousel.contains(event.relatedTarget)) {
+                isPaused = false;
+                startAutoplay();
+            }
+        });
+        document.addEventListener('visibilitychange', startAutoplay);
+        startAutoplay();
+    }
+
     let carrito = JSON.parse(localStorage.getItem('prismaCarrito')) || [];
     let productoActual = null;
     let origenActual = 'productos';
@@ -265,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.toggle('menu-open', abierto);
             if (btnBurger) {
                 btnBurger.setAttribute('aria-expanded', abierto);
-                btnBurger.innerHTML = `<i class="fas ${abierto ? 'fa-xmark' : 'fa-bars'}"></i>`;
+                btnBurger.setAttribute('aria-label', abierto ? 'Cerrar menú' : 'Abrir menú');
             }
         };
 
@@ -619,160 +686,627 @@ document.addEventListener('DOMContentLoaded', () => {
         maximumFractionDigits: 0,
     }).format(valor);
 
-    // Formularios
+    // Helper Confetti Animado
+    const lanzarConfetti = (duracionMs = 2500) => {
+        if (typeof confetti === 'function') {
+            confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.6 },
+                colors: ['#df9f28', '#d97885', '#faecd3', '#2d8a5e', '#b87e14']
+            });
+            const fin = Date.now() + duracionMs;
+            const intervalo = setInterval(() => {
+                if (Date.now() > fin) return clearInterval(intervalo);
+                confetti({
+                    particleCount: 25,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#df9f28', '#d97885', '#f8dfcf']
+                });
+                confetti({
+                    particleCount: 25,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#df9f28', '#d97885', '#faecd3']
+                });
+            }, 300);
+        }
+    };
+
+    // Formularios y Módulo de Reservas
     const reservaForm = document.getElementById('reservaForm');
     if (reservaForm) {
         const reservaProductosList = document.getElementById('reservaProductosList');
         const reservaProductoCards = [...reservaForm.querySelectorAll('[data-reserva-producto-slot]')];
         const addReservaProducto = document.getElementById('addReservaProducto');
         const reservaProductosHint = document.getElementById('reservaProductosHint');
+        const modalidadCardMesa = document.getElementById('modalityCardMesa');
+        const modalidadCardLlevar = document.getElementById('modalityCardLlevar');
+        const groupNumeroPersonas = document.getElementById('groupNumeroPersonas');
+        const takeawayAuthNotice = document.getElementById('takeawayAuthNotice');
+        const numeroPersonasInput = document.getElementById('numero_personas');
+        const totalNoteText = document.getElementById('totalNoteText');
+        const btnSubmitReserva = document.getElementById('btnSubmitReserva');
+        const paymentModalOverlay = document.getElementById('paymentModalOverlay');
+
+        // Función para actualizar cálculos de productos
+        const actualizarProductosReserva = () => {
+            const visibles = reservaProductoCards.filter(card => card.classList.contains('is-visible'));
+            const seleccionados = visibles.filter(card => card.querySelector('select')?.value);
+            let totalEstimado = 0;
+            visibles.forEach(card => {
+                const select = card.querySelector('select');
+                if (!select) return;
+                const cantidad = Number(card.querySelector('input[type="number"]')?.value) || 0;
+                const precio = Number(select.selectedOptions[0]?.dataset.price) || 0;
+                const subtotal = precio * cantidad;
+                totalEstimado += subtotal;
+                const subtotalEl = card.querySelector('[data-reserva-line-total]');
+                if (subtotalEl) {
+                    subtotalEl.textContent = select.value
+                        ? `${formatearCOP(precio)} c/u · Subtotal: ${formatearCOP(subtotal)}`
+                        : '';
+                }
+                select.required = seleccionados.length === 0 && card === visibles[0];
+                const removeButton = card.querySelector('[data-remove-reserva-producto]');
+                if (removeButton) removeButton.hidden = visibles.length === 1;
+            });
+            const totalEl = document.getElementById('reservaTotalEstimate');
+            if (totalEl) totalEl.textContent = formatearCOP(totalEstimado);
+            if (addReservaProducto) {
+                const quedaEspacio = reservaProductoCards.some(card => !card.classList.contains('is-visible'));
+                addReservaProducto.hidden = !quedaEspacio;
+                addReservaProducto.disabled = !quedaEspacio;
+            }
+            if (reservaProductosHint) {
+                const cantidad = seleccionados.length;
+                reservaProductosHint.textContent = cantidad
+                    ? `${cantidad} postre${cantidad === 1 ? '' : 's'} seleccionado${cantidad === 1 ? '' : 's'} para tu reserva.`
+                    : 'Elige al menos un postre para continuar.';
+            }
+
+            // Sincronizar clases en las tarjetas visuales
+            const idsSeleccionados = new Set(seleccionados.map(c => c.querySelector('select').value));
+            document.querySelectorAll('.dessert-card-mini').forEach(mini => {
+                const id = mini.dataset.productId;
+                if (idsSeleccionados.has(id)) {
+                    mini.classList.add('is-selected');
+                } else {
+                    mini.classList.remove('is-selected');
+                }
+            });
+        };
+
         if (reservaProductosList && reservaProductoCards.length) {
             reservaProductosList.classList.add('is-interactive');
-            const actualizarProductosReserva = () => {
-                const visibles = reservaProductoCards.filter(card => card.classList.contains('is-visible'));
-                const seleccionados = visibles.filter(card => card.querySelector('select').value);
-                let totalEstimado = 0;
-                visibles.forEach(card => {
-                    const select = card.querySelector('select');
-                    const cantidad = Number(card.querySelector('input[type="number"]').value) || 0;
-                    const precio = Number(select.selectedOptions[0]?.dataset.price) || 0;
-                    const subtotal = precio * cantidad;
-                    totalEstimado += subtotal;
-                    const subtotalEl = card.querySelector('[data-reserva-line-total]');
-                    if (subtotalEl) {
-                        subtotalEl.textContent = select.value
-                            ? `${formatearCOP(precio)} c/u · ${formatearCOP(subtotal)}`
-                            : '';
-                    }
-                    select.required = seleccionados.length === 0 && card === visibles[0];
-                    const removeButton = card.querySelector('[data-remove-reserva-producto]');
-                    if (removeButton) removeButton.hidden = visibles.length === 1;
-                });
-                const totalEl = document.getElementById('reservaTotalEstimate');
-                if (totalEl) totalEl.textContent = formatearCOP(totalEstimado);
-                if (addReservaProducto) {
-                    const quedaEspacio = reservaProductoCards.some(card => !card.classList.contains('is-visible'));
-                    addReservaProducto.hidden = !quedaEspacio;
-                    addReservaProducto.disabled = !quedaEspacio;
-                }
-                if (reservaProductosHint) {
-                    const cantidad = seleccionados.length;
-                    reservaProductosHint.textContent = cantidad
-                        ? `${cantidad} producto${cantidad === 1 ? '' : 's'} en tu reserva.`
-                        : 'Elige al menos un producto para continuar.';
-                }
-            };
 
             reservaProductoCards.forEach(card => {
                 const select = card.querySelector('select');
-                select.required = false;
-                select.addEventListener('change', actualizarProductosReserva);
-                card.querySelector('input[type="number"]').addEventListener('input', actualizarProductosReserva);
+                if (select) {
+                    select.required = false;
+                    select.addEventListener('change', actualizarProductosReserva);
+                }
+                const numInput = card.querySelector('input[type="number"]');
+                if (numInput) numInput.addEventListener('input', actualizarProductosReserva);
                 const removeButton = card.querySelector('[data-remove-reserva-producto]');
                 if (removeButton) {
                     removeButton.addEventListener('click', () => {
-                        card.querySelector('select').value = '';
-                        card.querySelector('input[type="number"]').value = '1';
+                        if (select) select.value = '';
+                        if (numInput) numInput.value = '1';
                         card.classList.remove('is-visible');
                         actualizarProductosReserva();
                     });
                 }
             });
+
             if (addReservaProducto) {
                 addReservaProducto.hidden = false;
                 addReservaProducto.addEventListener('click', () => {
-                    const siguiente = reservaProductoCards.find(
-                        card => !card.classList.contains('is-visible'),
-                    );
+                    const siguiente = reservaProductoCards.find(card => !card.classList.contains('is-visible'));
                     if (!siguiente) return;
                     siguiente.classList.add('is-visible');
                     actualizarProductosReserva();
                     siguiente.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    siguiente.querySelector('select').focus({ preventScroll: true });
+                    siguiente.querySelector('select')?.focus({ preventScroll: true });
                 });
             }
             actualizarProductosReserva();
         }
 
-        const fechaReserva = document.getElementById('fecha');
-        const modalidadReserva = document.getElementById('tipo_reserva');
-        const numeroPersonas = document.getElementById('numero_personas');
-        if (fechaReserva) fechaReserva.min = hoyISO();
-        if (modalidadReserva && numeroPersonas) {
-            const actualizarPersonas = () => {
-                numeroPersonas.required = modalidadReserva.value === 'Mesa';
-            };
-            modalidadReserva.addEventListener('change', actualizarPersonas);
-            actualizarPersonas();
-        }
-
-        const mostrarConfirmacionReserva = async (resultado) => {
-            const esParaLlevar = resultado.reservation_type === 'Para llevar';
-            const titulo = esParaLlevar
-                ? 'Tu pedido quedó registrado'
-                : 'Recibimos tu solicitud de mesa';
-            const estado = esParaLlevar
-                ? 'Pendiente de pago. Prisma confirmará el pedido después de verificar el comprobante.'
-                : 'Pendiente de confirmación. Prisma te contactará para confirmar disponibilidad.';
-            const detalle = `
-                <div class="pz-rainbow"></div>
-                <div class="pz-icon"><i class="fas fa-check"></i></div>
-                <h3 class="pz-title">${escapeHTML(titulo)}</h3>
-                <p class="pz-text">${escapeHTML(resultado.message)}</p>
-                <div class="reserva-success-summary">
-                    <span>Reserva #${escapeHTML(resultado.reservation_id)}</span>
-                    <strong>Total estimado: ${escapeHTML(resultado.total)}</strong>
-                </div>
-                <p class="reserva-success-state">${escapeHTML(estado)}</p>
-                <a class="reserva-success-whatsapp" href="${escapeHTML(resultado.whatsapp_url)}"
-                   target="_blank" rel="noopener noreferrer">
-                    <i class="fab fa-whatsapp" aria-hidden="true"></i>
-                    ${esParaLlevar ? 'Coordinar pago por WhatsApp' : 'Enviar solicitud por WhatsApp'}
-                </a>
-                <div class="pz-actions">
-                    <button type="button" class="pz-btn pz-btn-ghost" data-cancel>Cerrar</button>
-                    <button type="button" class="pz-btn pz-btn-primary" data-accept data-autofocus>
-                        Ver mi reserva
-                    </button>
-                </div>`;
-            const continuar = await abrirModalPrisma({
-                claseExtra: 'reservation-success-dialog',
-                html: detalle,
-                alAceptar: () => true,
+        // Stepper Quantity Buttons (+ / -)
+        document.querySelectorAll('.qty-btn-minus').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = document.getElementById(btn.dataset.target);
+                if (target && Number(target.value) > 1) {
+                    target.value = Number(target.value) - 1;
+                    actualizarProductosReserva();
+                }
             });
-            if (continuar && resultado.next_url) {
-                window.location.assign(resultado.next_url);
+        });
+        document.querySelectorAll('.qty-btn-plus').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = document.getElementById(btn.dataset.target);
+                if (target && Number(target.value) < 50) {
+                    target.value = Number(target.value) + 1;
+                    actualizarProductosReserva();
+                }
+            });
+        });
+
+        // Quick Add desde tarjetas visuales de postres
+        document.querySelectorAll('.dessert-card-mini [data-action="quick-add"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mini = btn.closest('.dessert-card-mini');
+                if (!mini) return;
+                const prodId = mini.dataset.productId;
+
+                // Buscar si ya está en algún slot visible
+                const slotExistente = reservaProductoCards.find(c => c.classList.contains('is-visible') && c.querySelector('select')?.value === prodId);
+                if (slotExistente) {
+                    const cantInput = slotExistente.querySelector('input[type="number"]');
+                    if (cantInput) cantInput.value = Math.min(50, (Number(cantInput.value) || 1) + 1);
+                    actualizarProductosReserva();
+                    slotExistente.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    return;
+                }
+
+                // Buscar el primer slot libre
+                let slotLibre = reservaProductoCards.find(c => c.classList.contains('is-visible') && !c.querySelector('select')?.value);
+                if (!slotLibre) {
+                    slotLibre = reservaProductoCards.find(c => !c.classList.contains('is-visible'));
+                    if (slotLibre) slotLibre.classList.add('is-visible');
+                }
+
+                if (slotLibre) {
+                    const select = slotLibre.querySelector('select');
+                    if (select) select.value = prodId;
+                    actualizarProductosReserva();
+                    slotLibre.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Límite de postres',
+                            text: 'Puedes reservar un máximo de 5 variedades diferentes por pedido. Si deseas más unidades, ajusta las cantidades.',
+                            confirmButtonColor: '#df9f28'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Modality Switcher (Mesa vs Para Llevar)
+        const actualizarModalidad = (modalidad) => {
+            const esMesa = modalidad === 'Mesa';
+            if (modalidadCardMesa && modalidadCardLlevar) {
+                if (esMesa) {
+                    modalidadCardMesa.classList.add('is-selected');
+                    modalidadCardLlevar.classList.remove('is-selected');
+                    const radioMesa = document.getElementById('modalidad_mesa');
+                    if (radioMesa) radioMesa.checked = true;
+                } else {
+                    modalidadCardLlevar.classList.add('is-selected');
+                    modalidadCardMesa.classList.remove('is-selected');
+                    const radioLlevar = document.getElementById('modalidad_llevar');
+                    if (radioLlevar) radioLlevar.checked = true;
+                }
+            }
+
+            if (groupNumeroPersonas) {
+                groupNumeroPersonas.hidden = !esMesa;
+            }
+            if (numeroPersonasInput) {
+                numeroPersonasInput.required = esMesa;
+            }
+
+            if (takeawayAuthNotice) {
+                takeawayAuthNotice.hidden = esMesa;
+            }
+
+            if (totalNoteText) {
+                totalNoteText.textContent = esMesa
+                    ? 'Las mesas no requieren pago anticipado. Te recibimos en nuestro local.'
+                    : 'Para llevar requiere inicio de sesión y pago anticipado.';
+            }
+
+            if (btnSubmitReserva) {
+                const btnText = btnSubmitReserva.querySelector('.btn-text');
+                if (btnText) {
+                    btnText.textContent = esMesa
+                        ? 'Confirmar mi Reserva de Mesa'
+                        : 'Registrar y Continuar al Pago Seguro';
+                }
             }
         };
 
-        if (reservaForm.dataset.reservaAjax === 'true') reservaForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (reservaForm.dataset.submitted === 'true') return;
-            if (!reservaForm.reportValidity()) return;
+        if (modalidadCardMesa) {
+            modalidadCardMesa.addEventListener('click', () => actualizarModalidad('Mesa'));
+        }
+        if (modalidadCardLlevar) {
+            modalidadCardLlevar.addEventListener('click', () => actualizarModalidad('Para llevar'));
+        }
 
-            const submitButton = reservaForm.querySelector('[type="submit"]');
-            if (submitButton) submitButton.disabled = true;
+        const tipoReservaSelect = document.getElementById('tipo_reserva');
+        if (tipoReservaSelect) {
+            tipoReservaSelect.addEventListener('change', () => actualizarModalidad(tipoReservaSelect.value));
+        }
 
+        // Guests Pills
+        document.querySelectorAll('.guest-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('.guest-pill').forEach(p => p.classList.remove('is-active'));
+                pill.classList.add('is-active');
+                if (numeroPersonasInput) {
+                    numeroPersonasInput.value = pill.dataset.guests;
+                }
+            });
+        });
+
+        // Time Quick Pills
+        document.querySelectorAll('.time-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const horaInput = document.getElementById('hora');
+                if (horaInput) horaInput.value = pill.dataset.time;
+            });
+        });
+
+        // Chips para indicaciones
+        document.querySelectorAll('.reserva-chip-btn').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const detallesTextarea = document.getElementById('detalles');
+                if (!detallesTextarea) return;
+                const texto = chip.dataset.text;
+                const previo = detallesTextarea.value.trim();
+                detallesTextarea.value = (previo ? previo + '\n• ' : '• ') + texto;
+                detallesTextarea.focus();
+            });
+        });
+
+        // Restablecer borrador si el usuario inició sesión recientemente
+        const borradorJSON = sessionStorage.getItem('reserva_draft');
+        if (borradorJSON) {
             try {
-                const respuesta = await fetch(reservaForm.action || window.location.href, {
+                const borrador = JSON.parse(borradorJSON);
+                if (borrador.nombre && document.getElementById('nombre')) document.getElementById('nombre').value = borrador.nombre;
+                if (borrador.telefono && document.getElementById('telefono')) document.getElementById('telefono').value = borrador.telefono;
+                if (borrador.fecha && document.getElementById('fecha')) document.getElementById('fecha').value = borrador.fecha;
+                if (borrador.hora && document.getElementById('hora')) document.getElementById('hora').value = borrador.hora;
+                if (borrador.detalles && document.getElementById('detalles')) document.getElementById('detalles').value = borrador.detalles;
+                if (borrador.tipo_reserva) actualizarModalidad(borrador.tipo_reserva);
+                sessionStorage.removeItem('reserva_draft');
+            } catch (err) {}
+        }
+
+        // Date input min = hoy
+        const fechaReserva = document.getElementById('fecha');
+        if (fechaReserva) fechaReserva.min = hoyISO();
+
+        // Control del Modal de Pago
+        const abrirModalPago = (reservaId, totalTexto) => {
+            if (!paymentModalOverlay) return;
+            document.getElementById('payModalReservaId').textContent = `Reserva #${reservaId}`;
+            document.getElementById('payModalTotal').textContent = totalTexto;
+            document.getElementById('payActionReservaId').value = reservaId;
+            paymentModalOverlay.hidden = false;
+        };
+
+        const cerrarModalPago = () => {
+            if (paymentModalOverlay) paymentModalOverlay.hidden = true;
+        };
+
+        const btnClosePaymentModal = document.getElementById('btnClosePaymentModal');
+        if (btnClosePaymentModal) btnClosePaymentModal.addEventListener('click', cerrarModalPago);
+
+        // Pestañas de Métodos de Pago
+        document.querySelectorAll('.payment-method-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.payment-method-tab').forEach(t => t.classList.remove('is-active'));
+                tab.classList.add('is-active');
+                const metodo = tab.dataset.method;
+                const hiddenMetodo = document.getElementById('selectedMetodoPago');
+                if (hiddenMetodo) hiddenMetodo.value = metodo;
+
+                document.querySelectorAll('.payment-method-details').forEach(det => det.hidden = true);
+                const activeDetails = document.getElementById(`method${metodo}Details`);
+                if (activeDetails) activeDetails.hidden = false;
+            });
+        });
+
+        // Envío del Formulario de Pago desde el Modal
+        const paymentExecutionForm = document.getElementById('paymentExecutionForm');
+        if (paymentExecutionForm) {
+            paymentExecutionForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const reservaId = document.getElementById('payActionReservaId')?.value;
+                if (!reservaId) return;
+
+                const btnSubmitPayment = document.getElementById('btnSubmitPayment');
+                if (btnSubmitPayment) {
+                    btnSubmitPayment.disabled = true;
+                    btnSubmitPayment.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando pago seguro...';
+                }
+
+                try {
+                    const formData = new FormData(paymentExecutionForm);
+                    const respuesta = await fetch(`/reserva/pagar/${reservaId}/`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    const resultado = await respuesta.json();
+                    if (!respuesta.ok || !resultado.ok) {
+                        throw new Error(resultado.error || 'No se pudo procesar el pago.');
+                    }
+
+                    cerrarModalPago();
+                    lanzarConfetti(3500);
+
+                    // Mensaje lindo y animado tras completar el pago
+                    if (window.Swal) {
+                        await Swal.fire({
+                            customClass: {
+                                popup: 'sweet-celebration-dialog',
+                                confirmButton: 'luxury-btn-gold'
+                            },
+                            icon: 'success',
+                            title: resultado.title || '¡Pago Recibido con Éxito! 🎉🍰',
+                            html: `
+                                <div class="sweet-payment-celebration">
+                                    <div class="cake-pulse-icon">🍰💖</div>
+                                    <p class="sweet-message-text">${escapeHTML(resultado.message)}</p>
+                                    <div class="sweet-receipt-pill">
+                                        <strong>Reserva #${escapeHTML(resultado.reservation_id)}</strong> · Total Pagado: <strong>${escapeHTML(resultado.total)} COP</strong>
+                                    </div>
+                                    <p class="sweet-pickup-info"><i class="fas fa-calendar-check"></i> Fecha de entrega: <strong>${escapeHTML(resultado.fecha_recogida)}</strong> a las <strong>${escapeHTML(resultado.hora_recogida)}</strong></p>
+                                </div>
+                            `,
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="fas fa-receipt"></i> Ver Comprobante y Pedido',
+                            cancelButtonText: '<i class="fab fa-whatsapp"></i> Hablar por WhatsApp',
+                            buttonsStyling: false
+                        }).then(result => {
+                            if (result.isConfirmed && resultado.next_url) {
+                                window.location.assign(resultado.next_url);
+                            } else {
+                                window.open(`https://wa.me/${window.PRISMA?.whatsapp || '573118689862'}?text=${encodeURIComponent('Hola Prisma 👋 Ya completé el pago de mi pedido #' + resultado.reservation_id)}`, '_blank');
+                                if (resultado.next_url) window.location.assign(resultado.next_url);
+                            }
+                        });
+                    }
+                } catch (err) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error en el pago',
+                            text: err.message || 'No se pudo completar el pago.',
+                            confirmButtonColor: '#df9f28'
+                        });
+                    }
+                } finally {
+                    if (btnSubmitPayment) {
+                        btnSubmitPayment.disabled = false;
+                        btnSubmitPayment.innerHTML = '<i class="fas fa-check-circle"></i> Completar Pago Ahora';
+                    }
+                }
+            });
+        }
+
+        // Envío AJAX del formulario de reserva principal
+        if (reservaForm.dataset.reservaAjax === 'true') {
+            reservaForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (reservaForm.dataset.submitted === 'true') return;
+
+                const modalidadElegida = document.querySelector('input[name="tipo_reserva"]:checked')?.value || document.getElementById('tipo_reserva')?.value || 'Mesa';
+                const usuarioLogueado = reservaForm.dataset.userLoggedIn === 'true';
+
+                // REGLA CLAVE: Solo si quiere reservar postre para llevar debe iniciar sesión
+                if (modalidadElegida === 'Para llevar' && !usuarioLogueado) {
+                    // Guardar borrador en sessionStorage para que no pierda lo seleccionado
+                    const draft = {
+                        nombre: document.getElementById('nombre')?.value || '',
+                        telefono: document.getElementById('telefono')?.value || '',
+                        fecha: document.getElementById('fecha')?.value || '',
+                        hora: document.getElementById('hora')?.value || '',
+                        detalles: document.getElementById('detalles')?.value || '',
+                        tipo_reserva: 'Para llevar'
+                    };
+                    sessionStorage.setItem('reserva_draft', JSON.stringify(draft));
+
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: '¡Casi Listo para tu Pedido! 🍰🔒',
+                            html: `
+                                <p style="font-size:1.05rem; color:#4a3435; line-height:1.5;">
+                                    Para reservar tu postre <strong>para llevar</strong> es necesario <strong>iniciar sesión</strong> o registrarte para completar tu pago seguro.
+                                </p>
+                                <p class="text-muted small">
+                                    ¡Tus datos y postres seleccionados han sido guardados para que continúes sin interrupción!
+                                </p>
+                            `,
+                            showDenyButton: true,
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión',
+                            denyButtonText: '<i class="fas fa-user-plus"></i> Crear Cuenta',
+                            cancelButtonText: 'Seguir editando',
+                            confirmButtonColor: '#df9f28',
+                            denyButtonColor: '#c45d6e',
+                            cancelButtonColor: '#8a8a8a',
+                        }).then(r => {
+                            if (r.isConfirmed) {
+                                window.location.assign(window.PRISMA?.urls?.login ? `${window.PRISMA.urls.login}?next=${encodeURIComponent(window.location.pathname)}` : '/usuarios/login/');
+                            } else if (r.isDenied) {
+                                window.location.assign(window.PRISMA?.urls?.registro ? `${window.PRISMA.urls.registro}?next=${encodeURIComponent(window.location.pathname)}` : '/usuarios/registro/');
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                if (!reservaForm.reportValidity()) return;
+
+                const submitButton = reservaForm.querySelector('[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando reserva...';
+                }
+
+                try {
+                    const respuesta = await fetch(reservaForm.action || window.location.href, {
+                        method: 'POST',
+                        body: new FormData(reservaForm),
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    const resultado = await respuesta.json();
+                    if (!respuesta.ok || !resultado.ok) {
+                        throw new Error(resultado.error || 'No se pudo registrar la reserva.');
+                    }
+
+                    reservaForm.dataset.submitted = 'true';
+
+                    // Si es PARA LLEVAR: Abrir modal de pago interactivo
+                    if (resultado.reservation_type === 'Para llevar') {
+                        abrirModalPago(resultado.reservation_id, resultado.total);
+                    } else {
+                        // Si es MESA: Mostrar alerta animada festiva
+                        lanzarConfetti(2800);
+                        if (window.Swal) {
+                            await Swal.fire({
+                                customClass: {
+                                    popup: 'sweet-celebration-dialog',
+                                    confirmButton: 'luxury-btn-gold'
+                                },
+                                icon: 'success',
+                                title: resultado.title || '¡Solicitud de Mesa Recibida! 🥂✨',
+                                html: `
+                                    <div class="sweet-payment-celebration">
+                                        <p class="sweet-message-text">${escapeHTML(resultado.message)}</p>
+                                        <div class="sweet-receipt-pill">
+                                            <strong>Reserva #${escapeHTML(resultado.reservation_id)}</strong> · Total estimado: <strong>${escapeHTML(resultado.total)} COP</strong>
+                                        </div>
+                                        <p class="sweet-pickup-info">📅 Fecha: <strong>${escapeHTML(resultado.fecha_formateada)}</strong> a las <strong>${escapeHTML(resultado.hora_formateada)}</strong></p>
+                                    </div>
+                                `,
+                                showCancelButton: true,
+                                confirmButtonText: '<i class="fas fa-eye"></i> Ver mi Reserva',
+                                cancelButtonText: '<i class="fab fa-whatsapp"></i> Confirmar por WhatsApp',
+                                buttonsStyling: false
+                            }).then(choice => {
+                                if (choice.isConfirmed && resultado.next_url) {
+                                    window.location.assign(resultado.next_url);
+                                } else if (resultado.whatsapp_url) {
+                                    window.open(resultado.whatsapp_url, '_blank');
+                                    if (resultado.next_url) window.location.assign(resultado.next_url);
+                                }
+                            });
+                        }
+                    }
+                } catch (error) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'No se pudo registrar',
+                            text: error.message || 'Ocurrió un error al enviar la reserva.',
+                            confirmButtonColor: '#df9f28'
+                        });
+                    } else {
+                        mostrarNotificacion(error.message || 'Ocurrió un error al enviar la reserva.');
+                    }
+                } finally {
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = '<span class="btn-text">Confirmar mi Reserva</span> <i class="fas fa-arrow-right"></i>';
+                    }
+                }
+            });
+        }
+    }
+
+    // Manejo interactivo en la vista de detalle del cliente (detalle.html)
+    const btnOpenPayFromDetail = document.getElementById('btnOpenPayFromDetail');
+    if (btnOpenPayFromDetail) {
+        btnOpenPayFromDetail.addEventListener('click', () => {
+            const payBox = document.getElementById('payBoxSection');
+            if (payBox) payBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }
+
+    const inlinePayForm = document.getElementById('inlinePayForm');
+    if (inlinePayForm) {
+        inlinePayForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = inlinePayForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando pago...';
+            }
+            try {
+                const resp = await fetch(inlinePayForm.action, {
                     method: 'POST',
-                    body: new FormData(reservaForm),
+                    body: new FormData(inlinePayForm),
                     headers: { 'Accept': 'application/json' },
                     credentials: 'same-origin',
                 });
-                const resultado = await respuesta.json();
-                if (!respuesta.ok || !resultado.ok) {
-                    throw new Error(resultado.error || 'No se pudo registrar la reserva.');
-                }
+                const res = await resp.json();
+                if (!resp.ok || !res.ok) throw new Error(res.error || 'No se pudo completar el pago.');
 
-                reservaForm.dataset.submitted = 'true';
-                await mostrarConfirmacionReserva(resultado);
-            } catch (error) {
-                mostrarNotificacion(error.message || 'Ocurrió un error al enviar la reserva.');
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = reservaForm.dataset.submitted === 'true';
+                lanzarConfetti(3000);
+                if (window.Swal) {
+                    await Swal.fire({
+                        customClass: { popup: 'sweet-celebration-dialog', confirmButton: 'luxury-btn-gold' },
+                        icon: 'success',
+                        title: res.title || '¡Pago Recibido con Éxito! 🎉🍰',
+                        html: `
+                            <div class="sweet-payment-celebration">
+                                <div class="cake-pulse-icon">🍰💖</div>
+                                <p class="sweet-message-text">${escapeHTML(res.message)}</p>
+                                <div class="sweet-receipt-pill">
+                                    <strong>Reserva #${escapeHTML(res.reservation_id)}</strong> · Total: <strong>${escapeHTML(res.total)} COP</strong>
+                                </div>
+                            </div>
+                        `,
+                        confirmButtonText: 'Continuar',
+                        buttonsStyling: false
+                    });
                 }
+                window.location.reload();
+            } catch (err) {
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: 'Error en el pago', text: err.message, confirmButtonColor: '#df9f28' });
+                }
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    }
+
+    const formCancelarCliente = document.getElementById('formCancelarCliente');
+    if (formCancelarCliente) {
+        formCancelarCliente.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '¿Confirmas cancelar tu reserva?',
+                    text: 'Tus postres reservados serán liberados. Si ya pagaste, gestionaremos la devolución de tu dinero.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, cancelar reserva',
+                    cancelButtonText: 'Mantener mi reserva',
+                    confirmButtonColor: '#c45d6e',
+                    cancelButtonColor: '#8a8a8a',
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        formCancelarCliente.submit();
+                    }
+                });
+            } else if (confirm('¿Confirmas que deseas cancelar esta reserva?')) {
+                formCancelarCliente.submit();
             }
         });
     }
