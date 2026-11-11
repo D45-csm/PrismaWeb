@@ -29,10 +29,10 @@ from APP.usuarios.permissions import (
 logger = logging.getLogger(__name__)
 
 POSTRES = {
-    'Manzana Verde Cheesecake': 25000,
-    'Café Chocolate': 28000,
-    'Fresa Chocolate': 32000,
-    'Postre Personalizado': 0,
+    'Manzana Verde Cheesecake': 15000,
+    'Café Chocolate': 15000,
+    'Fresa Chocolate': 15000,
+    'Postre Personalizado': 15000,
 }
 
 SLOTS_PRODUCTOS = tuple(range(1, 6))
