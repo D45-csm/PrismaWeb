@@ -26,3 +26,5 @@ class CarritoTests(TestCase):
         self.assertContains(response, 'id="clearCartButton"')
         self.assertContains(response, 'onclick="vaciarCarrito()"')
         self.assertContains(response, 'aria-label="Vaciar carrito"')
+        self.assertNotContains(response, 'aria-label="Notificaciones"')
+        self.assertContains(response, 'logo_prisma_header.png')
