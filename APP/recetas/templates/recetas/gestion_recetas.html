@@ -1,0 +1,285 @@
+{% extends 'base_crud.html' %}
+{% load static %}
+
+{% block title %}Gestión de recetas | Prisma{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/recetas.css' %}?v=3">{% endblock %}
+{% block crud_page_class %}recipe-admin-page{% endblock %}
+
+{% block crud_header %}
+    {% if puede_operar %}{% url 'operaciones_recetas' as operaciones_url %}{% endif %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='PRODUCCIÓN PRISMA' title='Gestión de recetas' description='Crea y actualiza recetas con sus ingredientes y cantidades vinculadas.' summary_value=total_recetas summary_label='recetas' summary_icon='fa-solid fa-book-open' summary2_value=total_recetas_activas summary2_label='activas' summary2_icon='fa-solid fa-circle-check' back_url=perfil_url back_label='Volver al panel' action_url=operaciones_url action_label='Operar recetas' action_icon='fa-solid fa-kitchen-set' %}
+{% endblock %}
+
+{% block crud_layout_class %}admin-crud-workspace--single{% endblock %}
+{% block crud_main_class %}insumo-main-panel{% endblock %}
+{% block crud_main %}
+    <div class="insumo-list-heading">
+        <div>
+            <span class="insumo-eyebrow">RECETARIO</span>
+            <h2>Buscar recetas</h2>
+            <p>Administra los datos y los insumos vinculados a cada preparación.</p>
+        </div>
+        {% if puede_agregar and receta_editar %}
+            <a class="insumo-button insumo-button-primary" href="{% url 'lista_recetas' %}">
+                <i class="fa-solid fa-plus"></i> Crear receta
+            </a>
+        {% elif puede_agregar %}
+            <button type="button" class="insumo-button insumo-button-primary"
+                    data-open-crud-editor data-create-url="{% url 'lista_recetas' %}"
+                    data-create-action="crear_receta">
+                <i class="fa-solid fa-plus"></i> Crear receta
+            </button>
+        {% endif %}
+    </div>
+    <form method="get" action="{% url 'lista_recetas' %}" class="insumo-filter-bar" role="search">
+        <label class="insumo-search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <span class="visually-hidden">Buscar recetas</span>
+            <input type="search" name="q" value="{{ query }}" placeholder="Nombre de la receta">
+        </label>
+        {% include 'partials/admin_status_filter.html' with estado=estado status_filter_id='recipeStatusSelect' status_filter_options_id='recipeStatusOptions' status_filter_label='Estado de las recetas' %}
+        <button type="submit" class="insumo-button insumo-button-filter">Buscar</button>
+        {% if query or estado != 'todos' %}
+            <a class="insumo-clear-filter" href="{% url 'lista_recetas' %}">
+                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Limpiar filtros
+            </a>
+        {% endif %}
+    </form>
+    <div class="insumo-results-label">
+        <span>{{ recetas|length }} receta{{ recetas|length|pluralize:"s" }}</span>
+        {% if query %}<span class="insumo-query-chip">“{{ query }}”</span>{% endif %}
+    </div>
+    <div class="insumo-list">
+        {% for receta in recetas %}
+            <article class="insumo-row insumo-row--record recipe-row{% if not receta.activo %} insumo-row-inactive{% endif %}">
+                <span class="recipe-row-icon" aria-hidden="true"><i class="fa-solid fa-book-open"></i></span>
+                <div class="insumo-row-info">
+                    <h3>{{ receta.nombre }}</h3>
+                    <p>{{ receta.descripcion|default:"Sin descripción"|truncatechars:130 }}</p>
+                    <div class="insumo-row-meta">
+                        <span><i class="fa-solid fa-layer-group"></i>{{ receta.total_insumos }} insumo{{ receta.total_insumos|pluralize:"s" }}</span>
+                        <span class="insumo-status{% if not receta.activo %} inactive{% endif %}">
+                            {% if receta.activo %}Activa{% else %}Desactivada{% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% if puede_cambiar or puede_eliminar %}
+                    <details class="insumo-row-actions">
+                        <summary aria-label="Acciones para {{ receta.nombre }}">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </summary>
+                        <div class="insumo-row-menu">
+                            {% if puede_cambiar %}
+                                <a class="insumo-menu-action" href="{% url 'lista_recetas' %}?editar={{ receta.pk }}">
+                                    <i class="fa-regular fa-pen-to-square"></i> Editar receta
+                                </a>
+                            {% endif %}
+                            {% if puede_eliminar %}
+                                <button type="button" class="insumo-menu-action" data-crud-delete-url="{% url 'lista_recetas' %}"
+                                        data-crud-delete-name="{{ receta.nombre }}"
+                                        data-recipe-delete-id="{{ receta.pk }}">
+                                    <i class="fa-regular fa-trash-can"></i> Eliminar receta
+                                </button>
+                            {% endif %}
+                        </div>
+                    </details>
+                {% endif %}
+            </article>
+        {% empty %}
+            <div class="insumo-empty-state">
+                <span class="insumo-empty-icon"><i class="fa-solid fa-book-open"></i></span>
+                <h3>No encontramos recetas</h3>
+                <p>{% if query %}Prueba con otro nombre o limpia los filtros.{% else %}Crea una receta y vincula sus insumos para comenzar.{% endif %}</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block crud_after_workspace %}
+    {% if puede_agregar or puede_cambiar %}
+        <dialog class="insumo-dialog product-editor-dialog admin-crud-editor-dialog recipe-editor-dialog" id="recipeEditorDialog"
+                data-open="{{ editor_mode }}" data-clear-query-params="editar"
+                aria-labelledby="recipeEditorTitle">
+        <div class="insumo-dialog-header">
+            <div>
+                <span class="insumo-eyebrow">{% if receta_editar %}ACTUALIZAR RECETARIO{% else %}NUEVO REGISTRO{% endif %}</span>
+                <h2 id="recipeEditorTitle">{% if receta_editar %}Editar receta{% else %}Crear receta{% endif %}</h2>
+                <p class="product-editor-description">{% if receta_editar %}Actualiza la receta y sus ingredientes vinculados.{% else %}Define la receta y los insumos necesarios para prepararla.{% endif %}</p>
+            </div>
+            <button class="insumo-dialog-close" type="button" data-close-crud-dialog aria-label="Cerrar formulario">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form method="post" action="{% url 'lista_recetas' %}" class="insumo-dialog-edit product-editor-form recipe-editor-form">
+            {% csrf_token %}
+            {{ unidades_por_insumo|json_script:"recipe-unit-map" }}
+            <input type="hidden" name="accion" value="{% if receta_editar %}editar_receta{% else %}crear_receta{% endif %}">
+            {% if receta_editar %}<input type="hidden" name="receta_id" value="{{ receta_editar.pk }}">{% endif %}
+            {% if form.non_field_errors %}
+                <div class="admin-form-errors" role="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="product-editor-fields recipe-editor-fields">
+                <div class="insumo-field">
+                    <label for="{{ form.nombre.id_for_label }}">Nombre de la receta</label>
+                    {{ form.nombre }}
+                    {% for error in form.nombre.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="insumo-field">
+                    <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+                    {{ form.descripcion }}
+                    {% for error in form.descripcion.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+                <div class="crud-editor-availability product-editor-availability recipe-active-field">
+                    <label class="insumo-availability-control" for="{{ form.activo.id_for_label }}">
+                        {{ form.activo }}
+                        <span class="insumo-switch" aria-hidden="true"></span>
+                        <span class="product-editor-availability-state" aria-live="polite">
+                            <span class="is-active">Receta activa</span>
+                            <span class="is-inactive">Receta inactiva</span>
+                        </span>
+                    </label>
+                    <p>Las recetas inactivas no aparecen en operaciones.</p>
+                    {% for error in form.activo.errors %}<small class="insumo-field-error">{{ error }}</small>{% endfor %}
+                </div>
+            </div>
+            <section class="recipe-ingredients-editor" aria-labelledby="recipeIngredientsTitle">
+                <div class="recipe-ingredients-heading">
+                    <div>
+                        <span class="insumo-eyebrow">RELACIÓN DE INSUMOS</span>
+                        <h3 id="recipeIngredientsTitle">Ingredientes por preparación</h3>
+                        <p>Solo los ingredientes vinculados aquí se descontarán al operar la receta.</p>
+                    </div>
+                    <button class="insumo-button insumo-button-filter" type="button" data-add-recipe-ingredient>
+                        <i class="fa-solid fa-plus"></i> Agregar insumo
+                    </button>
+                </div>
+                {{ formset.management_form }}
+                {% if formset.non_form_errors %}
+                    <div class="admin-form-errors" role="alert">{{ formset.non_form_errors }}</div>
+                {% endif %}
+                <div class="recipe-ingredient-rows" data-recipe-ingredient-rows
+                     data-initial-form-count="{{ formset.total_form_count }}">
+                    {% for ingredient_form in formset %}
+                        <div class="recipe-ingredient-row" data-recipe-ingredient-row
+                             {% if ingredient_form.DELETE.value %}hidden{% endif %}>
+                            {% for hidden in ingredient_form.hidden_fields %}{{ hidden }}{% endfor %}
+                            <div class="insumo-field">
+                                <label for="{{ ingredient_form.insumo.id_for_label }}">Insumo vinculado</label>
+                                <select name="{{ ingredient_form.insumo.html_name }}"
+                                        id="{{ ingredient_form.insumo.id_for_label }}"
+                                        class="insumo-input" required data-recipe-insumo
+                                        {% if ingredient_form.insumo.errors %}aria-invalid="true"{% endif %}>
+                                    {% for value, label in ingredient_form.insumo.field.choices %}
+                                        <option value="{{ value }}"{% if ingredient_form.insumo.value|stringformat:'s' == value|stringformat:'s' %} selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% for error in ingredient_form.insumo.errors %}<small class="insumo-field-error" data-field-error>{{ error }}</small>{% endfor %}
+                            </div>
+                            <div class="insumo-field">
+                                <label for="{{ ingredient_form.cantidad_insumo.id_for_label }}">Cantidad por receta</label>
+                                {{ ingredient_form.cantidad_insumo.as_widget }}
+                                {% for error in ingredient_form.cantidad_insumo.errors %}<small class="insumo-field-error" data-field-error>{{ error }}</small>{% endfor %}
+                            </div>
+                            <div class="insumo-field">
+                                <label for="{{ ingredient_form.medida_insumo.id_for_label }}">Unidad de receta</label>
+                                <select name="{{ ingredient_form.medida_insumo.html_name }}"
+                                        id="{{ ingredient_form.medida_insumo.id_for_label }}"
+                                        class="insumo-input" required data-recipe-unit
+                                        data-incompatible-value="{% if ingredient_form.medida_insumo.errors %}{{ ingredient_form.medida_insumo.value|default:'' }}{% endif %}"
+                                        {% if ingredient_form.medida_insumo.errors %}aria-invalid="true"{% endif %}>
+                                    {% for value, label in ingredient_form.medida_insumo.field.choices %}
+                                        <option value="{{ value }}"{% if ingredient_form.medida_insumo.value == value %} selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="recipe-inventory-unit" data-inventory-unit></small>
+                                {% for error in ingredient_form.medida_insumo.errors %}<small class="insumo-field-error" data-field-error data-unit-error>{{ error }}</small>{% endfor %}
+                            </div>
+                            <button type="button" class="recipe-remove-ingredient" data-remove-recipe-ingredient
+                                    aria-label="Quitar insumo">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            <span class="recipe-delete-field" hidden>{{ ingredient_form.DELETE }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <template data-empty-recipe-ingredient>
+                    <div class="recipe-ingredient-row" data-recipe-ingredient-row>
+                        {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                        <div class="insumo-field">
+                            <label for="{{ formset.empty_form.insumo.id_for_label }}">Insumo vinculado</label>
+                            <select name="{{ formset.empty_form.insumo.html_name }}"
+                                    id="{{ formset.empty_form.insumo.id_for_label }}"
+                                    class="insumo-input" required data-recipe-insumo>
+                                {% for value, label in formset.empty_form.insumo.field.choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="insumo-field">
+                            <label for="{{ formset.empty_form.cantidad_insumo.id_for_label }}">Cantidad por receta</label>
+                            {{ formset.empty_form.cantidad_insumo }}
+                        </div>
+                        <div class="insumo-field">
+                            <label for="{{ formset.empty_form.medida_insumo.id_for_label }}">Unidad de receta</label>
+                            <select name="{{ formset.empty_form.medida_insumo.html_name }}"
+                                    id="{{ formset.empty_form.medida_insumo.id_for_label }}"
+                                    class="insumo-input" required data-recipe-unit>
+                                {% for value, label in formset.empty_form.medida_insumo.field.choices %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="recipe-inventory-unit" data-inventory-unit></small>
+                        </div>
+                        <button type="button" class="recipe-remove-ingredient" data-remove-recipe-ingredient
+                                aria-label="Quitar insumo">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <span class="recipe-delete-field" hidden>{{ formset.empty_form.DELETE }}</span>
+                    </div>
+                </template>
+            </section>
+            <div class="insumo-dialog-actions">
+                <button type="button" class="insumo-button insumo-button-filter" data-close-crud-dialog>Cancelar</button>
+                <button type="submit" class="insumo-button insumo-button-primary">
+                    <i class="fa-regular fa-floppy-disk"></i>
+                    {% if receta_editar %}Guardar cambios{% else %}Crear receta{% endif %}
+                </button>
+            </div>
+        </form>
+        </dialog>
+    {% endif %}
+
+    {% if puede_eliminar %}
+        <dialog class="insumo-category-dialog insumo-delete-dialog" id="crudDeleteDialog"
+                aria-labelledby="recipeDeleteTitle">
+        <form method="post" action="{% url 'lista_recetas' %}" id="crudDeleteForm" class="insumo-editor-form">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="eliminar_receta">
+            <input type="hidden" name="receta_id" data-recipe-delete-id-field>
+            <div class="insumo-category-dialog-header">
+                <span class="insumo-delete-icon"><i class="fa-regular fa-trash-can"></i></span>
+                <button type="button" class="insumo-dialog-close" data-close-crud-dialog aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <h2 id="recipeDeleteTitle">¿Eliminar receta?</h2>
+            <p>Vas a eliminar <strong data-crud-delete-name></strong> y sus ingredientes vinculados.</p>
+            <div class="insumo-dialog-actions">
+                <button type="button" class="insumo-button insumo-button-filter" data-close-crud-dialog>Cancelar</button>
+                <button type="submit" class="insumo-button insumo-button-danger">
+                    <i class="fa-regular fa-trash-can"></i> Sí, eliminar
+                </button>
+            </div>
+        </form>
+        </dialog>
+    {% endif %}
+    <form class="visually-hidden" aria-hidden="true">{% csrf_token %}</form>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'js/admin_crud.js' %}?v=8" defer></script>
+    <script src="{% static 'js/admin_status_filter.js' %}?v=1" defer></script>
+    <script src="{% static 'js/recetas.js' %}?v=3" defer></script>
+{% endblock %}

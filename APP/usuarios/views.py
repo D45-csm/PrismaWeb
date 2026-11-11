@@ -1049,6 +1049,7 @@ def profile_view(request):
             'compra_insumos.view_compra_insumo',
         ),
         'productos': usuario_puede_acceder(request.user, 'productos.view_producto'),
+        'recetas': usuario_puede_acceder(request.user, 'recetas.view_receta'),
         'insumos': usuario_puede_acceder(request.user, 'insumos.view_insumo'),
         'ventas': usuario_puede_acceder(request.user, 'ventas.view_venta'),
     }
