@@ -2,10 +2,11 @@
 {% load static %}
 
 {% block title %}Prisma - El arte del postre{% endblock %}
+{% block body_attrs %} class="customer-area"{% endblock %}
 
 {% block extra_head %}
     <!-- Preload de la imagen principal del Hero para renderizado inmediato sin retraso -->
-    <link rel="preload" as="image" href="{% static 'img/imagen_inicio.jpeg' %}" fetchpriority="high">
+    <link rel="preload" as="image" href="{% static 'img/frutas.png' %}" fetchpriority="high">
 {% endblock %}
 
 {% block content %}
@@ -14,14 +15,19 @@
     <section class="hero" aria-label="Descubre Prisma">
         <div class="hero-carousel" id="homeCarousel" role="group" aria-label="Promociones destacadas" aria-roledescription="carrusel">
             <article class="hero-slide is-active" aria-hidden="false">
-                <img class="hero-slide-image" src="{% static 'img/imagen_inicio.jpeg' %}" alt="" fetchpriority="high">
+                <img class="hero-slide-image" src="{% static 'img/frutas.png' %}" alt="Postres artesanales frescos de Prisma" fetchpriority="high" decoding="async">
                 <div class="hero-content container">
-                    <h1>Conoce nuestros cheesecakes</h1>
+                    <span class="hero-eyebrow">HECHO CON CARIÑO, SERVIDO CON ARTE</span>
+                    <h1>Un momento dulce, hecho en Prisma</h1>
+                    <p>Cheesecakes y postres artesanales para convertir cualquier día en una ocasión especial.</p>
+                    <a href="{% url 'productos' %}" class="hero-cta">
+                        Explorar catálogo <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
                 </div>
             </article>
 
             <article class="hero-slide" aria-hidden="true">
-                <img class="hero-slide-image" src="{% static 'img/frutas.png' %}" alt="" loading="lazy">
+                <img class="hero-slide-image" src="{% static 'img/manzana_verde.jpeg' %}" alt="Postres de manzana verde" loading="eager" decoding="async">
                 <div class="hero-content container">
                     <span class="hero-eyebrow">EDICIONES QUE DURAN LO QUE UNA TEMPORADA</span>
                     <h2>La temporada sabe mejor en Prisma</h2>
@@ -33,10 +39,10 @@
             </article>
 
             <article class="hero-slide" aria-hidden="true">
-                <img class="hero-slide-image" src="{% static 'img/fresa_chocolate.jpeg' %}" alt="" loading="lazy">
+                <img class="hero-slide-image" src="{% static 'img/imagen_registro.jpeg' %}" alt="Postres artesanales de frutos rojos" loading="eager" decoding="async">
                 <div class="hero-content container">
                     <span class="hero-eyebrow">LOS QUE SIEMPRE SE ANTOJAN</span>
-                    <h2>Favoritos que conquistan desde el primer bocado</h2>
+                    <h2>Un favorito para cada antojo</h2>
                     <p>Manzana verde, café con chocolate y fresa: encuentra ese postre que se siente hecho para ti.</p>
                     <a href="#favoritos" class="hero-cta">
                         Ver nuestros favoritos <i class="fas fa-arrow-right" aria-hidden="true"></i>
@@ -45,7 +51,7 @@
             </article>
 
             <article class="hero-slide" aria-hidden="true">
-                <img class="hero-slide-image" src="{% static 'img/calabaza.png' %}" alt="" loading="lazy">
+                <img class="hero-slide-image" src="{% static 'img/torta.png' %}" alt="Tortas artesanales para reservar" loading="eager" decoding="async">
                 <div class="hero-content container">
                     <span class="hero-eyebrow">TU MOMENTO PRISMA EMPIEZA AQUÍ</span>
                     <h2>Reserva tus postres favoritos</h2>
@@ -57,23 +63,12 @@
             </article>
 
             <div class="hero-carousel-controls" aria-label="Controles del carrusel">
-                <button class="hero-carousel-arrow" type="button" data-carousel-direction="-1" aria-label="Imagen anterior">
-                    <i class="fas fa-arrow-left" aria-hidden="true"></i>
-                </button>
                 <div class="hero-carousel-dots" role="group" aria-label="Elegir imagen">
                     <button class="hero-carousel-dot is-active" type="button" aria-label="Mostrar imagen 1" aria-pressed="true"></button>
                     <button class="hero-carousel-dot" type="button" aria-label="Mostrar imagen 2" aria-pressed="false"></button>
                     <button class="hero-carousel-dot" type="button" aria-label="Mostrar imagen 3" aria-pressed="false"></button>
                     <button class="hero-carousel-dot" type="button" aria-label="Mostrar imagen 4" aria-pressed="false"></button>
                 </div>
-                <button class="hero-carousel-arrow" type="button" data-carousel-direction="1" aria-label="Imagen siguiente">
-                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                </button>
-            </div>
-
-            <div class="hero-scroll-hint" aria-hidden="true">
-                <span>Desliza para descubrir</span>
-                <i class="fas fa-chevron-down"></i>
             </div>
         </div>
     </section>
@@ -94,7 +89,7 @@
                     <div class="featured-info">
                         <h3>Manzana Verde</h3>
                         <p>La frescura de la manzana verde en un postre que siempre provoca.</p>
-                        <span class="price">$25,000</span>
+                        <span class="price">$15,000</span>
                     </div>
                 </div>
                 <div class="featured-card featured-card--cafe">
@@ -104,17 +99,17 @@
                     <div class="featured-info">
                         <h3>Café Chocolate</h3>
                         <p>Notas de café y chocolate para un antojo profundo e irresistible.</p>
-                        <span class="price">$28,000</span>
+                        <span class="price">$15,000</span>
                     </div>
                 </div>
-                <div class="featured-card">
+                <div class="featured-card featured-card--berry">
                     <div class="featured-image">
                         <img src="{% static 'img/fresa_chocolate.jpeg' %}" alt="Fresa Chocolate" loading="lazy" decoding="async">
                     </div>
                     <div class="featured-info">
                         <h3>Fresa Chocolate</h3>
                         <p>Fresa y chocolate se encuentran en cada bocado lleno de sabor.</p>
-                        <span class="price">$32,000</span>
+                        <span class="price">$15,000</span>
                     </div>
                 </div>
             </div>
