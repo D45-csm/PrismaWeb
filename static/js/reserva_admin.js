@@ -1,4 +1,50 @@
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-confirm-reservation-cancel]').forEach(form => {
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+
+            if (!window.Swal) {
+                if (window.confirm(`¿Cancelar la reserva #${form.dataset.reservationId}?`)) {
+                    form.submit();
+                }
+                return;
+            }
+
+            const isPaid = form.dataset.isPaid === 'true';
+            const result = await window.Swal.fire({
+                title: '¿Cancelar esta reserva?',
+                html: `
+                    <div class="reservation-cancel-summary">
+                        <span class="reservation-cancel-icon" aria-hidden="true">
+                            <i class="fas fa-calendar-xmark"></i>
+                        </span>
+                        <p>Vas a cancelar la reserva <strong>#${form.dataset.reservationId}</strong>.</p>
+                        <p class="reservation-cancel-note">
+                            Se liberarán los insumos y el espacio reservados.
+                        </p>
+                        ${isPaid ? '<p class="reservation-cancel-warning"><i class="fas fa-circle-exclamation" aria-hidden="true"></i> El pago ya fue confirmado; recuerda gestionar la devolución.</p>' : ''}
+                    </div>
+                `,
+                showCancelButton: true,
+                reverseButtons: true,
+                focusCancel: true,
+                confirmButtonText: 'Sí, cancelar reserva',
+                cancelButtonText: 'Conservar reserva',
+                confirmButtonColor: '#a33c50',
+                cancelButtonColor: '#f1edf5',
+                customClass: {
+                    popup: 'reservation-cancel-popup',
+                    title: 'reservation-cancel-title',
+                    htmlContainer: 'reservation-cancel-content',
+                    confirmButton: 'reservation-cancel-confirm',
+                    cancelButton: 'reservation-cancel-dismiss',
+                },
+            });
+
+            if (result.isConfirmed) form.submit();
+        });
+    });
+
     const form = document.getElementById('reservaForm');
     const productList = document.getElementById('reservaProductosList');
     if (!form || !productList) return;
