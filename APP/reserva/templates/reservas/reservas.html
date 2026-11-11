@@ -1,13 +1,12 @@
 {% extends 'base_prisma.html' %}
-{% load static l10n %}
+{% load l10n %}
 
 {% block title %}Reservas - Prisma | El arte del postre{% endblock %}
-{% block body_attrs %} class="reservas-luxury-page"{% endblock %}
+{% block body_attrs %} class="customer-area reservas-luxury-page"{% endblock %}
 
 {% block content %}
     {% include 'partials/header_cliente.html' with active='reservas' titles=True %}
 
-    <!-- HERO SECTION (Inspirado en el diseño cálido y gourmet de Alma Martín / Prisma) -->
     <section class="luxury-reservas-hero">
         <div class="luxury-hero-decor decor-top-left"></div>
         <div class="luxury-hero-decor decor-bottom-right"></div>
@@ -15,74 +14,37 @@
             <span class="luxury-eyebrow">
                 <i class="fas fa-sparkles"></i> EXPERIENCIA ARTESANAL PRISMA
             </span>
-            <h1 class="luxury-hero-title">Reserva tu Mesa o Postre Favorito</h1>
+            <h1 class="luxury-hero-title">Reserva tu momento en Prisma</h1>
             <p class="luxury-hero-subtitle">
-                Asegura tu momento especial. Disfruta en nuestro acogedor local o programa tu postre artesanal para llevar con empaque de lujo.
+                Elige cómo disfrutar, cuéntanos cuándo vienes y nosotros nos encargamos del resto.
             </p>
-
         </div>
     </section>
 
-    <!-- MAIN RESERVAS CONTAINER -->
     <main class="luxury-reservas-main">
         <div class="container luxury-reservas-grid">
-
-            <!-- SIDEBAR DE INFORMACIÓN & BENEFICIOS -->
             <aside class="luxury-info-panel">
                 <div class="luxury-brand-card">
                     <div class="luxury-brand-badge">
                         <i class="fas fa-crown"></i> Calidad Artesanal
                     </div>
-                    <h2>Tu experiencia a la medida</h2>
+                    <h2>Una reserva sencilla</h2>
                     <p class="luxury-brand-desc">
-                        Cada postre en Prisma se prepara con ingredientes seleccionados de origen natural. Reserva con anticipación para asegurar frescura total.
+                        Selecciona mesa o pedido para llevar. Prepararemos tus postres frescos para la fecha que elijas.
                     </p>
-
-                    <div class="luxury-steps-list">
-                        <div class="luxury-step-item">
-                            <div class="step-num step-gold">01</div>
-                            <div class="step-text">
-                                <h4>Elige tu modalidad</h4>
-                                <p>Mesa en el local (sin registro previo) o para llevar (con inicio de sesión y pago).</p>
-                            </div>
-                        </div>
-                        <div class="luxury-step-item">
-                            <div class="step-num step-rose">02</div>
-                            <div class="step-text">
-                                <h4>Selecciona tus postres</h4>
-                                <p>Escoge hasta 5 delicias de nuestra carta artesanal fresca.</p>
-                            </div>
-                        </div>
-                        <div class="luxury-step-item">
-                            <div class="step-num step-cream">03</div>
-                            <div class="step-text">
-                                <h4>Confirmación inmediata</h4>
-                                <p>Recibe tu comprobante digital y coordinamos todos los detalles.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="luxury-lookup-card">
-                        <i class="fas fa-receipt luxury-lookup-ico"></i>
-                        <div>
-                            <h4>¿Ya tienes una reserva?</h4>
-                            <p>Consulta el estado, realiza tu pago pendiente o cancela tu reserva en cualquier momento.</p>
-                            <a href="{% url 'consultar_reserva' %}" class="luxury-link-btn">
-                                <i class="fas fa-search"></i> Consultar mi reserva
-                            </a>
-                        </div>
-                    </div>
+                    <a href="{% url 'consultar_reserva' %}" class="luxury-link-btn">
+                        <i class="fas fa-receipt"></i> ¿Ya tienes una reserva? Consúltala aquí
+                    </a>
                 </div>
             </aside>
 
-            <!-- FORMULARIO DE RESERVA INTERACTIVO -->
             <section class="luxury-form-section">
                 <div class="luxury-form-card shadow-luxury">
 
                     <div class="form-card-header">
-                        <span class="form-pretitle">Crear reserva · Agenda en 3 pasos</span>
-                        <h2 class="form-title">Completa los Datos de tu Reserva</h2>
-                        <p class="form-subtitle">Los campos marcados con (*) son necesarios para preparar tu visita o entrega.</p>
+                        <span class="form-pretitle">Tu próxima experiencia dulce</span>
+                        <h2 class="form-title">Planea tu visita</h2>
+                        <p class="form-subtitle">Solo necesitamos unos datos para dejar todo listo.</p>
                     </div>
 
                     {% include 'partials/messages.html' %}
@@ -192,37 +154,62 @@
                                 </div>
                             </div>
 
-                            <div class="form-grid-2">
-                                <div class="form-group-luxury">
-                                    <label for="fecha">Fecha de Reserva o Recogida *</label>
-                                    <div class="input-luxury-wrap">
-                                        <i class="far fa-calendar-alt input-ico"></i>
-                                        <input type="date" id="fecha" name="fecha" required>
-                                    </div>
-                                </div>
-                                <div class="form-group-luxury">
-                                    <label for="hora">Hora *</label>
-                                    <div class="input-luxury-wrap">
-                                        <i class="far fa-clock input-ico"></i>
-                                        <input type="time" id="hora" name="hora" min="14:00" max="18:30"
-                                               aria-describedby="horarioReservaAyuda" required>
-                                    </div>
-                                    <small class="form-hint-text" id="horarioReservaAyuda">
-                                        Horario disponible: de 2:00 PM a 6:30 PM.
-                                    </small>
+                            <div class="form-group-luxury reservation-date-field">
+                                <label for="fecha">Fecha de Reserva o Recogida *</label>
+                                <div class="input-luxury-wrap">
+                                    <i class="far fa-calendar-alt input-ico"></i>
+                                    <input type="date" id="fecha" name="fecha" required>
                                 </div>
                             </div>
 
-                            <!-- Quick Time Chips -->
-                            <div class="time-quick-pills">
-                                <span class="quick-pills-label"><i class="fas fa-bolt"></i> Horarios frecuentes:</span>
-                                <button type="button" class="time-pill" data-time="14:00">02:00 PM</button>
-                                <button type="button" class="time-pill" data-time="15:00">03:00 PM</button>
-                                <button type="button" class="time-pill" data-time="16:00">04:00 PM</button>
-                                <button type="button" class="time-pill" data-time="17:00">05:00 PM</button>
-                                <button type="button" class="time-pill" data-time="18:00">06:00 PM</button>
-                                <button type="button" class="time-pill" data-time="18:30">06:30 PM</button>
-                            </div>
+                            <fieldset class="reservation-time-fieldset">
+                                <legend>Elige un horario *</legend>
+                                <p class="form-hint-text" id="horarioReservaAyuda">
+                                    Estamos disponibles de 2:00 p. m. a 6:30 p. m.
+                                </p>
+                                <div class="reservation-time-list" role="group" aria-describedby="horarioReservaAyuda">
+                                    <label class="reservation-time-option" for="hora_1400">
+                                        <input type="radio" id="hora_1400" name="hora" value="14:00" required>
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>2:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1430">
+                                        <input type="radio" id="hora_1430" name="hora" value="14:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>2:30 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1500">
+                                        <input type="radio" id="hora_1500" name="hora" value="15:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>3:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1530">
+                                        <input type="radio" id="hora_1530" name="hora" value="15:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>3:30 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1600">
+                                        <input type="radio" id="hora_1600" name="hora" value="16:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>4:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1630">
+                                        <input type="radio" id="hora_1630" name="hora" value="16:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>4:30 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1700">
+                                        <input type="radio" id="hora_1700" name="hora" value="17:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>5:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1730">
+                                        <input type="radio" id="hora_1730" name="hora" value="17:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>5:30 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1800">
+                                        <input type="radio" id="hora_1800" name="hora" value="18:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>6:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1830">
+                                        <input type="radio" id="hora_1830" name="hora" value="18:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>6:30 p. m.</span>
+                                    </label>
+                                </div>
+                            </fieldset>
 
                             <!-- Selector de Número de Personas (Solo para Mesa) -->
                             <div class="form-group-luxury" id="groupNumeroPersonas">
@@ -247,7 +234,6 @@
                             </div>
                         </div>
 
-                        <!-- PASO 3: CATÁLOGO VISUAL DE POSTRES Y PRODUCTOS (Estilo Catálogo Imagen 12) -->
                         <div class="form-section-block">
                             <div class="products-header-flex">
                                 <div>
@@ -259,36 +245,16 @@
                                 <span class="badge-cap-luxury">Hasta 5 productos</span>
                             </div>
 
-                            <!-- PRODUCTOS VISUAL CARDS GRID (Interactivo como Imagen 12) -->
                             {% if productos %}
-                                <div class="desserts-visual-grid" id="dessertsVisualGrid">
-                                    {% for producto in productos %}
-                                        <div class="dessert-card-mini" data-product-id="{{ producto.pk }}"
-                                             data-product-name="{{ producto.nombre }}"
-                                             data-product-price="{{ producto.precio|unlocalize }}">
-                                            <div class="dessert-card-media">
-                                                {% if producto.imagen_principal %}
-                                                    <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" loading="lazy">
-                                                {% else %}
-                                                    <img src="{% static 'img/cafe_chocolate.jpeg' %}" alt="{{ producto.nombre }}">
-                                                {% endif %}
-                                                <span class="dessert-badge-tag">
-                                                    {{ producto.categoria.nombre|default:"POSTRE ARTESANAL" }}
-                                                </span>
-                                            </div>
-                                            <div class="dessert-card-body">
-                                                <h4 class="dessert-title">{{ producto.nombre }}</h4>
-                                                <span class="dessert-price">${{ producto.precio|floatformat:0 }}</span>
-                                                <button type="button" class="btn-add-dessert" data-action="quick-add">
-                                                    <i class="fas fa-plus"></i> Agregar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
+                                <a href="{% url 'productos' %}#productosGrid" class="choose-dessert-link">
+                                    <i class="fas fa-cookie-bite" aria-hidden="true"></i>
+                                    <span>Elige tu postre</span>
+                                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                </a>
+                            {% else %}
+                                <p class="reserva-productos-empty">No hay postres disponibles en este momento.</p>
                             {% endif %}
 
-                            <!-- LISTA DE PRODUCTOS SELECCIONADOS (SLOTS SINCRONIZADOS) -->
                             <div class="selected-products-panel">
                                 <h4 class="selected-panel-title">
                                     <i class="fas fa-receipt"></i> Postres en tu reserva
