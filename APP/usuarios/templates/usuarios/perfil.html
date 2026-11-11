@@ -219,6 +219,18 @@
                 <i class="fa-solid fa-arrow-right action-arrow"></i>
             </a>
 
+            <a {% if permisos_modulos.recetas %}href="{% url 'lista_recetas' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+               class="quick-action{% if not permisos_modulos.recetas %} dashboard-module-blocked{% endif %}">
+                <div class="quick-icon purple-icon">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+                <div class="quick-info">
+                    <h3>Gestión de recetas</h3>
+                    <p>{% if permisos_modulos.recetas %}Administra recetas y realiza preparaciones descontando sus insumos.{% else %}Tu rol no permite gestionar recetas.{% endif %}</p>
+                </div>
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
             <a {% if permisos_modulos.insumos %}href="{% url 'gestion_insumos' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
                class="quick-action{% if not permisos_modulos.insumos %} dashboard-module-blocked{% endif %}">
                 <div class="quick-icon blue-icon">
