@@ -1,0 +1,107 @@
+{% extends 'base_prisma.html' %}
+
+{% block title %}Mis reservas | Prisma{% endblock %}
+{% block body_attrs %} class="reservation-history-page"{% endblock %}
+
+{% block content %}
+    {% include 'partials/header_cliente.html' with active='mis-reservas' titles=True %}
+
+    <section class="reservation-subhero reservation-subhero--compact">
+        <div class="container reservation-subhero-content reservation-history-hero">
+            <span class="reservation-history-hero-icon" aria-hidden="true">
+                <i class="fas fa-calendar-check"></i>
+            </span>
+            <div>
+                <span>Tu historial personal</span>
+                <h1>Mis reservas</h1>
+                <p>Guarda y consulta tus reservas cuando quieras. Desde cada detalle puedes modificar o cancelar sin escribir por WhatsApp.</p>
+            </div>
+        </div>
+    </section>
+
+    <main class="reservation-page-content">
+        <div class="container reservation-history-content">
+            {% include 'partials/messages.html' %}
+
+            <div class="reservation-history-heading">
+                <div>
+                    <span class="reservation-kicker">RESPALDO DE TU CUENTA</span>
+                    <h2>Tus momentos Prisma</h2>
+                </div>
+                <span class="reservation-history-count">
+                    {{ reservas|length }} reserva{{ reservas|length|pluralize:"s" }}
+                </span>
+            </div>
+
+            {% if reservas %}
+                <div class="reservation-history-list">
+                    {% for reserva in reservas %}
+                        <article class="reservation-history-card">
+                            <div class="reservation-history-card-top">
+                                <div class="reservation-history-identity">
+                                    <span class="reservation-history-id">Reserva #{{ reserva.pk }}</span>
+                                    <span class="reservation-status reservation-status--{{ reserva.estado|slugify }}">
+                                        {{ reserva.estado }}
+                                    </span>
+                                </div>
+                                <span class="reservation-history-created">
+                                    Creada el {{ reserva.fecha_realizacion|date:"d/m/Y" }}
+                                </span>
+                            </div>
+
+                            <div class="reservation-history-facts">
+                                <span><i class="far fa-calendar" aria-hidden="true"></i> {{ reserva.fecha_reserva|date:"d/m/Y" }}</span>
+                                <span><i class="far fa-clock" aria-hidden="true"></i> {{ reserva.hora|time:"H:i"|default:"Hora por acordar" }}</span>
+                                <span>
+                                    <i class="fas {% if reserva.tipo_reserva == 'Mesa' %}fa-chair{% else %}fa-bag-shopping{% endif %}" aria-hidden="true"></i>
+                                    {{ reserva.tipo_reserva }}
+                                </span>
+                                {% if reserva.tipo_reserva == 'Mesa' and reserva.numero_personas %}
+                                    <span><i class="fas fa-users" aria-hidden="true"></i> {{ reserva.numero_personas }} personas</span>
+                                {% endif %}
+                            </div>
+
+                            <ul class="reservation-history-products">
+                                {% for linea in reserva.lineas.all %}
+                                    <li>{{ linea.cantidad }}× {{ linea.nombre_producto }}</li>
+                                {% empty %}
+                                    <li>Sin productos asociados</li>
+                                {% endfor %}
+                            </ul>
+
+                            <div class="reservation-history-card-bottom">
+                                <span class="reservation-history-total">
+                                    Total <strong>{{ reserva.total|floatformat:0 }} COP</strong>
+                                </span>
+                                {% if reserva.tipo_reserva == 'Mesa' %}
+                                    <span class="reservation-history-payment">Sin prepago</span>
+                                {% elif reserva.pago_confirmado %}
+                                    <span class="reservation-history-payment is-paid"><i class="fas fa-check-circle" aria-hidden="true"></i> Pago verificado</span>
+                                {% else %}
+                                    <span class="reservation-history-payment is-pending"><i class="fas fa-clock" aria-hidden="true"></i> Pago pendiente</span>
+                                {% endif %}
+                                <a class="reservation-history-open" href="{% url 'reserva_cliente' reserva.pk %}">
+                                    Ver y gestionar <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <section class="reservation-history-empty">
+                    <span class="reservation-history-empty-icon"><i class="fas fa-calendar-plus" aria-hidden="true"></i></span>
+                    <h3>Aún no tienes reservas guardadas</h3>
+                    <p>Las reservas realizadas con tu sesión iniciada aparecerán aquí. Si reservaste como invitado, puedes recuperarla con el número y teléfono registrados.</p>
+                    <a class="luxury-btn-gold" href="{% url 'reservas' %}">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Hacer una reserva
+                    </a>
+                    <a class="reservation-back-link" href="{% url 'consultar_reserva' %}">
+                        Recuperar una reserva de invitado
+                    </a>
+                </section>
+            {% endif %}
+        </div>
+    </main>
+
+    {% include 'partials/footer_cliente.html' %}
+{% endblock %}
