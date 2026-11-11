@@ -59,7 +59,7 @@
           <div class="header-actions d-flex align-items-center gap-3">
 
             {% if user.is_authenticated and not user.is_staff and not user.is_superuser %}
-              <span class="customer-session-label">Hola, {{ user.username }}</span>
+              <span class="customer-session-label">Hola, {{ user.get_full_name|default:user.username }}</span>
               <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
                 <button type="submit" class="customer-logout-button">Cerrar sesión</button>
@@ -125,7 +125,7 @@
             <div class="featured-info p-3">
               <h3>Manzana Verde</h3>
               <p>Delicioso postre con sabor a manzana verde</p>
-              <span class="price">$25.000</span>
+              <span class="price">$15.000</span>
             </div>
 
           </div>
@@ -142,7 +142,7 @@
             <div class="featured-info p-3">
               <h3>Café Chocolate</h3>
               <p>La combinación perfecta de café y chocolate</p>
-              <span class="price">$28.000</span>
+              <span class="price">$15.000</span>
             </div>
 
           </div>
@@ -159,7 +159,7 @@
             <div class="featured-info p-3">
               <h3>Fresa Chocolate</h3>
               <p>Fresa fresca cubierta de chocolate suave</p>
-              <span class="price">$32.000</span>
+              <span class="price">$15.000</span>
             </div>
 
           </div>
