@@ -89,16 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const startAutoplay = () => {
             stopAutoplay();
             if (!isPaused && !prefersReducedMotion && !document.hidden && slides.length > 1) {
-                timer = window.setInterval(() => showSlide(currentSlide + 1), 6500);
+                timer = window.setInterval(() => showSlide(currentSlide + 1), 4500);
             }
         };
 
-        carousel.querySelectorAll('[data-carousel-direction]').forEach((button) => {
-            button.addEventListener('click', () => {
-                showSlide(currentSlide + Number(button.dataset.carouselDirection));
-                startAutoplay();
-            });
-        });
         dots.forEach((dot, index) => {
             dot.addEventListener('click', () => {
                 showSlide(index);
@@ -123,7 +117,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 startAutoplay();
             }
         });
-        document.addEventListener('visibilitychange', startAutoplay);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopAutoplay();
+                return;
+            }
+            isPaused = false;
+            startAutoplay();
+        });
+        window.addEventListener('pagehide', () => {
+            isPaused = false;
+            stopAutoplay();
+        });
+        window.addEventListener('pageshow', () => {
+            isPaused = false;
+            startAutoplay();
+        });
         startAutoplay();
     }
 
@@ -307,12 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <button type="button" class="drawer-close" aria-label="Cerrar menú"><i class="fas fa-xmark"></i></button>`;
         nav.prepend(head);
 
-        const iconos = { [URLS.inicio]: 'fa-house', [URLS.productos]: 'fa-cake-candles', [URLS.reservas]: 'fa-calendar-check', [URLS.contactos]: 'fa-comments', [URLS.temporada]: 'fa-apple-whole' };
-        nav.querySelectorAll('ul a').forEach(a => {
-            const ic = iconos[a.getAttribute('href')] || 'fa-star';
-            a.insertAdjacentHTML('afterbegin', `<span class="nav-ico"><i class="fas ${ic}"></i></span>`);
-        });
-
         const textoWa = encodeURIComponent('Hola Prisma 👋 Quisiera información para hacer una reserva.');
         const foot = document.createElement('div');
         foot.className = 'drawer-foot';
@@ -481,6 +484,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderProductos = (lista) => {
         const grid = document.getElementById('productosGrid');
         if (!grid) return;
+        if (!lista.length) {
+            grid.innerHTML = '<p class="product-search-empty">No encontramos postres con esa búsqueda. Prueba con otro nombre o categoría.</p>';
+            return;
+        }
         grid.innerHTML = lista.map(p => `
             <div class="product-card">
                 <img src="${imgUrl(p.img)}" alt="${p.nombre}" loading="lazy" decoding="async">
@@ -621,11 +628,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // 6. FILTROS DE PRODUCTOS
     // ============================================
+    let categoriaActiva = 'todos';
+    let textoBusqueda = '';
+    const normalizarBusqueda = (texto) => texto
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('es-CO')
+        .trim();
+    const actualizarProductosFiltrados = () => {
+        const termino = normalizarBusqueda(textoBusqueda);
+        const filtrados = productos.filter(producto => {
+            const coincideCategoria = categoriaActiva === 'todos' || producto.categoria === categoriaActiva;
+            const contenido = normalizarBusqueda(`${producto.nombre} ${producto.categoria} ${producto.desc || ''}`);
+            return coincideCategoria && (!termino || contenido.includes(termino));
+        });
+        renderProductos(filtrados);
+    };
     const filtrarProductos = (categoria) => {
+        categoriaActiva = categoria;
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         const btnActivo = document.querySelector(`.filter-btn[data-categoria="${categoria}"]`);
         if (btnActivo) btnActivo.classList.add('active');
-        renderProductos(categoria === 'todos' ? productos : productos.filter(p => p.categoria === categoria));
+        actualizarProductosFiltrados();
     };
 
     // ============================================
@@ -660,19 +684,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicializar componentes según la página
     if (document.getElementById('productosGrid')) {
-        renderProductos(productos);
         const sInput = document.getElementById('searchInput');
         if (sInput) {
-            let searchDebounceTimer = null;
+            textoBusqueda = sInput.value;
             sInput.addEventListener('input', (e) => {
-                clearTimeout(searchDebounceTimer);
-                searchDebounceTimer = setTimeout(() => {
-                    const q = e.target.value.toLowerCase().trim();
-                    const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
-                    renderProductos(filtrados);
-                }, 50);
+                textoBusqueda = e.target.value;
+                actualizarProductosFiltrados();
             });
         }
+        actualizarProductosFiltrados();
     }
 
     if (document.getElementById('temporadaGrid')) renderTemporada();
@@ -721,6 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (reservaForm) {
         const reservaProductosList = document.getElementById('reservaProductosList');
         const reservaProductoCards = [...reservaForm.querySelectorAll('[data-reserva-producto-slot]')];
+        const reservationTimeInputs = [...reservaForm.querySelectorAll('input[name="hora"]')];
         const addReservaProducto = document.getElementById('addReservaProducto');
         const reservaProductosHint = document.getElementById('reservaProductosHint');
         const modalidadCardMesa = document.getElementById('modalityCardMesa');
@@ -768,16 +789,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     : 'Elige al menos un postre para continuar.';
             }
 
-            // Sincronizar clases en las tarjetas visuales
-            const idsSeleccionados = new Set(seleccionados.map(c => c.querySelector('select').value));
-            document.querySelectorAll('.dessert-card-mini').forEach(mini => {
-                const id = mini.dataset.productId;
-                if (idsSeleccionados.has(id)) {
-                    mini.classList.add('is-selected');
-                } else {
-                    mini.classList.remove('is-selected');
-                }
-            });
         };
 
         if (reservaProductosList && reservaProductoCards.length) {
@@ -832,48 +843,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (target && Number(target.value) < 50) {
                     target.value = Number(target.value) + 1;
                     actualizarProductosReserva();
-                }
-            });
-        });
-
-        // Quick Add desde tarjetas visuales de postres
-        document.querySelectorAll('.dessert-card-mini [data-action="quick-add"]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const mini = btn.closest('.dessert-card-mini');
-                if (!mini) return;
-                const prodId = mini.dataset.productId;
-
-                // Buscar si ya está en algún slot visible
-                const slotExistente = reservaProductoCards.find(c => c.classList.contains('is-visible') && c.querySelector('select')?.value === prodId);
-                if (slotExistente) {
-                    const cantInput = slotExistente.querySelector('input[type="number"]');
-                    if (cantInput) cantInput.value = Math.min(50, (Number(cantInput.value) || 1) + 1);
-                    actualizarProductosReserva();
-                    slotExistente.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    return;
-                }
-
-                // Buscar el primer slot libre
-                let slotLibre = reservaProductoCards.find(c => c.classList.contains('is-visible') && !c.querySelector('select')?.value);
-                if (!slotLibre) {
-                    slotLibre = reservaProductoCards.find(c => !c.classList.contains('is-visible'));
-                    if (slotLibre) slotLibre.classList.add('is-visible');
-                }
-
-                if (slotLibre) {
-                    const select = slotLibre.querySelector('select');
-                    if (select) select.value = prodId;
-                    actualizarProductosReserva();
-                    slotLibre.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                } else {
-                    if (window.Swal) {
-                        Swal.fire({
-                            icon: 'info',
-                            title: 'Límite de postres',
-                            text: 'Puedes reservar un máximo de 5 variedades diferentes por pedido. Si deseas más unidades, ajusta las cantidades.',
-                            confirmButtonColor: '#df9f28'
-                        });
-                    }
                 }
             });
         });
@@ -945,12 +914,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Time Quick Pills
-        document.querySelectorAll('.time-pill').forEach(pill => {
-            pill.addEventListener('click', () => {
-                const horaInput = document.getElementById('hora');
-                if (horaInput) horaInput.value = pill.dataset.time;
+        const actualizarHorarioSeleccionado = () => {
+            reservationTimeInputs.forEach(input => {
+                input.closest('.reservation-time-option')?.classList.toggle('is-selected', input.checked);
             });
+        };
+        reservationTimeInputs.forEach(input => {
+            input.addEventListener('change', actualizarHorarioSeleccionado);
         });
 
         // Chips para indicaciones
@@ -973,7 +943,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (borrador.nombre && document.getElementById('nombre')) document.getElementById('nombre').value = borrador.nombre;
                 if (borrador.telefono && document.getElementById('telefono')) document.getElementById('telefono').value = borrador.telefono;
                 if (borrador.fecha && document.getElementById('fecha')) document.getElementById('fecha').value = borrador.fecha;
-                if (borrador.hora && document.getElementById('hora')) document.getElementById('hora').value = borrador.hora;
+                if (borrador.hora) {
+                    const horaBorrador = reservationTimeInputs.find(input => input.value === borrador.hora);
+                    if (horaBorrador) {
+                        horaBorrador.checked = true;
+                        actualizarHorarioSeleccionado();
+                    }
+                }
                 if (borrador.detalles && document.getElementById('detalles')) document.getElementById('detalles').value = borrador.detalles;
                 if (borrador.tipo_reserva) actualizarModalidad(borrador.tipo_reserva);
                 sessionStorage.removeItem('reserva_draft');
@@ -1111,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         nombre: document.getElementById('nombre')?.value || '',
                         telefono: document.getElementById('telefono')?.value || '',
                         fecha: document.getElementById('fecha')?.value || '',
-                        hora: document.getElementById('hora')?.value || '',
+                        hora: reservaForm.querySelector('input[name="hora"]:checked')?.value || '',
                         detalles: document.getElementById('detalles')?.value || '',
                         tipo_reserva: 'Para llevar'
                     };
