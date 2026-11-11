@@ -1135,6 +1135,7 @@
 .reservation-admin-metric.is-payment strong { color: #a46c1d; }
 .reservation-admin-metric.is-confirmed strong { color: #25804f; }
 .reservation-admin-metric.is-total strong { color: var(--admin-primary); font-size: 1.2rem; }
+.reservation-admin-hours-note { display: block; margin-top: 5px; color: var(--admin-muted); font-size: .76rem; }
 .reservation-admin-payment { display: inline-block; font-size: .82rem; font-weight: 800; white-space: nowrap; }
 .reservation-admin-payment.is-not-required { color: var(--admin-muted); }
 .reservation-admin-payment.is-paid { color: #25804f; }
@@ -1143,3 +1144,419 @@
 #reservaProductosList.is-interactive .reservation-admin-product:not(.is-visible) { display: none; }
 .reservation-admin-total { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 11px; background: #faf4f9; color: var(--admin-muted); }
 .reservation-admin-total strong { color: var(--admin-primary); }
+
+.reservation-admin-page {
+    max-width: 1720px;
+    margin: 0 auto;
+    padding-right: clamp(14px, 2.8vw, 40px);
+    padding-left: clamp(14px, 2.8vw, 40px);
+}
+
+.reservation-admin-heading {
+    padding: clamp(20px, 3vw, 34px);
+    border: 1px solid #e8def2;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 92% 8%, rgba(196, 163, 220, .2), transparent 34%),
+        linear-gradient(125deg, #fff 0%, #fbf8ff 60%, #f8f2fb 100%);
+    box-shadow: var(--admin-shadow);
+}
+
+.reservation-admin-heading h1 {
+    color: var(--admin-text);
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -.035em;
+}
+
+.reservation-admin-eyebrow {
+    color: var(--admin-primary-dark) !important;
+    font-size: .72rem;
+    font-weight: 800 !important;
+    letter-spacing: .1em;
+}
+
+.reservation-admin-eyebrow i {
+    margin-right: 5px;
+    color: #b3804c;
+}
+
+.reservation-admin-heading .btn,
+.reservation-admin-page .btn {
+    min-height: 40px;
+}
+
+.reservation-admin-page .card {
+    overflow: hidden;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 18px;
+    box-shadow: var(--admin-shadow) !important;
+}
+
+.reservation-admin-page .card-header {
+    background: linear-gradient(120deg, #fff, #fcf9ff) !important;
+}
+
+.reservation-admin-page .form-control,
+.reservation-admin-page .form-select {
+    min-height: 42px;
+    border-color: #e5deed;
+    border-radius: 10px;
+}
+
+.reservation-admin-page .form-control:focus,
+.reservation-admin-page .form-select:focus {
+    border-color: #aa8bc7;
+    box-shadow: 0 0 0 3px rgba(118, 82, 163, .12);
+}
+
+.reservation-admin-history .card-body {
+    padding: clamp(14px, 2vw, 24px);
+}
+
+.reservation-admin-history .table-responsive {
+    border: 1px solid var(--admin-border);
+    border-radius: 14px;
+}
+
+.reservation-admin-table {
+    min-width: 1240px;
+    margin: 0;
+}
+
+.reservation-admin-table thead th {
+    padding: 13px 12px;
+    border-bottom: 1px solid var(--admin-border);
+    color: var(--admin-muted);
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.reservation-admin-table tbody td {
+    padding: 13px 12px;
+    border-color: #f0edf4;
+    color: var(--admin-text);
+    font-size: .84rem;
+    vertical-align: middle;
+}
+
+.reservation-admin-table tbody tr {
+    transition: background-color .18s ease;
+}
+
+.reservation-admin-table tbody tr:hover {
+    background-color: #fcfaff;
+}
+
+.reservation-admin-table td:first-child {
+    min-width: 220px;
+}
+
+.reservation-admin-table td:nth-child(9) {
+    min-width: 112px;
+}
+
+.reservation-admin-table td form {
+    min-width: 0;
+}
+
+.reservation-admin-table .btn {
+    font-size: .78rem;
+}
+
+@media (max-width: 767.98px) {
+    .reservation-admin-page {
+        padding-top: 16px !important;
+    }
+
+    .reservation-admin-heading {
+        align-items: stretch !important;
+        padding: 20px 17px;
+        border-radius: 17px;
+    }
+
+    .reservation-admin-heading > .d-flex {
+        justify-content: stretch;
+    }
+
+    .reservation-admin-heading > .d-flex .btn {
+        flex: 1 1 100%;
+        justify-content: center;
+    }
+
+    .reservation-admin-page .alert {
+        align-items: stretch !important;
+        padding: 16px;
+    }
+
+    .reservation-admin-page .alert > .d-flex {
+        align-items: flex-start !important;
+    }
+
+    .reservation-admin-page .alert > a {
+        width: 100%;
+    }
+
+    .reservation-admin-metrics .col-sm-6 {
+        width: 50%;
+    }
+
+    .reservation-admin-metric {
+        min-height: 104px;
+        padding: 14px;
+    }
+
+    .reservation-admin-metric strong {
+        font-size: 1.24rem;
+        overflow-wrap: anywhere;
+    }
+
+    .reservation-admin-history > .card-header {
+        align-items: flex-start !important;
+        flex-direction: column;
+    }
+
+    .reservation-admin-history .card-body {
+        padding: 12px;
+    }
+
+    .reservation-admin-history form.row {
+        padding: 13px !important;
+    }
+
+    .reservation-admin-table {
+        min-width: 0;
+        border: 0 !important;
+    }
+
+    .reservation-admin-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    .reservation-admin-table,
+    .reservation-admin-table tbody,
+    .reservation-admin-table tbody tr,
+    .reservation-admin-table tbody td {
+        display: block;
+        width: 100%;
+    }
+
+    .reservation-admin-table tbody {
+        display: grid;
+        gap: 12px;
+        padding: 12px;
+        background: #f8f6fa;
+    }
+
+    .reservation-admin-table tbody tr:not(.reservation-admin-empty-row) {
+        overflow: hidden;
+        border: 1px solid #e9e3ef;
+        border-radius: 15px;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(54, 35, 80, .05);
+    }
+
+    .reservation-admin-table tbody td {
+        position: relative;
+        display: block;
+        min-width: 0 !important;
+        padding: 10px 12px 10px 122px;
+        border-bottom: 1px solid #f1eef4;
+        font-size: .84rem;
+        overflow-wrap: anywhere;
+    }
+
+    .reservation-admin-table tbody td::before {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 98px;
+        color: var(--admin-muted);
+        content: attr(data-label);
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .035em;
+        line-height: 1.4;
+        text-transform: uppercase;
+    }
+
+    .reservation-admin-table tbody td > * {
+        min-width: 0;
+    }
+
+    .reservation-admin-table tbody td form {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .reservation-admin-table tbody td form .form-select {
+        flex: 1 1 120px;
+        width: auto;
+    }
+
+    .reservation-admin-table tbody td:last-child {
+        border-bottom: 0;
+    }
+
+    .reservation-admin-table tbody td[colspan] {
+        display: block;
+        padding: 26px 14px;
+        border: 0;
+        border-radius: 13px;
+        background: #fff;
+        text-align: center;
+    }
+
+    .reservation-admin-table tbody td[colspan]::before {
+        content: none;
+    }
+}
+
+@media (max-width: 420px) {
+    .reservation-admin-metrics .col-sm-6 {
+        width: 100%;
+    }
+
+    .reservation-admin-metric {
+        min-height: auto;
+    }
+
+    .reservation-admin-table tbody {
+        padding: 8px;
+    }
+
+    .reservation-admin-table tbody td {
+        padding: 10px 10px 10px 102px;
+    }
+
+    .reservation-admin-table tbody td::before {
+        top: 11px;
+        left: 10px;
+        width: 84px;
+        font-size: .64rem;
+    }
+}
+
+.reservation-cancel-popup {
+    width: min(440px, calc(100vw - 28px)) !important;
+    padding: 28px !important;
+    border: 1px solid #eee6f2 !important;
+    border-radius: 22px !important;
+    box-shadow: 0 24px 70px rgba(37, 24, 49, .24) !important;
+}
+
+.reservation-cancel-title {
+    margin: 4px 0 0 !important;
+    color: var(--admin-text) !important;
+    font-size: 1.4rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -.025em;
+}
+
+.reservation-cancel-content {
+    margin: 0 !important;
+    color: var(--admin-muted) !important;
+}
+
+.reservation-cancel-summary {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 4px 2px 2px;
+    text-align: center;
+}
+
+.reservation-cancel-icon {
+    display: grid;
+    width: 58px;
+    height: 58px;
+    place-items: center;
+    border: 1px solid #f1d8dd;
+    border-radius: 19px;
+    background: linear-gradient(145deg, #fff5f5, #fff0ed);
+    color: #a33c50;
+    font-size: 1.35rem;
+}
+
+.reservation-cancel-summary p {
+    margin: 0;
+    line-height: 1.55;
+}
+
+.reservation-cancel-summary p strong {
+    color: var(--admin-text);
+}
+
+.reservation-cancel-note,
+.reservation-cancel-warning {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid #eee8f2;
+    border-radius: 12px;
+    background: #faf8fc;
+    color: #64596e;
+    font-size: .86rem;
+}
+
+.reservation-cancel-warning {
+    border-color: #f0dfc7;
+    background: #fff9ef;
+    color: #805a26;
+}
+
+.reservation-cancel-warning i {
+    margin-right: 4px;
+}
+
+.reservation-cancel-popup .swal2-actions {
+    width: 100%;
+    gap: 9px;
+    margin: 20px 0 0 !important;
+}
+
+.reservation-cancel-popup .swal2-actions button {
+    min-height: 44px;
+    margin: 0 !important;
+    padding: 0 15px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    font-size: .86rem;
+    font-weight: 700;
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.reservation-cancel-popup .swal2-actions button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 13px rgba(37, 24, 49, .12);
+}
+
+.reservation-cancel-popup .reservation-cancel-dismiss {
+    border-color: #e8e1ee !important;
+    color: #554b60 !important;
+}
+
+.reservation-cancel-popup .reservation-cancel-confirm {
+    color: #fff !important;
+}
+
+@media (max-width: 420px) {
+    .reservation-cancel-popup {
+        padding: 23px 18px !important;
+    }
+
+    .reservation-cancel-popup .swal2-actions {
+        flex-direction: column-reverse;
+    }
+
+    .reservation-cancel-popup .swal2-actions button {
+        width: 100%;
+    }
+}
