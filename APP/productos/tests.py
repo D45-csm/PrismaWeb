@@ -201,6 +201,51 @@ class ProductoSeguridadTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'css/style.css')
 
+    def test_busqueda_del_catalogo_se_precarga_al_llegar_desde_la_portada(self):
+        response = self.client.get(reverse('productos'), {'q': 'Torta'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['search_query'], 'Torta')
+        self.assertContains(response, 'id="searchInput"')
+        self.assertContains(response, 'value="Torta"')
+
+    def test_portada_muestra_busqueda_y_navegacion_principal(self):
+        response = self.client.get(reverse('base_cliente'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'action="{reverse("productos")}"')
+        self.assertContains(response, 'name="q"')
+        self.assertContains(response, 'nav-icon-home')
+        self.assertContains(response, 'nav-icon-products')
+        self.assertContains(response, 'nav-icon-reservations')
+        self.assertContains(response, 'nav-icon-contact')
+        self.assertNotContains(response, 'Mis reservas')
+        self.assertContains(response, 'Explorar catálogo')
+        self.assertEqual(response.content.count(b'class="hero-carousel-dot is-active"'), 1)
+        self.assertEqual(response.content.count(b'class="hero-carousel-dot"'), 3)
+        self.assertNotContains(response, 'hero-carousel-arrow')
+        self.assertNotContains(response, 'hero-scroll-hint')
+        self.assertNotContains(response, 'aria-label="Favoritos"')
+        self.assertEqual(
+            response.content.count(b'<span class="price">$15,000</span>'),
+            3,
+        )
+
+    def test_portada_muestra_el_nombre_completo_del_cliente(self):
+        cliente = get_user_model().objects.create_user(
+            username='cliente_nombre_portada',
+            password='Clave-segura-123',
+            telefono='3005678125',
+            first_name='Lucia',
+            last_name='Gomez',
+        )
+        self.client.force_login(cliente)
+
+        response = self.client.get(reverse('base_cliente'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Lucia Gomez')
+
     def test_ficha_y_estado_de_producto_siguen_el_patron_de_insumos(self):
         admin = get_user_model().objects.create_user(
             username='admin_productos_dialogos',

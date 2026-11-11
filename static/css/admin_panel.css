@@ -237,6 +237,41 @@
     background-image: var(--bs-navbar-toggler-icon-bg);
 }
 
+.admin-navbar-toggler {
+    display: grid;
+    width: 44px;
+    height: 42px;
+    place-items: center;
+    padding: 0 !important;
+}
+
+.admin-menu-icon {
+    display: grid;
+    width: 19px;
+    gap: 4px;
+}
+
+.admin-menu-icon span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--admin-primary-dark);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.admin-navbar-toggler.is-open .admin-menu-icon span:first-child {
+    transform: translateY(6px) rotate(45deg);
+}
+
+.admin-navbar-toggler.is-open .admin-menu-icon span:nth-child(2) {
+    opacity: 0;
+}
+
+.admin-navbar-toggler.is-open .admin-menu-icon span:last-child {
+    transform: translateY(-6px) rotate(-45deg);
+}
+
 /* Ocultar el botón del menú en computadores */
 
 @media (min-width: 992px) {
@@ -810,6 +845,10 @@ a.dashboard-module-blocked {
 
     .navbar .navbar-collapse {
         padding-top: 15px;
+    }
+
+    .navbar .navbar-collapse.show {
+        display: block;
     }
 
     .navbar .navbar-nav {

@@ -1,0 +1,484 @@
+{% extends 'base_admin.html' %}
+{% load static l10n %}
+
+{% block title %}Gestión de Reservas | Panel Administrativo Prisma{% endblock %}
+{% block content %}
+<div class="container-fluid py-4 reservation-admin-page">
+
+    <!-- ENCABEZADO PRINCIPAL -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 reservation-admin-heading">
+        <div>
+            <p class="text-uppercase text-secondary mb-1 letter-spacing-1 font-weight-bold reservation-admin-eyebrow">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i> Operación Gastronómica · Módulo de Reservas
+            </p>
+            <h1 class="h2 mb-1">Reservas</h1>
+            <p class="text-secondary mb-0">Control de ocupación en mesa, preparación de postres para llevar y confirmación de asistencia.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" href="{% url 'perfil' %}">
+                <i class="fas fa-arrow-left"></i> Volver al panel
+            </a>
+            {% if puede_crear %}
+                <a class="btn btn-primary" href="#formularioReservaAdmin">
+                    <i class="fas fa-plus-circle"></i> Nueva Reserva Manual
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ALERTAS VISUALES DE NUEVAS RESERVAS (CRUM-1294..1298 & SCRUM-1288..1292) -->
+    {% if total_alertas_nuevas > 0 %}
+        <div class="alert alert-warning border-warning shadow-sm mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2" role="alert">
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-danger rounded-pill p-2 animate-pulse"><i class="fas fa-bell"></i></span>
+                <div>
+                    <strong>¡Atención Operativa! Hay {{ total_alertas_nuevas }} nueva(s) reserva(s) pendiente(s) de revisión.</strong>
+                    <div class="small text-dark mt-1">
+                        {% for alerta in alertas_recientes %}
+                            <span class="badge bg-light text-dark border me-1">
+                                #{{ alerta.pk }} · {{ alerta.nombre_cliente }} ({{ alerta.tipo_reserva }} · {{ alerta.fecha_reserva|date:"d/m" }})
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% if solo_nuevas %}
+                <a href="{% url 'gestion_reservas' %}" class="btn btn-sm btn-dark">
+                    <i class="fas fa-list"></i> Ver todas las reservas
+                </a>
+            {% else %}
+                <a href="{% url 'gestion_reservas' %}?notif=nuevas" class="btn btn-sm btn-dark">
+                    <i class="fas fa-eye"></i> Revisar reservas nuevas
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- TARJETAS DE MÉTRICAS -->
+    <div class="row g-3 mb-4 reservation-admin-metrics">
+        <div class="col-sm-6 col-xl-3">
+            <div class="reservation-admin-metric">
+                <span>Pendientes de mesa</span>
+                <strong>{{ total_pendientes }}</strong>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="reservation-admin-metric is-payment">
+                <span>Pendientes de pago</span>
+                <strong>{{ total_pendientes_pago }}</strong>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="reservation-admin-metric is-confirmed">
+                <span>Confirmadas para entrega</span>
+                <strong>{{ total_confirmadas }}</strong>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="reservation-admin-metric is-total">
+                <span>Total recaudado en reservas</span>
+                <strong>${{ total_recaudado|floatformat:0 }} COP</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULARIO CREAR / EDITAR RESERVA (SCRUM-1246, 1247, 1248, 1249, 1250, 1264, 1265, 1266) -->
+    {% if puede_crear or reserva_editar %}
+        <section class="card shadow-sm mb-4 border-0" id="formularioReservaAdmin">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0 text-primary">
+                    <i class="fas {% if reserva_editar %}fa-pen-to-square{% else %}fa-plus-circle{% endif %}"></i>
+                    {% if reserva_editar %}Editar Reserva #{{ reserva_editar.pk }}{% else %}Registrar Reserva Manual / Canal Externo (RF6-01){% endif %}
+                </h2>
+                {% if reserva_editar %}
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'gestion_reservas' %}">Cancelar edición</a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <form id="reservaForm" data-reserva-ajax="false" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="{% if reserva_editar %}editar{% else %}crear{% endif %}">
+                    {% if reserva_editar %}
+                        <input type="hidden" name="reserva_id" value="{{ reserva_editar.pk }}">
+                    {% endif %}
+
+                    <div class="row g-3" id="reservaProductosList">
+                        <!-- Nombre del Cliente -->
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold" for="nombre">Nombre del cliente *</label>
+                            <input class="form-control" id="nombre" name="nombre" maxlength="100"
+                                   value="{{ reserva_editar.nombre_cliente|default:'' }}" placeholder="Ej. Carlos Mendoza" required>
+                        </div>
+
+                        <!-- Teléfono -->
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold" for="telefono">Teléfono / WhatsApp *</label>
+                            <input class="form-control" id="telefono" name="telefono" maxlength="30"
+                                   value="{{ reserva_editar.telefono|default:'' }}" placeholder="Ej. 311 868 9862" required>
+                        </div>
+
+                        <!-- Canal de Origen (SCRUM-1249: Canales externos) -->
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold" for="canal_origen">Canal de origen (SCRUM-1249)</label>
+                            <select class="form-select" id="canal_origen" name="canal_origen">
+                                {% for valor, etiqueta in canales_reserva %}
+                                    <option value="{{ valor }}"{% if reserva_editar.canal_origen == valor or not reserva_editar and valor == 'Llamada telefónica' %} selected{% endif %}>
+                                        {{ etiqueta }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Fecha -->
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold" for="fecha">Fecha *</label>
+                            <input class="form-control" type="date" id="fecha" name="fecha"
+                                   value="{{ reserva_editar.fecha_reserva|date:'Y-m-d' }}" required>
+                        </div>
+
+                        <!-- Hora -->
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold" for="hora">Hora *</label>
+                            <input class="form-control" type="time" id="hora" name="hora" min="14:00" max="18:30"
+                                   value="{{ reserva_editar.hora|time:'H:i' }}" required>
+                            <small class="reservation-admin-hours-note">Horario permitido: 2:00 PM a 6:30 PM.</small>
+                        </div>
+
+                        <!-- Modalidad -->
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold" for="tipo_reserva">Modalidad *</label>
+                            <select class="form-select" id="tipo_reserva" name="tipo_reserva" required>
+                                {% if not reserva_editar %}<option value="" selected disabled>Elige modalidad</option>{% endif %}
+                                <option value="Mesa"{% if reserva_editar.tipo_reserva == 'Mesa' %} selected{% endif %}>Con mesa</option>
+                                <option value="Para llevar"{% if reserva_editar.tipo_reserva == 'Para llevar' %} selected{% endif %}>Para llevar</option>
+                            </select>
+                        </div>
+
+                        <!-- Personas -->
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold" for="numero_personas">Número de personas</label>
+                            <input class="form-control" type="number" id="numero_personas" name="numero_personas"
+                                   min="1" max="50" value="{{ reserva_editar.numero_personas|default_if_none:'' }}" placeholder="Obligatorio para mesa">
+                        </div>
+
+                        <!-- Selector de Productos (SCRUM-1248 / 1266: Valida disponibilidad) -->
+                        <div class="col-12 mt-4">
+                            <h3 class="h6 text-uppercase text-secondary letter-spacing-1 border-bottom pb-2">
+                                <i class="fas fa-cookie-bite text-warning"></i> Postres seleccionados (Disponibilidad y stock de insumos)
+                            </h3>
+                        </div>
+
+                        {% for slot in slots_editables %}
+                            <div class="col-12 reservation-admin-product{% if slot.producto_id or forloop.first %} is-visible{% endif %}"
+                                 data-reserva-producto-slot="{{ forloop.counter }}">
+                                <div class="row g-2 align-items-end p-2 border rounded bg-light">
+                                    <div class="col-md-7">
+                                        <label class="form-label font-weight-bold" for="producto_id_{{ forloop.counter }}">
+                                            Postre {{ forloop.counter }}
+                                        </label>
+                                        <select class="form-select" id="producto_id_{{ forloop.counter }}" name="producto_id_{{ forloop.counter }}"
+                                                {% if forloop.first %}required{% endif %}>
+                                            <option value="">Selecciona un postre...</option>
+                                            {% for producto in productos %}
+                                                <option value="{{ producto.pk }}" data-price="{{ producto.precio|unlocalize }}"
+                                                        {% if producto.pk == slot.producto_id %} selected{% endif %}>
+                                                    {{ producto.nombre }} (${{ producto.precio|floatformat:0 }})
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label font-weight-bold" for="cantidad_{{ forloop.counter }}">Cantidad</label>
+                                        <input class="form-control" type="number" id="cantidad_{{ forloop.counter }}"
+                                               name="cantidad_{{ forloop.counter }}" min="1" max="50" value="{{ slot.cantidad }}">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-outline-danger w-100" data-remove-reserva-producto aria-label="Quitar">
+                                            <i class="fas fa-trash"></i> Quitar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                            <button type="button" class="btn btn-outline-primary" id="addReservaProducto" hidden>
+                                <i class="fas fa-plus"></i> Añadir otro postre
+                            </button>
+                            <div class="reservation-admin-total">
+                                Total estimado: <strong id="reservaTotalEstimate" class="text-primary h5 mb-0">{% if reserva_editar %}{{ reserva_total }}{% else %}$0{% endif %}</strong>
+                            </div>
+                        </div>
+
+                        <!-- Indicaciones -->
+                        <div class="col-12 mt-3">
+                            <label class="form-label font-weight-bold" for="detalles">Indicaciones especiales</label>
+                            <textarea class="form-control" id="detalles" name="detalles" maxlength="500" rows="2"
+                                      placeholder="Alergias, dedicatoria, detalles de entrega...">{{ reserva_editar.detalles }}</textarea>
+                        </div>
+
+                        <!-- Botón Guardar -->
+                        <div class="col-12 d-flex gap-2 mt-4">
+                            <button class="btn btn-success px-4" type="submit">
+                                <i class="fas fa-check-circle"></i> {% if reserva_editar %}Guardar Cambios{% else %}Registrar Reserva y Validar Insumos{% endif %}
+                            </button>
+                            {% if reserva_editar %}
+                                <a class="btn btn-outline-secondary" href="{% url 'gestion_reservas' %}">Cancelar</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+    {% endif %}
+
+    <!-- TABLA DE HISTORIAL Y CONSULTA (SCRUM-1276..1286) -->
+    <section class="card shadow-sm border-0 reservation-admin-history">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h2 class="h5 mb-0 text-dark">
+                <i class="fas fa-table-list text-primary" aria-hidden="true"></i>
+                {% if solo_nuevas %}Reservas nuevas sin revisar{% else %}Reservas y pedidos{% endif %}
+            </h2>
+            <span class="badge bg-secondary">{{ reservas.count }} registro(s) encontrado(s)</span>
+        </div>
+        <div class="card-body">
+            <!-- FORMULARIO DE FILTROS -->
+            <form method="get" class="row g-2 align-items-end mb-4 p-3 bg-light rounded border">
+                {% if solo_nuevas %}<input type="hidden" name="notif" value="nuevas">{% endif %}
+                <div class="col-lg-3">
+                    <label class="form-label font-weight-bold" for="q">Buscar por cliente o teléfono</label>
+                    <input class="form-control" id="q" name="q" value="{{ query }}" placeholder="Ej. Carlos o 311868...">
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label font-weight-bold" for="fecha_filtro">Fecha</label>
+                    <input class="form-control" type="date" id="fecha_filtro" name="fecha" value="{{ fecha_filtro }}">
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label font-weight-bold" for="estado_filtro">Estado</label>
+                    <select class="form-select" id="estado_filtro" name="estado">
+                        <option value="">Todos los estados</option>
+                        {% for valor, etiqueta in estados_reserva %}
+                            <option value="{{ valor }}"{% if estado_filtro == valor %} selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label font-weight-bold" for="modalidad_filtro">Modalidad</label>
+                    <select class="form-select" id="modalidad_filtro" name="modalidad">
+                        <option value="">Todas</option>
+                        {% for valor, etiqueta in modalidades_reserva %}
+                            <option value="{{ valor }}"{% if modalidad_filtro == valor %} selected{% endif %}>{{ etiqueta }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-3 d-flex gap-2">
+                    <button class="btn btn-primary w-100" type="submit">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                    <a class="btn btn-outline-secondary" href="{% url 'gestion_reservas' %}" title="Limpiar filtros">
+                        <i class="fas fa-rotate-left"></i>
+                    </a>
+                </div>
+            </form>
+
+            <!-- TABLA DE RESULTADOS -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle border reservation-admin-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Reserva / Cliente</th>
+                            <th>Fecha y Hora</th>
+                            <th>Modalidad / Canal</th>
+                            <th>Estado</th>
+                            <th>Pago Anticipado</th>
+                            <th>Total</th>
+                            <th>Confirmar Asistencia (RF6-10)</th>
+                            <th>Alerta</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for reserva in reservas %}
+                        <tr class="{% if not reserva.notificacion_consultada %}table-warning-subtle{% endif %}">
+                            <!-- Cliente y Productos -->
+                            <td data-label="Reserva / cliente">
+                                <strong class="text-primary">#{{ reserva.pk }}</strong> · <strong>{{ reserva.nombre_cliente }}</strong><br>
+                                <small class="text-secondary"><i class="fas fa-phone"></i> {{ reserva.telefono }}</small>
+                                {% if reserva.tipo_reserva == 'Mesa' and reserva.numero_personas %}
+                                    <span class="badge bg-info-subtle text-info border ms-1">{{ reserva.numero_personas }} personas</span>
+                                {% endif %}
+                                <div class="mt-1 small bg-white p-2 rounded border">
+                                    <strong class="text-dark">Preparación:</strong>
+                                    <ul class="mb-0 ps-3">
+                                        {% for linea in reserva.lineas.all %}
+                                            <li>{{ linea.cantidad }}× {{ linea.nombre_producto }}</li>
+                                        {% empty %}
+                                            <li class="text-muted">Sin postres asignados</li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% if reserva.detalles %}
+                                        <div class="text-muted mt-1 fst-italic"><i class="fas fa-comment-dots"></i> {{ reserva.detalles }}</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Fecha y Hora -->
+                            <td data-label="Fecha y hora">
+                                <div><i class="far fa-calendar"></i> {{ reserva.fecha_reserva|date:"d/m/Y" }}</div>
+                                <small class="text-muted"><i class="far fa-clock"></i> {{ reserva.hora|time:"H:i"|default:"Sin hora" }}</small>
+                            </td>
+
+                            <!-- Modalidad y Canal -->
+                            <td data-label="Modalidad / canal">
+                                <span class="badge {% if reserva.tipo_reserva == 'Mesa' %}bg-primary{% else %}bg-purple text-white{% endif %}">
+                                    {{ reserva.tipo_reserva }}
+                                </span>
+                                <div class="small text-muted mt-1"><i class="fas fa-share-nodes"></i> {{ reserva.canal_origen }}</div>
+                            </td>
+
+                            <!-- Estado con Selector Rápido -->
+                            <td data-label="Estado">
+                                {% if reserva.estado == 'Realizada' or reserva.estado == 'No asistió' %}
+                                    <span class="badge {% if reserva.estado == 'Realizada' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ reserva.estado }}
+                                    </span>
+                                {% elif puede_editar %}
+                                    <form method="post" class="d-flex gap-1"
+                                          onsubmit="return confirm('¿Confirmas el cambio de estado de la reserva #{{ reserva.pk }}?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="estado">
+                                        <input type="hidden" name="reserva_id" value="{{ reserva.pk }}">
+                                        <select class="form-select form-select-sm" name="estado" aria-label="Estado">
+                                            {% for valor, etiqueta in estados_reserva %}
+                                                {% if valor != 'Realizada' and valor != 'No asistió' %}
+                                                    <option value="{{ valor }}"{% if reserva.estado == valor %} selected{% endif %}>{{ etiqueta }}</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                        <button class="btn btn-sm btn-outline-primary" type="submit" title="Guardar estado">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    {{ reserva.estado }}
+                                {% endif %}
+                            </td>
+
+                            <!-- Pago Anticipado -->
+                            <td data-label="Pago">
+                                {% if reserva.tipo_reserva == 'Mesa' %}
+                                    <span class="badge bg-light text-secondary border">Sin prepago</span>
+                                {% elif reserva.pago_confirmado %}
+                                    <span class="badge bg-success"><i class="fas fa-check-circle"></i> Verificado</span>
+                                    {% if reserva.metodo_pago %}<small class="d-block text-dark font-weight-bold">{{ reserva.metodo_pago }}</small>{% endif %}
+                                    {% if reserva.fecha_pago_confirmado %}<small class="d-block text-muted">{{ reserva.fecha_pago_confirmado|date:"d/m H:i" }}</small>{% endif %}
+                                {% else %}
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pendiente</span>
+                                    {% if puede_editar and reserva.estado != 'Cancelada' and reserva.estado != 'Realizada' and reserva.estado != 'No asistió' %}
+                                        <form method="post" class="mt-1"
+                                              onsubmit="return confirm('¿Verificaste el pago de la reserva #{{ reserva.pk }}?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="accion" value="confirmar_pago">
+                                            <input type="hidden" name="reserva_id" value="{{ reserva.pk }}">
+                                            <button class="btn btn-sm btn-success w-100" type="submit">
+                                                <i class="fas fa-dollar-sign"></i> Confirmar pago
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+
+                            <!-- Total -->
+                            <td data-label="Total"><strong class="text-dark">${{ reserva.total|floatformat:0 }}</strong></td>
+
+                            <!-- ASISTENCIA (SCRUM-1330..1334) -->
+                            <td data-label="Asistencia">
+                                {% if reserva.asistencia %}
+                                    <span class="badge {% if reserva.asistencia == 'Asistió' %}bg-success{% else %}bg-danger{% endif %} mb-1">
+                                        {{ reserva.asistencia }}
+                                    </span>
+                                    {% if reserva.fecha_asistencia %}
+                                        <div class="small text-muted"><i class="far fa-clock"></i> {{ reserva.fecha_asistencia|date:"d/m/Y H:i" }}</div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-light text-muted border mb-1">Sin registrar</span>
+                                {% endif %}
+
+                                {% if puede_editar and reserva.estado != 'Cancelada' and reserva.estado != 'Pendiente' and reserva.estado != 'Pendiente de pago' %}
+                                    <form method="post" class="d-flex gap-1 mt-1">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="asistencia">
+                                        <input type="hidden" name="reserva_id" value="{{ reserva.pk }}">
+                                        <select class="form-select form-select-sm" name="asistencia" required>
+                                            <option value="">Marcar asistencia...</option>
+                                            {% for valor, etiqueta in opciones_asistencia %}
+                                                <option value="{{ valor }}"{% if reserva.asistencia == valor %} selected{% endif %}>{{ etiqueta }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button class="btn btn-sm btn-primary" type="submit" title="Guardar Asistencia">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+
+                            <!-- Notificación Consultada (CRUM-1298) -->
+                            <td data-label="Alerta">
+                                {% if reserva.notificacion_consultada %}
+                                    <span class="badge bg-light text-secondary border">Consultada</span>
+                                {% else %}
+                                    <a class="badge bg-danger text-white text-decoration-none animate-pulse"
+                                       href="{% url 'consultar_notificacion_reserva' reserva.pk %}" title="Marcar como consultada">
+                                        <i class="fas fa-bell"></i> Nueva Alerta
+                                    </a>
+                                {% endif %}
+                            </td>
+
+                            <!-- Acciones (Editar y Cancelar Admin SCRUM-1258..1262) -->
+                            <td data-label="Acciones">
+                                <div class="d-flex flex-column gap-1">
+                                    {% if puede_editar and reserva.estado != 'Cancelada' and reserva.estado != 'Realizada' %}
+                                        <a class="btn btn-sm btn-outline-secondary"
+                                           href="{% url 'gestion_reservas' %}?editar={{ reserva.pk }}" title="Editar reserva">
+                                            <i class="fas fa-pen"></i> Editar
+                                        </a>
+
+                                        <form method="post" data-confirm-reservation-cancel data-reservation-id="{{ reserva.pk }}"
+                                              data-is-paid="{% if reserva.pago_confirmado %}true{% else %}false{% endif %}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="accion" value="cancelar">
+                                            <input type="hidden" name="reserva_id" value="{{ reserva.pk }}">
+                                            <button class="btn btn-sm btn-outline-danger w-100" type="submit" title="Cancelar reserva">
+                                                <i class="fas fa-ban"></i> Cancelar
+                                            </button>
+                                        </form>
+                                    {% elif reserva.estado == 'Cancelada' %}
+                                        <span class="badge bg-danger-subtle text-danger border">Cancelada</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr class="reservation-admin-empty-row">
+                            <!-- Mensaje cuando no existen reservas (SCRUM-1280 & SCRUM-1286) -->
+                            <td colspan="9" class="text-center py-5 text-secondary">
+                                <i class="fas fa-calendar-xmark fa-3x text-muted mb-3 d-block"></i>
+                                <h5>No se encontraron reservas con los filtros aplicados.</h5>
+                                <p class="mb-3">Prueba cambiando la fecha, modalidad o borrando el término de búsqueda.</p>
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'gestion_reservas' %}">
+                                    <i class="fas fa-rotate-left"></i> Restablecer todos los filtros
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/reserva_admin.js' %}?v=3" defer></script>
+{% endblock %}

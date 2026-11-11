@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from APP.usuarios.models import Usuario
 from APP.productos.models import Producto
@@ -7,8 +9,11 @@ from APP.productos.models import Producto
 class Reserva(models.Model):
     choices_estado = [
         ('Pendiente', 'Pendiente'),
+        ('Pendiente de pago', 'Pendiente de pago'),
         ('Confirmada', 'Confirmada'),
         ('Cancelada', 'Cancelada'),
+        ('Realizada', 'Realizada'),
+        ('No asistió', 'No asistió'),
     ]
 
     choice_asistencia = [
@@ -20,6 +25,14 @@ class Reserva(models.Model):
         ('Mesa', 'Mesa'),
         ('Para llevar', 'Para llevar'),
     ]
+
+    choices_canal = [
+        ('Web', 'Web'),
+        ('Llamada telefónica', 'Llamada telefónica'),
+        ('WhatsApp', 'WhatsApp / Mensaje'),
+        ('Presencial', 'Presencial'),
+    ]
+
     usuario = models.ForeignKey( Usuario , on_delete=models.SET_NULL, null=True, blank=True)
     nombre_cliente = models.CharField(max_length=100, blank=True, null=True)
     telefono = models.CharField(max_length=30, blank=True)
@@ -28,13 +41,26 @@ class Reserva(models.Model):
     hora = models.TimeField(blank=True, null=True)
     numero_personas = models.PositiveIntegerField(null=True, blank=True, )
     tipo_reserva = models.CharField(max_length=50, choices=choices_tipo_reserva, default='Para llevar')
+    canal_origen = models.CharField(max_length=50, choices=choices_canal, default='Web')
     detalles = models.TextField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=choices_estado, default='Pendiente')
     asistencia = models.CharField(max_length=20, choices=choice_asistencia, blank=True , null=True)
+    fecha_asistencia = models.DateTimeField(blank=True, null=True)
+    notificacion_consultada = models.BooleanField(default=False)
+    pago_confirmado = models.BooleanField(default=False)
+    fecha_pago_confirmado = models.DateTimeField(blank=True, null=True)
+    metodo_pago = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         nombre = self.usuario.username if self.usuario else "Usuario Eliminado/Invitado"
         return f"Reserva de {nombre} el {self.fecha_reserva} a las {self.hora}"
+
+    @property
+    def total(self):
+        return sum(
+            (linea.subtotal for linea in self.lineas.all()),
+            Decimal('0.00'),
+        )
 
 
 class DetalleReserva(models.Model):

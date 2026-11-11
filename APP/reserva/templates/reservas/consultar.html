@@ -1,0 +1,75 @@
+{% extends 'base_prisma.html' %}
+{% load static %}
+
+{% block title %}Consultar mi reserva | Prisma{% endblock %}
+{% block body_attrs %} class="customer-area reservation-lookup-page luxury-page"{% endblock %}
+
+{% block content %}
+    {% include 'partials/header_cliente.html' with active='reservas' titles=True %}
+
+    <section class="reservation-subhero luxury-subhero reservation-subhero--compact">
+        <div class="container reservation-subhero-content text-center">
+            <span class="luxury-eyebrow"><i class="fas fa-search"></i> ATENCIÓN PERSONALIZADA</span>
+            <h1>Consulta tu reserva</h1>
+            <p>Accede a los detalles, completa tu pago seguro o gestiona tu visita.</p>
+        </div>
+    </section>
+
+    <main class="reservation-page-content py-5">
+        <div class="container reservation-lookup-layout">
+            <section class="reservation-panel reservation-lookup-card shadow-luxury">
+                <div class="reservation-lookup-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="reservation-kicker">MIS RESERVAS</span>
+                <h2>Volvamos a tu experiencia</h2>
+                <p>Ingresa el número de reserva y el teléfono registrado para verificar tu identidad y mostrarte tu información de forma segura.</p>
+
+                {% include 'partials/messages.html' %}
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="form-group-luxury">
+                        <label for="reserva_id">Número de reserva *</label>
+                        <div class="input-luxury-wrap">
+                            <i class="fas fa-hashtag input-ico"></i>
+                            <input type="number" id="reserva_id" name="reserva_id" min="1" placeholder="Ej. 1024" required>
+                        </div>
+                    </div>
+                    <div class="form-group-luxury">
+                        <label for="telefono">Teléfono registrado *</label>
+                        <div class="input-luxury-wrap">
+                            <i class="fas fa-phone-alt input-ico"></i>
+                            <input type="tel" id="telefono" name="telefono" maxlength="30" placeholder="El mismo número usado al reservar" required>
+                        </div>
+                    </div>
+                    <button class="luxury-btn-gold btn-full mt-3" type="submit">
+                        <i class="fas fa-arrow-right"></i> Ver mi reserva
+                    </button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <a class="reservation-back-link" href="{% url 'reservas' %}">
+                        <i class="fas fa-plus-circle"></i> ¿Deseas hacer una nueva reserva? Haz clic aquí
+                    </a>
+                </div>
+            </section>
+
+            <aside class="reservation-lookup-aside shadow-luxury">
+                <span class="reservation-kicker">FÁCIL, RÁPIDO Y SEGURO</span>
+                <h2>Tu plan dulce a solo un clic</h2>
+                <p>Al consultar tu reserva podrás:</p>
+                <ul class="luxury-perks-list">
+                    <li><i class="fas fa-check-circle text-success"></i> Completar el pago seguro de pedidos para llevar (Nequi, Daviplata, Tarjeta).</li>
+                    <li><i class="fas fa-check-circle text-success"></i> Ver el estado en tiempo real (Confirmada, Pendiente, Realizada).</li>
+                    <li><i class="fas fa-check-circle text-success"></i> Modificar la fecha, hora o agregar más postres.</li>
+                    <li><i class="fas fa-check-circle text-success"></i> Cancelar la reserva fácilmente con liberación de insumos.</li>
+                </ul>
+                <div class="reservation-help mt-4">
+                    <i class="fas fa-shield-halved text-warning"></i>
+                    <span>Tus datos están protegidos. Solo tú puedes consultar con tu número de reserva y teléfono.</span>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    {% include 'partials/footer_cliente.html' %}
+{% endblock %}
