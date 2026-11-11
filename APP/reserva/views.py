@@ -36,10 +36,50 @@ POSTRES = {
 }
 
 SLOTS_PRODUCTOS = tuple(range(1, 6))
+HORA_APERTURA_RESERVAS = time(14, 0)
+HORA_CIERRE_RESERVAS = time(18, 30)
 
 
 def _normalizar_telefono(telefono):
     return ''.join(digito for digito in telefono if digito.isdigit())
+
+
+def _validar_disponibilidad_insumos(productos_lineas):
+    """
+    Valida disponibilidad y stock de insumos según recetas antes de guardar (SCRUM-1248, SCRUM-1266).
+    productos_lineas es una lista de tuplas (producto, cantidad).
+    """
+    try:
+        from APP.recetas.models import Receta, RecetaInsumo
+        from APP.inventario.models import Movimiento
+        from django.db.models import Sum
+    except ImportError:
+        return True
+
+    for producto, cantidad in productos_lineas:
+        if not producto.activo:
+            raise ValueError(f"El producto '{producto.nombre}' no se encuentra disponible actualmente.")
+
+        # Buscar recetas vinculadas por nombre de producto
+        recetas = Receta.objects.filter(nombre__iexact=producto.nombre, activo=True)
+        for receta in recetas:
+            for ri in RecetaInsumo.objects.filter(receta=receta).select_related('insumo'):
+                insumo = ri.insumo
+                if not insumo.activo:
+                    raise ValueError(f"El insumo '{insumo.nombre}' necesario para '{producto.nombre}' no está disponible.")
+
+                # Si hay movimientos registrados en el inventario para este insumo, verificar stock
+                if Movimiento.objects.filter(insumo=insumo).exists():
+                    entradas = Movimiento.objects.filter(insumo=insumo, accion='ENTRADA').aggregate(total=Sum('cantidad'))['total'] or Decimal('0')
+                    salidas = Movimiento.objects.filter(insumo=insumo, accion='SALIDA').aggregate(total=Sum('cantidad'))['total'] or Decimal('0')
+                    stock_disponible = Decimal(str(entradas)) - Decimal(str(salidas))
+                    requerido = Decimal(str(ri.cantidad_insumo)) * Decimal(str(cantidad))
+                    if stock_disponible < requerido:
+                        raise ValueError(
+                            f"Stock insuficiente del insumo '{insumo.nombre}' para preparar {cantidad}x '{producto.nombre}'. "
+                            f"Disponible: {stock_disponible} {ri.medida_insumo}, Requerido: {requerido} {ri.medida_insumo}."
+                        )
+    return True
 
 
 def _datos_reserva(post_data, reserva=None):
@@ -48,7 +88,11 @@ def _datos_reserva(post_data, reserva=None):
     fecha_texto = post_data.get('fecha', '').strip()
     hora_texto = post_data.get('hora', '').strip()
     modalidad = post_data.get('tipo_reserva', '').strip()
+    canal = post_data.get('canal_origen', 'Web').strip() or 'Web'
     detalles = post_data.get('detalles', '').strip()
+
+    if canal not in dict(Reserva.choices_canal):
+        canal = 'Web'
 
     if not nombre or len(nombre) > 100:
         raise ValueError('Ingresa el nombre del cliente (máximo 100 caracteres).')
@@ -63,6 +107,9 @@ def _datos_reserva(post_data, reserva=None):
         hora_reserva = time.fromisoformat(hora_texto)
     except (TypeError, ValueError):
         raise ValueError('Ingresa una fecha y una hora válidas.') from None
+
+    if not HORA_APERTURA_RESERVAS <= hora_reserva <= HORA_CIERRE_RESERVAS:
+        raise ValueError('El horario de reservas es de 2:00 PM a 6:30 PM.')
 
     ahora = timezone.localtime()
     if fecha_reserva < timezone.localdate() or (
@@ -123,6 +170,9 @@ def _datos_reserva(post_data, reserva=None):
     if len(productos) != len(ids_producto):
         raise ValueError('Uno de los productos ya no está disponible.')
 
+    productos_tuplas = [(productos[pk], cantidad) for pk, cantidad in lineas]
+    _validar_disponibilidad_insumos(productos_tuplas)
+
     return {
         'nombre_cliente': nombre,
         'telefono': telefono,
@@ -130,8 +180,9 @@ def _datos_reserva(post_data, reserva=None):
         'hora': hora_reserva,
         'numero_personas': numero_personas,
         'tipo_reserva': modalidad,
+        'canal_origen': canal,
         'detalles': detalles,
-    }, [(productos[pk], cantidad) for pk, cantidad in lineas]
+    }, productos_tuplas
 
 
 def _guardar_reserva(request, reserva=None):
@@ -315,6 +366,7 @@ def _render_reserva_form(request, template='reservas/reservas.html', **context):
         'slots_productos': SLOTS_PRODUCTOS,
         'estados_reserva': Reserva.choices_estado,
         'modalidades_reserva': Reserva.choices_tipo_reserva,
+        'canales_reserva': Reserva.choices_canal,
         'opciones_asistencia': Reserva.choice_asistencia,
         'whatsapp_destino': settings.RESERVAS_WHATSAPP_DESTINO,
         **context,
@@ -344,6 +396,20 @@ def reservas_view(request):
     if request.method == 'GET':
         return _render_reserva_form(request)
 
+    modalidad = request.POST.get('tipo_reserva', 'Para llevar' if 'postre' in request.POST else '').strip()
+    if modalidad == 'Para llevar' and not request.user.is_authenticated:
+        login_url = f"{reverse('login')}?next={reverse('reservas')}"
+        error_msg = 'Para reservar tu postre para llevar debes iniciar sesión y después completar tu pago.'
+        if 'application/json' in request.headers.get('Accept', ''):
+            return JsonResponse({
+                'ok': False,
+                'require_login': True,
+                'error': error_msg,
+                'login_url': login_url,
+            }, status=401)
+        messages.warning(request, error_msg)
+        return redirect(login_url)
+
     if 'producto_id_1' in request.POST:
         try:
             reserva = _guardar_reserva(request)
@@ -355,23 +421,24 @@ def reservas_view(request):
         return JsonResponse({
             'ok': True,
             'title': (
-                'Tu pedido quedó registrado'
-                if es_para_llevar else 'Recibimos tu solicitud de mesa'
+                '¡Pedido para llevar registrado!'
+                if es_para_llevar else '¡Recibimos tu solicitud de mesa!'
             ),
             'message': (
-                'Para llevar: debes pagar el total por anticipado. Escríbenos por WhatsApp '
-                'para recibir los medios de pago y enviar el comprobante. El pedido no se '
-                'confirmará hasta verificar el pago.'
+                'Tu pedido quedó guardado exitosamente. Ahora completa tu pago para asegurar la preparación de tus postres.'
                 if es_para_llevar else
-                'No necesitas pagar por anticipado para solicitar una mesa. Te escribiremos '
-                'por WhatsApp para confirmar disponibilidad y los detalles de tu visita.'
+                'Recibimos tu solicitud de mesa. Te contactaremos por WhatsApp para darte la bienvenida y confirmar detalles.'
             ),
             'email_sent': email_sent,
             'total': _formatear_cop(reserva.total),
             'reservation_type': reserva.tipo_reserva,
             'reservation_id': reserva.pk,
+            'pago_confirmado': reserva.pago_confirmado,
+            'require_payment': es_para_llevar and not reserva.pago_confirmado,
             'next_url': reverse('reserva_cliente', args=[reserva.pk]),
             'whatsapp_url': _url_whatsapp_reserva(reserva),
+            'fecha_formateada': reserva.fecha_reserva.strftime('%d/%m/%Y'),
+            'hora_formateada': reserva.hora.strftime('%H:%M') if reserva.hora else '',
         }, status=201)
 
     nombre = request.POST.get('nombre', '').strip()
@@ -423,6 +490,7 @@ def reservas_view(request):
     precio_unitario = POSTRES[postre]
     with transaction.atomic():
         reserva = Reserva.objects.create(
+            usuario=request.user if request.user.is_authenticated else None,
             nombre_cliente=nombre,
             telefono=telefono,
             fecha_reserva=fecha_reserva,
@@ -474,21 +542,21 @@ def reservas_view(request):
             logger.exception('Falló el envío de correo de la reserva #%s.', reserva.pk)
 
     mensaje = (
-        'Tu pedido quedó registrado y se notificó al equipo. Debes pagar anticipadamente; '
-        'escríbenos por WhatsApp para conocer los medios de pago.'
+        'Tu pedido quedó registrado y se notificó al equipo. Completa tu pago seguro para confirmar.'
         if email_sent else
-        'Tu pedido quedó registrado, pero no se pudo enviar el correo. Debes pagar '
-        'anticipadamente; escríbenos por WhatsApp para conocer los medios de pago.'
+        'Tu pedido quedó registrado. Completa tu pago seguro para confirmar.'
     )
 
     return JsonResponse({
         'ok': True,
         'email_sent': email_sent,
         'message': mensaje,
-        'title': 'Tu pedido quedó registrado',
+        'title': '¡Pedido para llevar registrado!',
         'total': _formatear_cop(reserva.total),
         'reservation_type': reserva.tipo_reserva,
         'reservation_id': reserva.pk,
+        'pago_confirmado': reserva.pago_confirmado,
+        'require_payment': not reserva.pago_confirmado,
         'next_url': reverse('reserva_cliente', args=[reserva.pk]),
         'whatsapp_url': whatsapp_url,
     }, status=201)
@@ -514,21 +582,123 @@ def consultar_reserva(request):
     return render(request, 'reservas/consultar.html')
 
 
+@login_required(login_url='login')
+@require_http_methods(['GET'])
+def mis_reservas(request):
+    reservas = (
+        Reserva.objects.filter(usuario=request.user)
+        .prefetch_related('lineas')
+        .order_by('-fecha_realizacion', '-pk')
+    )
+    return render(request, 'reservas/mis_reservas.html', {'reservas': reservas})
+
+
+@require_http_methods(['POST'])
+def pagar_reserva_cliente(request, pk):
+    reserva = get_object_or_404(Reserva.objects.prefetch_related('lineas'), pk=pk)
+    tiene_acceso = (
+        request.session.get(f'reserva_{pk}_access')
+        or (request.user.is_authenticated and reserva.usuario_id == request.user.pk)
+        or usuario_puede_entrar_panel(request.user)
+    )
+    if not tiene_acceso:
+        return JsonResponse({'ok': False, 'error': 'No tienes permiso para pagar esta reserva.'}, status=403)
+
+    if reserva.tipo_reserva != 'Para llevar':
+        return JsonResponse({'ok': False, 'error': 'Las reservas de mesa no requieren pago anticipado.'}, status=400)
+
+    if reserva.estado in ('Cancelada', 'Realizada', 'No asistió'):
+        return JsonResponse({'ok': False, 'error': 'Esta reserva ya no admite pagos.'}, status=400)
+
+    if reserva.pago_confirmado:
+        return JsonResponse({'ok': True, 'message': 'El pago de este pedido ya estaba verificado previamente.', 'pago_confirmado': True})
+
+    metodo = request.POST.get('metodo_pago', 'Nequi').strip() or 'Nequi'
+
+    with transaction.atomic():
+        reserva.pago_confirmado = True
+        reserva.fecha_pago_confirmado = timezone.now()
+        reserva.estado = 'Confirmada'
+        reserva.metodo_pago = metodo
+        reserva.notificacion_consultada = False
+        reserva.save(update_fields=[
+            'pago_confirmado',
+            'fecha_pago_confirmado',
+            'estado',
+            'metodo_pago',
+            'notificacion_consultada',
+        ])
+        try:
+            from APP.ventas.models import Comprobante
+            Comprobante.objects.create(
+                reserva=reserva,
+                estado='Confirmado',
+                direccion_comprobante=f'comprobantes/{metodo.lower()}_{reserva.pk}.pdf',
+            )
+        except Exception:
+            pass
+
+    _notificar_reserva(reserva, request, confirmada=True)
+
+    mensaje_lindo = (
+        '¡Pago recibido con éxito! 🎉🍰✨ '
+        'Tu pedido está 100% confirmado. En Prisma estamos seleccionando los mejores '
+        'ingredientes artesanales para que tu postre esté fresco, delicioso y listo para recoger '
+        f'el {reserva.fecha_reserva.strftime("%d/%m/%Y")}'
+        + (f' a las {reserva.hora.strftime("%H:%M")}' if reserva.hora else '')
+        + '. ¡Muchísimas gracias por confiar en nosotros para endulzar tus momentos especiales!'
+    )
+
+    if 'application/json' in request.headers.get('Accept', ''):
+        return JsonResponse({
+            'ok': True,
+            'title': '¡Pago Recibido con Éxito! 🎉🍰',
+            'message': mensaje_lindo,
+            'reservation_id': reserva.pk,
+            'total': _formatear_cop(reserva.total),
+            'metodo_pago': metodo,
+            'estado': reserva.estado,
+            'pago_confirmado': True,
+            'fecha_recogida': reserva.fecha_reserva.strftime('%d/%m/%Y'),
+            'hora_recogida': reserva.hora.strftime('%H:%M') if reserva.hora else '',
+            'next_url': reverse('reserva_cliente', args=[reserva.pk]),
+        })
+    messages.success(request, mensaje_lindo)
+    return redirect('reserva_cliente', pk=pk)
+
+
 @require_http_methods(['GET', 'POST'])
 def reserva_cliente(request, pk):
-    if not request.session.get(f'reserva_{pk}_access'):
-        return redirect('consultar_reserva')
     reserva = get_object_or_404(Reserva.objects.prefetch_related('lineas'), pk=pk)
+    tiene_acceso = (
+        request.session.get(f'reserva_{pk}_access')
+        or (request.user.is_authenticated and reserva.usuario_id == request.user.pk)
+        or usuario_puede_entrar_panel(request.user)
+    )
+    if not tiene_acceso:
+        return redirect('consultar_reserva')
 
     if request.method == 'POST':
         accion = request.POST.get('accion', '')
+        if accion == 'pagar':
+            return pagar_reserva_cliente(request, pk)
+
         if accion == 'cancelar':
             if reserva.estado in ('Cancelada', 'Realizada', 'No asistió'):
-                messages.error(request, 'Esta reserva ya no se puede cancelar.')
+                msg = 'Esta reserva ya no se puede cancelar.'
+                if 'application/json' in request.headers.get('Accept', ''):
+                    return JsonResponse({'ok': False, 'error': msg}, status=400)
+                messages.error(request, msg)
             else:
                 reserva.estado = 'Cancelada'
                 reserva.save(update_fields=['estado'])
-                messages.success(request, 'La reserva fue cancelada correctamente.')
+                if reserva.pago_confirmado:
+                    msg = 'La reserva fue cancelada correctamente. Nuestro equipo se comunicará contigo para gestionar la devolución correspondiente.'
+                else:
+                    msg = 'La reserva fue cancelada correctamente y los cupos e insumos fueron liberados.'
+                if 'application/json' in request.headers.get('Accept', ''):
+                    return JsonResponse({'ok': True, 'message': msg, 'estado': 'Cancelada'})
+                messages.success(request, msg)
             return redirect('reserva_cliente', pk=pk)
         if accion == 'editar':
             if reserva.estado not in (
@@ -702,6 +872,22 @@ def gestion_reservas(request):
                 else:
                     messages.success(request, f'Estado de la reserva #{reserva.pk} actualizado.')
             return redirect('gestion_reservas')
+        if accion == 'cancelar':
+            exigir_permiso(request, 'reserva.change_reserva')
+            reserva = _reserva_posteada(request)
+            if reserva.estado in ('Cancelada', 'Realizada'):
+                messages.error(request, 'Esta reserva ya no se puede cancelar.')
+            else:
+                reserva.estado = 'Cancelada'
+                reserva.save(update_fields=['estado'])
+                if reserva.pago_confirmado:
+                    messages.success(
+                        request,
+                        f'Reserva #{reserva.pk} cancelada. Recuerda gestionar la devolución correspondiente para {reserva.nombre_cliente}.',
+                    )
+                else:
+                    messages.success(request, f'Reserva #{reserva.pk} cancelada correctamente e insumos liberados.')
+            return redirect('gestion_reservas')
         if accion == 'asistencia':
             exigir_permiso(request, 'reserva.change_reserva')
             reserva = _reserva_posteada(request)
@@ -715,7 +901,7 @@ def gestion_reservas(request):
                 reserva.estado = 'Realizada' if asistencia == 'Asistió' else 'No asistió'
                 reserva.fecha_asistencia = timezone.now()
                 reserva.save(update_fields=['asistencia', 'estado', 'fecha_asistencia'])
-                messages.success(request, f'Asistencia de la reserva #{reserva.pk} registrada.')
+                messages.success(request, f'Asistencia de la reserva #{reserva.pk} registrada: {asistencia}.')
             return redirect('gestion_reservas')
         messages.error(request, 'No se reconoció la acción solicitada.')
 
@@ -750,13 +936,17 @@ def consultar_notificacion_reserva(request, pk):
 
 
 def _render_gestion_reservas(request, reserva_editar=None):
-    reservas = Reserva.objects.prefetch_related('lineas').order_by(
+    todas_las_reservas = Reserva.objects.all()
+    reservas = todas_las_reservas.prefetch_related('lineas').order_by(
         '-fecha_reserva', '-hora', '-pk'
     )
     query = request.GET.get('q', '').strip()[:100]
     fecha = request.GET.get('fecha', '').strip()
     estado = request.GET.get('estado', '').strip()
     modalidad = request.GET.get('modalidad', '').strip()
+    solo_nuevas = request.GET.get('notif') == 'nuevas'
+    if solo_nuevas:
+        reservas = reservas.filter(notificacion_consultada=False)
     if query:
         reservas = reservas.filter(
             Q(nombre_cliente__icontains=query)
@@ -778,25 +968,35 @@ def _render_gestion_reservas(request, reserva_editar=None):
         reservas = reservas.filter(tipo_reserva=modalidad)
     else:
         modalidad = ''
+    total_recaudado = sum(
+        (
+            reserva.total
+            for reserva in todas_las_reservas.filter(
+                pago_confirmado=True,
+            ).prefetch_related('lineas')
+        ),
+        start=Decimal('0.00'),
+    )
     return _render_reserva_form(
         request,
         'reservas/gestion.html',
         reservas=reservas,
-        total_pendientes=reservas.filter(estado='Pendiente').count(),
-        total_pendientes_pago=reservas.filter(estado='Pendiente de pago').count(),
-        total_confirmadas=reservas.filter(estado='Confirmada').count(),
-        total_recaudado=(
-            sum(
-                (reserva.total for reserva in reservas if reserva.pago_confirmado),
-                start=Decimal('0.00'),
-            )
-        ),
+        total_pendientes=todas_las_reservas.filter(estado='Pendiente').count(),
+        total_pendientes_pago=todas_las_reservas.filter(estado='Pendiente de pago').count(),
+        total_confirmadas=todas_las_reservas.filter(estado='Confirmada').count(),
+        total_alertas_nuevas=Reserva.objects.filter(notificacion_consultada=False).count(),
+        alertas_recientes=Reserva.objects.filter(
+            notificacion_consultada=False,
+        ).order_by('-pk')[:5],
+        canales_reserva=Reserva.choices_canal,
+        total_recaudado=total_recaudado,
         reserva_editar=reserva_editar,
         slots_editables=_slots_editables(reserva_editar),
         query=query,
         fecha_filtro=fecha,
         estado_filtro=estado,
         modalidad_filtro=modalidad,
+        solo_nuevas=solo_nuevas,
         puede_crear=usuario_puede_acceder(request.user, 'reserva.add_reserva'),
         puede_editar=usuario_puede_acceder(request.user, 'reserva.change_reserva'),
     )
