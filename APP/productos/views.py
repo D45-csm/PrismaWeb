@@ -236,6 +236,7 @@ def productos_view(request):
         'productos': productos_qs,
         'categorias': _categorias_disponibles(productos_qs),
         'productos_data': [_producto_a_json(p) for p in productos_qs],
+        'search_query': request.GET.get('q', '').strip()[:100],
     }
     return render(request, 'productos/productos.html', contexto)
 
