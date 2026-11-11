@@ -1,41 +1,51 @@
 {% load static %}
-<header id="header">
-    <div class="container">
-        <a class="logo" href="{% url 'base_cliente' %}" aria-label="Prisma, inicio">
+<header id="header" class="luxury-header{% if active == 'inicio' %} luxury-header--hero{% endif %}">
+    <div class="container header-container">
+        <a class="logo luxury-logo" href="{% url 'base_cliente' %}" aria-label="Prisma, inicio">
             <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
         </a>
 
         <nav class="nav-menu" id="navMenu" aria-label="Navegación principal">
             <ul>
                 <li><a class="{% if active == 'inicio' %}active{% endif %}" href="{% url 'base_cliente' %}">Inicio</a></li>
-                <li><a class="{% if active == 'productos' %}active{% endif %}" href="{% url 'productos' %}">Productos</a></li>
-                <li><a class="{% if active == 'reservas' %}active{% endif %}" href="{% url 'reservas' %}">Reserva</a></li>
+                <li><a class="{% if active == 'productos' %}active{% endif %}" href="{% url 'productos' %}">Catálogo</a></li>
+                <li><a class="{% if active == 'reservas' %}active{% endif %}" href="{% url 'reservas' %}">Reservas</a></li>
+                {% if user.is_authenticated and not user.is_staff and not user.is_superuser %}
+                    <li><a class="{% if active == 'mis-reservas' %}active{% endif %}" href="{% url 'mis_reservas' %}">Mis reservas</a></li>
+                {% endif %}
                 <li><a class="{% if active == 'contactos' %}active{% endif %}" href="{% url 'contactos' %}">Contacto</a></li>
             </ul>
         </nav>
 
         <div class="header-actions">
-            {% if user.is_authenticated and not user.is_staff and not user.is_superuser %}
-                <span class="customer-session-label">Hola, {{ user.username }}</span>
-                <form method="post" action="{% url 'logout' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="customer-logout-button">Cerrar sesión</button>
-                </form>
-            {% else %}
-                <a href="{% url 'login' %}" class="btn-login" aria-label="Iniciar sesión">
-                    <i class="fas fa-user"></i>
-                </a>
-            {% endif %}
-            <a href="{% url 'carrito' %}" class="btn-cart" aria-label="Ver carrito">
+            <a href="{% url 'reservas' %}" class="header-action-btn" title="Notificaciones de reserva" aria-label="Notificaciones">
+                <i class="far fa-bell"></i>
+            </a>
+            <a href="{% url 'productos' %}" class="header-action-btn" title="Favoritos" aria-label="Favoritos">
+                <i class="far fa-heart"></i>
+            </a>
+            <a href="{% url 'carrito' %}" class="btn-cart header-action-btn" aria-label="Ver carrito">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="cart-count">0</span>
             </a>
+            {% if user.is_authenticated and not user.is_staff and not user.is_superuser %}
+                <div class="customer-session-pill">
+                    <span class="customer-session-label"><i class="fas fa-user-circle"></i> {{ user.username }}</span>
+                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="customer-logout-button" title="Cerrar sesión"><i class="fas fa-sign-out-alt"></i></button>
+                    </form>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn-login header-action-btn" aria-label="Iniciar sesión" title="Mi Cuenta">
+                    <i class="far fa-user"></i>
+                </a>
+            {% endif %}
         </div>
+
+        <button class="mobile-menu-btn header-action-btn" type="button" aria-label="Abrir menú" aria-expanded="false"
+                aria-controls="navMenu" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars" aria-hidden="true"></i>
+        </button>
     </div>
 </header>
-<div class="mobile-menu-dock container">
-    <button class="mobile-menu-btn" type="button" aria-label="Abrir menú" aria-expanded="false"
-            aria-controls="navMenu" onclick="toggleMobileMenu()">
-        <i class="fas fa-bars"></i>
-    </button>
-</div>
