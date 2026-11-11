@@ -152,6 +152,54 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => toast.remove(), 3000);
     };
 
+    const mostrarNotificacionCarrito = (titulo, mensaje) => {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification cart-toast';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+
+        const contenido = document.createElement('span');
+        contenido.className = 'cart-toast-content';
+        const encabezado = document.createElement('strong');
+        encabezado.textContent = titulo;
+        const detalle = document.createElement('span');
+        detalle.textContent = mensaje;
+        contenido.append(encabezado, detalle);
+
+        toast.append(contenido);
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3600);
+    };
+
+    const mostrarAccesoCarrito = () => {
+        const toast = document.createElement('div');
+        toast.className = 'cart-toast-action';
+        toast.setAttribute('role', 'status');
+        toast.setAttribute('aria-live', 'polite');
+
+        const link = document.createElement('a');
+        link.className = 'cart-toast-action-link';
+        link.href = URLS.carrito || '/carrito/';
+        link.setAttribute('aria-label', `Ir al carrito, ${carrito.reduce((sum, item) => sum + item.cantidad, 0)} productos`);
+
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-cart-shopping';
+        icon.setAttribute('aria-hidden', 'true');
+
+        const label = document.createElement('span');
+        label.textContent = 'Ir al carrito';
+
+        const count = document.createElement('span');
+        count.className = 'cart-toast-action-count';
+        count.textContent = carrito.reduce((sum, item) => sum + item.cantidad, 0);
+        count.setAttribute('aria-hidden', 'true');
+
+        link.append(icon, label, count);
+        toast.append(link);
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3600);
+    };
+
 
     const escapeHTML = (t) => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const capitalizar = (t) => t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
@@ -167,6 +215,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const previo = document.activeElement;
         const overlay = document.createElement('div');
         overlay.className = 'pz-overlay';
+        if (claseExtra.split(/\s+/).includes('cart-clear-confirmation')) {
+            overlay.classList.add('cart-clear-overlay');
+        }
         overlay.innerHTML = `<div class="pz-dialog ${claseExtra}" role="dialog" aria-modal="true">${html}</div>`;
         document.body.appendChild(overlay);
         document.body.style.overflow = 'hidden';
@@ -200,9 +251,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const confirmarPrisma = ({ icono = 'fa-circle-question', inicial = '', titulo, mensaje, confirmar = 'Aceptar', cancelar = 'Cancelar' }) =>
+    const confirmarPrisma = ({ icono = 'fa-circle-question', inicial = '', titulo, mensaje, confirmar = 'Aceptar', cancelar = 'Cancelar', claseExtra = '' }) =>
         abrirModalPrisma({
-            claseExtra: 'pz-confirm',
+            claseExtra: `pz-confirm ${claseExtra}`,
             html: `
                 <div class="pz-rainbow"></div>
                 <div class="pz-icon">${inicial ? `<span>${escapeHTML(inicial)}</span>` : `<i class="fas ${icono}"></i>`}</div>
@@ -245,60 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         actualizar();
     };
-
-    // ---------- Datos de contacto para finalizar un pedido ----------
-    const pedirDatosPedido = ({ totalPostres, total }) => abrirModalPrisma({
-        claseExtra: 'pz-pedido',
-        html: `
-            <div class="pz-rainbow"></div>
-            <button type="button" class="pz-close" data-cancel aria-label="Cerrar"><i class="fas fa-xmark"></i></button>
-            <div class="pz-icon"><i class="fas fa-bag-shopping"></i></div>
-            <h3 class="pz-title">Completa tu pedido</h3>
-            <p class="pz-text">Déjanos tus datos y la hora aproximada en que pasarás a recoger tu pedido en el local.</p>
-            <div class="pz-summary">
-                <span><i class="fas fa-cake-candles"></i>${totalPostres} ${totalPostres === 1 ? 'postre' : 'postres'}</span>
-                <strong>Total estimado: $${total.toLocaleString('es-CO')}</strong>
-            </div>
-            <div class="pz-field">
-                <label for="pzNombre">Tu nombre</label>
-                <input type="text" id="pzNombre" maxlength="100" autocomplete="name" required>
-            </div>
-            <div class="pz-field">
-                <label for="pzTelefono">Tu teléfono</label>
-                <input type="tel" id="pzTelefono" maxlength="30" autocomplete="tel" required>
-            </div>
-            <div class="pz-field">
-                <label for="pzHoraRecogida">¿A qué hora aproximada vendrás a recogerlo?</label>
-                <input type="time" id="pzHoraRecogida" required data-autofocus>
-            </div>
-            <div class="pz-field">
-                <label for="pzNotasPedido">Nota para el pedido <small>(opcional)</small></label>
-                <textarea id="pzNotasPedido" rows="3" maxlength="300" placeholder="Alguna indicación para preparar tu pedido"></textarea>
-            </div>
-            <p class="pz-error" id="pzPedidoError" role="alert" hidden></p>
-            <div class="pz-actions">
-                <button type="button" class="pz-btn pz-btn-ghost" data-cancel>Cancelar</button>
-                <button type="button" class="pz-btn pz-btn-primary" data-accept><i class="fab fa-whatsapp"></i> Enviar pedido</button>
-            </div>`,
-        alAceptar: (dlg) => {
-            const nombre = dlg.querySelector('#pzNombre').value.trim();
-            const telefono = dlg.querySelector('#pzTelefono').value.trim();
-            const horaRecogida = dlg.querySelector('#pzHoraRecogida').value;
-            const error = dlg.querySelector('#pzPedidoError');
-            if (!nombre || !telefono || !horaRecogida) {
-                error.textContent = 'Completa tu nombre, teléfono y hora de recogida.';
-                error.hidden = false;
-                dlg.querySelector(!nombre ? '#pzNombre' : !telefono ? '#pzTelefono' : '#pzHoraRecogida').focus();
-                return false;
-            }
-            return {
-                nombre,
-                telefono,
-                horaRecogida,
-                notas: dlg.querySelector('#pzNotasPedido').value.trim(),
-            };
-        }
-    });
 
     // ---------- Menú móvil (se construye solo, sirve para todas las páginas) ----------
     let setMenuMovil = () => {};
@@ -372,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
         actualizarContadorCarrito();
-        mostrarNotificacion(`✅ ${producto.nombre} agregado`);
+        mostrarAccesoCarrito();
     };
 
     const agregarDesdeModal = () => {
@@ -381,52 +378,110 @@ document.addEventListener('DOMContentLoaded', () => {
         cerrarModal();
     };
 
-    const cambiarCantidad = (id, delta) => {
-        const item = carrito.find(i => i.id === id);
+    const cambiarCantidad = (id, delta, tamaño = 'personal') => {
+        const item = carrito.find(i => i.id === id && i.tamaño === tamaño);
         if (!item) return;
-        item.cantidad += delta;
-        if (item.cantidad <= 0) {
-            carrito = carrito.filter(i => i.id !== id);
+        if (item.cantidad + delta <= 0) {
+            eliminarItem(id, tamaño);
+            return;
         }
+        item.cantidad += delta;
         localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
         actualizarContadorCarrito();
         renderizarCarrito();
     };
 
-    const eliminarItem = (id) => {
-        carrito = carrito.filter(i => i.id !== id);
+    const eliminarItem = async (id, tamaño = 'personal') => {
+        const item = carrito.find(i => i.id === id && i.tamaño === tamaño);
+        if (!item) return;
+
+        const confirmado = await confirmarPrisma({
+            icono: 'fa-trash-can',
+            titulo: '¿Eliminar producto?',
+            mensaje: `¿Estás seguro de que quieres eliminar <strong>${escapeHTML(item.nombre)}</strong> del carrito? Esta acción no se puede deshacer.`,
+            confirmar: 'Eliminar producto',
+            cancelar: 'Cancelar',
+            claseExtra: 'cart-clear-confirmation'
+        });
+        if (!confirmado) return;
+
+        carrito = carrito.filter(i => i !== item);
         localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
         actualizarContadorCarrito();
         renderizarCarrito();
-        mostrarNotificacion('🗑️ Producto eliminado');
+        mostrarNotificacionCarrito('¡Producto eliminado!', `${item.nombre} se eliminó del carrito`);
+    };
+
+    const vaciarCarrito = async () => {
+        if (carrito.length === 0) return;
+
+        const confirmado = await confirmarPrisma({
+            icono: 'fa-trash-can',
+            titulo: 'Vaciar carrito',
+            mensaje: '¿Estás seguro de que quieres eliminar todos los productos del carrito? Esta acción no se puede deshacer.',
+            confirmar: 'Vaciar carrito',
+            cancelar: 'Cancelar',
+            claseExtra: 'cart-clear-confirmation'
+        });
+        if (!confirmado) return;
+
+        carrito = [];
+        localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
+        actualizarContadorCarrito();
+        renderizarCarrito();
+        mostrarNotificacionCarrito('Carrito vaciado', 'Se eliminaron todos los productos.');
     };
 
     const renderizarCarrito = () => {
         const container = document.getElementById('cartItemsList');
         if (!container) return;
+        const botonPago = document.getElementById('proceedToPayment');
+        if (botonPago) botonPago.disabled = carrito.length === 0;
+        const botonVaciar = document.getElementById('clearCartButton');
+        if (botonVaciar) botonVaciar.hidden = carrito.length === 0;
 
         if (carrito.length === 0) {
-            container.innerHTML = '<div class="empty-cart"><i class="fas fa-shopping-basket"></i><p>Tu carrito está vacío 😢</p></div>';
+            container.innerHTML = `
+                <div class="empty-cart">
+                    <span class="empty-cart-icon"><i class="fas fa-bag-shopping" aria-hidden="true"></i></span>
+                    <span class="empty-cart-eyebrow">Aún no hay productos</span>
+                    <h3>Tu próxima elección te espera</h3>
+                    <p>Explora nuestros postres y agrega tus favoritos al carrito.</p>
+                    <a class="empty-cart-link" href="${escapeHTML(URLS.productos || '/productos/catalogo/')}">
+                        Explorar productos <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>`;
             document.getElementById('subtotal').textContent = '$0';
             document.getElementById('total').textContent = '$0';
+            document.getElementById('cartItemsCount').textContent = '0 productos';
+            document.getElementById('cartSummaryCount').textContent = '0 artículos';
+            const checkoutSection = document.getElementById('checkoutSection');
+            if (checkoutSection) checkoutSection.hidden = true;
             return;
         }
 
         let subtotal = 0;
+        let totalUnidades = 0;
         container.innerHTML = carrito.map(item => {
             subtotal += item.precio * item.cantidad;
+            totalUnidades += item.cantidad;
+            const detalleTamaño = item.tamaño !== 'personal'
+                ? `<p class="item-size">Tamaño: ${escapeHTML(item.tamaño)}</p>`
+                : '';
             return `
                 <div class="cart-item">
                     <img src="${imgUrl(item.img)}" alt="${item.nombre}">
                     <div class="cart-item-info">
-                        <h4>${item.nombre}</h4>
-                        <p class="item-size">Tamaño: ${item.tamaño}</p>
+                        <div class="cart-item-details">
+                            <h4>${escapeHTML(item.nombre)}</h4>
+                            ${detalleTamaño}
+                        </div>
                         <p class="item-price">$${item.precio.toLocaleString('es-CO')}</p>
                         <div class="cart-item-actions">
-                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, -1)">−</button>
+                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, -1, '${escapeHTML(item.tamaño)}')" aria-label="Disminuir cantidad de ${escapeHTML(item.nombre)}">−</button>
                             <span>${item.cantidad}</span>
-                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, 1)">+</button>
-                            <button class="cart-item-remove" onclick="eliminarItem(${item.id})" title="Quitar"><i class="fas fa-trash"></i></button>
+                            <button class="qty-btn" onclick="cambiarCantidad(${item.id}, 1, '${escapeHTML(item.tamaño)}')" aria-label="Aumentar cantidad de ${escapeHTML(item.nombre)}">+</button>
+                            <button class="cart-item-remove" onclick="eliminarItem(${item.id}, '${escapeHTML(item.tamaño)}')" title="Quitar" aria-label="Eliminar ${escapeHTML(item.nombre)} del carrito"><i class="fas fa-trash" aria-hidden="true"></i></button>
                         </div>
                     </div>
                 </div>
@@ -435,47 +490,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('subtotal').textContent = '$' + subtotal.toLocaleString('es-CO');
         document.getElementById('total').textContent = '$' + subtotal.toLocaleString('es-CO');
+        const etiquetaUnidades = `${totalUnidades} ${totalUnidades === 1 ? 'artículo' : 'artículos'}`;
+        document.getElementById('cartItemsCount').textContent = `${totalUnidades} ${totalUnidades === 1 ? 'producto' : 'productos'}`;
+        document.getElementById('cartSummaryCount').textContent = etiquetaUnidades;
     };
 
-    const checkout = async () => {
-        if (carrito.length === 0) {
-            mostrarNotificacion('🛒 Tu carrito está vacío');
-            return;
-        }
-
-        const totalPostres = carrito.reduce((sum, i) => sum + i.cantidad, 0);
-        const subtotal = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
-        const total = subtotal;
-        const fmt = (n) => '$' + n.toLocaleString('es-CO');
-
-        const datos = await pedirDatosPedido({ totalPostres, total });
-        if (!datos) return;
-
-        const lineas = carrito.map((i, n) =>
-            `${n + 1}. ${i.nombre} (${capitalizar(i.tamaño)}) ×${i.cantidad} — ${fmt(i.precio * i.cantidad)}`
-        ).join('\n');
-
-        const texto = [
-            '🌈 *PEDIDO · PRISMA*',
-            '━━━━━━━━━━━━━━',
-            `👤 *Cliente:* ${capitalizar(datos.nombre)}`,
-            `📱 *Teléfono:* ${datos.telefono}`,
-            `🕒 *Hora aproximada de recogida en el local:* ${datos.horaRecogida}`,
-            '',
-            '🍰 *Productos del pedido*',
-            lineas,
-            '',
-            `🔢 Total de postres: ${totalPostres}`,
-            `💰 *Total estimado: ${fmt(total)}*`,
-            '',
-            '📝 *Nota para el pedido*',
-            datos.notas || 'Sin indicaciones especiales.',
-            '━━━━━━━━━━━━━━',
-            'Quedo atento(a) a la confirmación de mi pedido. ¡Gracias! 🙌'
-        ].join('\n');
-
-        mostrarNotificacion('📲 Abriendo WhatsApp para confirmar tu pedido…');
-        window.open(`https://wa.me/573118689862?text=${encodeURIComponent(texto)}`, '_blank');
+    const checkout = () => {
+        if (carrito.length === 0) return;
+        window.location.assign(URLS.reservas || '/reserva/');
     };
 
     // ============================================
@@ -1288,6 +1310,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     construirMenuMovil();
+    const botonPago = document.getElementById('proceedToPayment');
+    if (botonPago) botonPago.addEventListener('click', checkout);
     window.toggleMobileMenu = () => {
         const nav = document.getElementById('navMenu');
         if (nav) setMenuMovil(!nav.classList.contains('mobile-open'));
@@ -1359,6 +1383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.agregarDesdeModal = agregarDesdeModal;
     window.cambiarCantidad = cambiarCantidad;
     window.eliminarItem = eliminarItem;
+    window.vaciarCarrito = vaciarCarrito;
     window.checkout = checkout;
     window.abrirModal = abrirModal;
     window.cerrarModal = cerrarModal;

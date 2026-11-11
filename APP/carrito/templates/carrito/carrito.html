@@ -8,14 +8,32 @@
 
     <main class="cart-section">
         <div class="container">
-            <h1>Tu carrito</h1>
+            <header class="cart-page-heading">
+                <div>
+                    <h1>Carrito de compras</h1>
+                    <p>Revisa tus productos antes de proceder al pago</p>
+                </div>
+            </header>
+
             <div class="cart-layout">
                 <section class="cart-items-container" aria-label="Productos en el carrito">
+                    <div class="cart-list-heading">
+                        <span>Tu selección</span>
+                        <span id="cartItemsCount">0 productos</span>
+                    </div>
                     <div id="cartItemsList" aria-live="polite"></div>
                 </section>
 
                 <aside class="cart-summary" aria-label="Resumen de compra">
-                    <h3>Resumen de tu pedido</h3>
+                    <div class="cart-summary-heading">
+                        <div>
+                            <h2>Resumen del pedido</h2>
+                        </div>
+                        <button class="cart-summary-clear" id="clearCartButton" type="button" onclick="vaciarCarrito()" aria-label="Vaciar carrito" title="Vaciar carrito" hidden>
+                            <i class="fas fa-trash-can" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <p class="cart-summary-count" id="cartSummaryCount">0 artículos</p>
                     <div class="summary-row">
                         <span>Subtotal</span>
                         <span id="subtotal">$0</span>
@@ -24,12 +42,15 @@
                         <span>Total estimado</span>
                         <span id="total">$0</span>
                     </div>
-                    <button class="btn-primary btn-full" type="button" onclick="checkout()">
-                        Continuar con el pedido <i class="fas fa-arrow-right"></i>
+                    <button class="btn-primary btn-full" id="proceedToPayment" type="button" disabled>
+                        Proceder al pago <i class="fas fa-arrow-right"></i>
                     </button>
                     <a class="continue-shopping" href="{% url 'productos' %}">Seguir comprando</a>
+                    <p class="cart-summary-note"><i class="fab fa-whatsapp" aria-hidden="true"></i> El pago se coordina por WhatsApp al confirmar el pedido.</p>
                 </aside>
             </div>
+
         </div>
     </main>
+
 {% endblock %}
