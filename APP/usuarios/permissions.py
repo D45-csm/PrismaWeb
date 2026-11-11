@@ -11,6 +11,7 @@ PERMISOS_DE_VISTA_DEL_PANEL = (
     'insumos.view_insumo',
     'compra_insumos.view_compra_insumo',
     'productos.view_producto',
+    'recetas.view_receta',
     'ventas.view_venta',
 )
 
