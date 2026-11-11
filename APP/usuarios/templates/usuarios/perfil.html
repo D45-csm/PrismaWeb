@@ -160,7 +160,7 @@
 
 
             <!-- Reservas -->
-            <a {% if permisos_modulos.reservas %}href="#reservas"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+            <a {% if permisos_modulos.reservas %}href="{% url 'gestion_reservas' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
                class="quick-action{% if not permisos_modulos.reservas %} dashboard-module-blocked{% endif %}">
                 <div class="quick-icon purple-icon">
                     <i class="fa-regular fa-calendar-days"></i>
@@ -243,6 +243,9 @@
                 <h2>Reservas recientes</h2>
                 <p>Consulta las últimas reservas registradas.</p>
             </div>
+            {% if permisos_modulos.reservas %}
+                <a class="btn btn-primary" href="{% url 'gestion_reservas' %}">Gestionar reservas</a>
+            {% endif %}
         </div>
 
         {% if permisos_modulos.reservas %}
@@ -254,7 +257,7 @@
                         <th>Cliente</th>
                         <th>Fecha</th>
                         <th>Hora</th>
-                        <th>Postre / cantidad</th>
+                        <th>Productos / cantidad</th>
                         <th>Estado</th>
                     </tr>
                 </thead>

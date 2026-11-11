@@ -12,15 +12,16 @@
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 
     <!-- CSS del sitio -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=35">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=43">
     <link rel="stylesheet" href="{% static 'css/messages.css' %}?v=3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Bloque para preloads específicos por página -->
     {% block extra_head %}{% endblock %}
 
-    <!-- SweetAlert2 diferido para no bloquear el render inicial -->
+    <!-- SweetAlert2 & Canvas Confetti para alertas animadas festivas -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
 
     <noscript>
         <style>
@@ -58,7 +59,7 @@
             }
         };
     </script>
-    <script src="{% static 'js/script.js' %}?v=13" defer></script>
+    <script src="{% static 'js/script.js' %}?v=12" defer></script>
     <script src="{% static 'js/admin_messages.js' %}" defer></script>
 </body>
 </html>

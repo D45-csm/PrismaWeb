@@ -60,6 +60,82 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const carousel = document.getElementById('homeCarousel');
+    if (carousel) {
+        const slides = [...carousel.querySelectorAll('.hero-slide')];
+        const dots = [...carousel.querySelectorAll('.hero-carousel-dot')];
+        let currentSlide = 0;
+        let timer = null;
+        let isPaused = false;
+
+        const showSlide = (nextSlide) => {
+            currentSlide = (nextSlide + slides.length) % slides.length;
+            slides.forEach((slide, index) => {
+                const isActive = index === currentSlide;
+                slide.classList.toggle('is-active', isActive);
+                slide.setAttribute('aria-hidden', String(!isActive));
+            });
+            dots.forEach((dot, index) => {
+                const isActive = index === currentSlide;
+                dot.classList.toggle('is-active', isActive);
+                dot.setAttribute('aria-pressed', String(isActive));
+            });
+        };
+
+        const stopAutoplay = () => {
+            window.clearInterval(timer);
+            timer = null;
+        };
+        const startAutoplay = () => {
+            stopAutoplay();
+            if (!isPaused && !prefersReducedMotion && !document.hidden && slides.length > 1) {
+                timer = window.setInterval(() => showSlide(currentSlide + 1), 4500);
+            }
+        };
+
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                showSlide(index);
+                startAutoplay();
+            });
+        });
+        carousel.addEventListener('mouseenter', () => {
+            isPaused = true;
+            stopAutoplay();
+        });
+        carousel.addEventListener('mouseleave', () => {
+            isPaused = false;
+            startAutoplay();
+        });
+        carousel.addEventListener('focusin', () => {
+            isPaused = true;
+            stopAutoplay();
+        });
+        carousel.addEventListener('focusout', (event) => {
+            if (!carousel.contains(event.relatedTarget)) {
+                isPaused = false;
+                startAutoplay();
+            }
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopAutoplay();
+                return;
+            }
+            isPaused = false;
+            startAutoplay();
+        });
+        window.addEventListener('pagehide', () => {
+            isPaused = false;
+            stopAutoplay();
+        });
+        window.addEventListener('pageshow', () => {
+            isPaused = false;
+            startAutoplay();
+        });
+        startAutoplay();
+    }
+
     let carrito = JSON.parse(localStorage.getItem('prismaCarrito')) || [];
     let productoActual = null;
     let origenActual = 'productos';
@@ -237,12 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <button type="button" class="drawer-close" aria-label="Cerrar menú"><i class="fas fa-xmark"></i></button>`;
         nav.prepend(head);
 
-        const iconos = { [URLS.inicio]: 'fa-house', [URLS.productos]: 'fa-cake-candles', [URLS.reservas]: 'fa-calendar-check', [URLS.contactos]: 'fa-comments', [URLS.temporada]: 'fa-apple-whole' };
-        nav.querySelectorAll('ul a').forEach(a => {
-            const ic = iconos[a.getAttribute('href')] || 'fa-star';
-            a.insertAdjacentHTML('afterbegin', `<span class="nav-ico"><i class="fas ${ic}"></i></span>`);
-        });
-
         const textoWa = encodeURIComponent('Hola Prisma 👋 Quisiera información para hacer una reserva.');
         const foot = document.createElement('div');
         foot.className = 'drawer-foot';
@@ -262,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.toggle('menu-open', abierto);
             if (btnBurger) {
                 btnBurger.setAttribute('aria-expanded', abierto);
-                btnBurger.innerHTML = `<i class="fas ${abierto ? 'fa-xmark' : 'fa-bars'}"></i>`;
+                btnBurger.setAttribute('aria-label', abierto ? 'Cerrar menú' : 'Abrir menú');
             }
         };
 
@@ -436,6 +506,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderProductos = (lista) => {
         const grid = document.getElementById('productosGrid');
         if (!grid) return;
+        if (!lista.length) {
+            grid.innerHTML = '<p class="product-search-empty">No encontramos postres con esa búsqueda. Prueba con otro nombre o categoría.</p>';
+            return;
+        }
         grid.innerHTML = lista.map(p => `
             <div class="product-card">
                 <img src="${imgUrl(p.img)}" alt="${p.nombre}" loading="lazy" decoding="async">
@@ -576,11 +650,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // 6. FILTROS DE PRODUCTOS
     // ============================================
+    let categoriaActiva = 'todos';
+    let textoBusqueda = '';
+    const normalizarBusqueda = (texto) => texto
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('es-CO')
+        .trim();
+    const actualizarProductosFiltrados = () => {
+        const termino = normalizarBusqueda(textoBusqueda);
+        const filtrados = productos.filter(producto => {
+            const coincideCategoria = categoriaActiva === 'todos' || producto.categoria === categoriaActiva;
+            const contenido = normalizarBusqueda(`${producto.nombre} ${producto.categoria} ${producto.desc || ''}`);
+            return coincideCategoria && (!termino || contenido.includes(termino));
+        });
+        renderProductos(filtrados);
+    };
     const filtrarProductos = (categoria) => {
+        categoriaActiva = categoria;
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         const btnActivo = document.querySelector(`.filter-btn[data-categoria="${categoria}"]`);
         if (btnActivo) btnActivo.classList.add('active');
-        renderProductos(categoria === 'todos' ? productos : productos.filter(p => p.categoria === categoria));
+        actualizarProductosFiltrados();
     };
 
     // ============================================
@@ -615,19 +706,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicializar componentes según la página
     if (document.getElementById('productosGrid')) {
-        renderProductos(productos);
         const sInput = document.getElementById('searchInput');
         if (sInput) {
-            let searchDebounceTimer = null;
+            textoBusqueda = sInput.value;
             sInput.addEventListener('input', (e) => {
-                clearTimeout(searchDebounceTimer);
-                searchDebounceTimer = setTimeout(() => {
-                    const q = e.target.value.toLowerCase().trim();
-                    const filtrados = q ? productos.filter(p => p.nombre.toLowerCase().includes(q)) : productos;
-                    renderProductos(filtrados);
-                }, 50);
+                textoBusqueda = e.target.value;
+                actualizarProductosFiltrados();
             });
         }
+        actualizarProductosFiltrados();
     }
 
     if (document.getElementById('temporadaGrid')) renderTemporada();
@@ -635,94 +722,589 @@ document.addEventListener('DOMContentLoaded', () => {
 
     actualizarContadorCarrito();
 
-    // Formularios
+    const formatearCOP = (valor) => new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0,
+    }).format(valor);
+
+    // Helper Confetti Animado
+    const lanzarConfetti = (duracionMs = 2500) => {
+        if (typeof confetti === 'function') {
+            confetti({
+                particleCount: 120,
+                spread: 80,
+                origin: { y: 0.6 },
+                colors: ['#df9f28', '#d97885', '#faecd3', '#2d8a5e', '#b87e14']
+            });
+            const fin = Date.now() + duracionMs;
+            const intervalo = setInterval(() => {
+                if (Date.now() > fin) return clearInterval(intervalo);
+                confetti({
+                    particleCount: 25,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#df9f28', '#d97885', '#f8dfcf']
+                });
+                confetti({
+                    particleCount: 25,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#df9f28', '#d97885', '#faecd3']
+                });
+            }, 300);
+        }
+    };
+
+    // Formularios y Módulo de Reservas
     const reservaForm = document.getElementById('reservaForm');
     if (reservaForm) {
-        const inputCantidad = document.getElementById('cantidad');
-        const selectPostre = document.getElementById('postre');
-        const summaryQty = document.getElementById('summaryQty');
-        const summaryPostre = document.getElementById('summaryPostre');
-        const btnMenos = document.getElementById('qtyMenos');
+        const reservaProductosList = document.getElementById('reservaProductosList');
+        const reservaProductoCards = [...reservaForm.querySelectorAll('[data-reserva-producto-slot]')];
+        const reservationTimeInputs = [...reservaForm.querySelectorAll('input[name="hora"]')];
+        const addReservaProducto = document.getElementById('addReservaProducto');
+        const reservaProductosHint = document.getElementById('reservaProductosHint');
+        const modalidadCardMesa = document.getElementById('modalityCardMesa');
+        const modalidadCardLlevar = document.getElementById('modalityCardLlevar');
+        const groupNumeroPersonas = document.getElementById('groupNumeroPersonas');
+        const takeawayAuthNotice = document.getElementById('takeawayAuthNotice');
+        const numeroPersonasInput = document.getElementById('numero_personas');
+        const totalNoteText = document.getElementById('totalNoteText');
+        const btnSubmitReserva = document.getElementById('btnSubmitReserva');
+        const paymentModalOverlay = document.getElementById('paymentModalOverlay');
 
-        // Campo "¿Cómo quieres tu reserva?" (se agrega solo si la página aún no lo tiene)
-        let detalles = document.getElementById('detalles');
-        if (!detalles) {
-            const grupo = document.createElement('div');
-            grupo.className = 'form-group-icon detalles-group';
-            grupo.innerHTML = `
-                <label for="detalles"><i class="fas fa-pen-to-square"></i> ¿Cómo quieres tu reserva? <small>(opcional)</small></label>
-                <textarea id="detalles" name="detalles" rows="4" maxlength="500" placeholder="Cuéntanos los detalles: ocasión, mensaje en el postre, sabores, alergias, hora de entrega, si es para regalo…"></textarea>
-                <div class="pz-chips" id="detallesChips"></div>
-                <div class="pz-counter"><span id="detallesCount">0</span>/500</div>`;
-            const ancla = reservaForm.querySelector('.reservas-summary') || reservaForm.querySelector('[type="submit"]');
-            if (ancla && ancla.parentNode) ancla.parentNode.insertBefore(grupo, ancla);
-            else reservaForm.appendChild(grupo);
-            detalles = document.getElementById('detalles');
+        // Función para actualizar cálculos de productos
+        const actualizarProductosReserva = () => {
+            const visibles = reservaProductoCards.filter(card => card.classList.contains('is-visible'));
+            const seleccionados = visibles.filter(card => card.querySelector('select')?.value);
+            let totalEstimado = 0;
+            visibles.forEach(card => {
+                const select = card.querySelector('select');
+                if (!select) return;
+                const cantidad = Number(card.querySelector('input[type="number"]')?.value) || 0;
+                const precio = Number(select.selectedOptions[0]?.dataset.price) || 0;
+                const subtotal = precio * cantidad;
+                totalEstimado += subtotal;
+                const subtotalEl = card.querySelector('[data-reserva-line-total]');
+                if (subtotalEl) {
+                    subtotalEl.textContent = select.value
+                        ? `${formatearCOP(precio)} c/u · Subtotal: ${formatearCOP(subtotal)}`
+                        : '';
+                }
+                select.required = seleccionados.length === 0 && card === visibles[0];
+                const removeButton = card.querySelector('[data-remove-reserva-producto]');
+                if (removeButton) removeButton.hidden = visibles.length === 1;
+            });
+            const totalEl = document.getElementById('reservaTotalEstimate');
+            if (totalEl) totalEl.textContent = formatearCOP(totalEstimado);
+            if (addReservaProducto) {
+                const quedaEspacio = reservaProductoCards.some(card => !card.classList.contains('is-visible'));
+                addReservaProducto.hidden = !quedaEspacio;
+                addReservaProducto.disabled = !quedaEspacio;
+            }
+            if (reservaProductosHint) {
+                const cantidad = seleccionados.length;
+                reservaProductosHint.textContent = cantidad
+                    ? `${cantidad} postre${cantidad === 1 ? '' : 's'} seleccionado${cantidad === 1 ? '' : 's'} para tu reserva.`
+                    : 'Elige al menos un postre para continuar.';
+            }
+
+        };
+
+        if (reservaProductosList && reservaProductoCards.length) {
+            reservaProductosList.classList.add('is-interactive');
+
+            reservaProductoCards.forEach(card => {
+                const select = card.querySelector('select');
+                if (select) {
+                    select.required = false;
+                    select.addEventListener('change', actualizarProductosReserva);
+                }
+                const numInput = card.querySelector('input[type="number"]');
+                if (numInput) numInput.addEventListener('input', actualizarProductosReserva);
+                const removeButton = card.querySelector('[data-remove-reserva-producto]');
+                if (removeButton) {
+                    removeButton.addEventListener('click', () => {
+                        if (select) select.value = '';
+                        if (numInput) numInput.value = '1';
+                        card.classList.remove('is-visible');
+                        actualizarProductosReserva();
+                    });
+                }
+            });
+
+            if (addReservaProducto) {
+                addReservaProducto.hidden = false;
+                addReservaProducto.addEventListener('click', () => {
+                    const siguiente = reservaProductoCards.find(card => !card.classList.contains('is-visible'));
+                    if (!siguiente) return;
+                    siguiente.classList.add('is-visible');
+                    actualizarProductosReserva();
+                    siguiente.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    siguiente.querySelector('select')?.focus({ preventScroll: true });
+                });
+            }
+            actualizarProductosReserva();
         }
-        activarDetalles(detalles, document.getElementById('detallesChips'), document.getElementById('detallesCount'));
-        const btnMas = document.getElementById('qtyMas');
 
-        const actualizarResumenReserva = () => {
-            if (!inputCantidad || !summaryQty) return;
-            let cantidad = parseInt(inputCantidad.value, 10);
-            if (isNaN(cantidad) || cantidad < 1) cantidad = 1;
-            if (cantidad > 50) cantidad = 50;
-            inputCantidad.value = cantidad;
-            summaryQty.textContent = cantidad;
-            if (summaryPostre) {
-                summaryPostre.textContent = selectPostre && selectPostre.value ? selectPostre.value : 'selecciona un postre';
+        // Stepper Quantity Buttons (+ / -)
+        document.querySelectorAll('.qty-btn-minus').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = document.getElementById(btn.dataset.target);
+                if (target && Number(target.value) > 1) {
+                    target.value = Number(target.value) - 1;
+                    actualizarProductosReserva();
+                }
+            });
+        });
+        document.querySelectorAll('.qty-btn-plus').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = document.getElementById(btn.dataset.target);
+                if (target && Number(target.value) < 50) {
+                    target.value = Number(target.value) + 1;
+                    actualizarProductosReserva();
+                }
+            });
+        });
+
+        // Modality Switcher (Mesa vs Para Llevar)
+        const actualizarModalidad = (modalidad) => {
+            const esMesa = modalidad === 'Mesa';
+            if (modalidadCardMesa && modalidadCardLlevar) {
+                if (esMesa) {
+                    modalidadCardMesa.classList.add('is-selected');
+                    modalidadCardLlevar.classList.remove('is-selected');
+                    const radioMesa = document.getElementById('modalidad_mesa');
+                    if (radioMesa) radioMesa.checked = true;
+                } else {
+                    modalidadCardLlevar.classList.add('is-selected');
+                    modalidadCardMesa.classList.remove('is-selected');
+                    const radioLlevar = document.getElementById('modalidad_llevar');
+                    if (radioLlevar) radioLlevar.checked = true;
+                }
+            }
+
+            if (groupNumeroPersonas) {
+                groupNumeroPersonas.hidden = !esMesa;
+            }
+            if (numeroPersonasInput) {
+                numeroPersonasInput.required = esMesa;
+            }
+
+            if (takeawayAuthNotice) {
+                takeawayAuthNotice.hidden = esMesa;
+            }
+
+            if (totalNoteText) {
+                totalNoteText.textContent = esMesa
+                    ? 'Las mesas no requieren pago anticipado. Te recibimos en nuestro local.'
+                    : 'Para llevar requiere inicio de sesión y pago anticipado.';
+            }
+
+            if (btnSubmitReserva) {
+                const btnText = btnSubmitReserva.querySelector('.btn-text');
+                if (btnText) {
+                    btnText.textContent = esMesa
+                        ? 'Confirmar mi Reserva de Mesa'
+                        : 'Registrar y Continuar al Pago Seguro';
+                }
             }
         };
 
-        if (btnMenos) btnMenos.addEventListener('click', () => {
-            inputCantidad.value = Math.max(1, (parseInt(inputCantidad.value, 10) || 1) - 1);
-            actualizarResumenReserva();
+        if (modalidadCardMesa) {
+            modalidadCardMesa.addEventListener('click', () => actualizarModalidad('Mesa'));
+        }
+        if (modalidadCardLlevar) {
+            modalidadCardLlevar.addEventListener('click', () => actualizarModalidad('Para llevar'));
+        }
+
+        const tipoReservaSelect = document.getElementById('tipo_reserva');
+        if (tipoReservaSelect) {
+            tipoReservaSelect.addEventListener('change', () => actualizarModalidad(tipoReservaSelect.value));
+        }
+
+        // Guests Pills
+        document.querySelectorAll('.guest-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('.guest-pill').forEach(p => p.classList.remove('is-active'));
+                pill.classList.add('is-active');
+                if (numeroPersonasInput) {
+                    numeroPersonasInput.value = pill.dataset.guests;
+                }
+            });
         });
-        if (btnMas) btnMas.addEventListener('click', () => {
-            inputCantidad.value = Math.min(50, (parseInt(inputCantidad.value, 10) || 1) + 1);
-            actualizarResumenReserva();
+
+        const actualizarHorarioSeleccionado = () => {
+            reservationTimeInputs.forEach(input => {
+                input.closest('.reservation-time-option')?.classList.toggle('is-selected', input.checked);
+            });
+        };
+        reservationTimeInputs.forEach(input => {
+            input.addEventListener('change', actualizarHorarioSeleccionado);
         });
-        if (inputCantidad) inputCantidad.addEventListener('input', actualizarResumenReserva);
-        if (selectPostre) selectPostre.addEventListener('change', actualizarResumenReserva);
-        actualizarResumenReserva();
-        const fechaEntrega = document.getElementById('fecha');
-        if (fechaEntrega) fechaEntrega.min = hoyISO();
 
-        reservaForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!reservaForm.reportValidity()) return;
+        // Chips para indicaciones
+        document.querySelectorAll('.reserva-chip-btn').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const detallesTextarea = document.getElementById('detalles');
+                if (!detallesTextarea) return;
+                const texto = chip.dataset.text;
+                const previo = detallesTextarea.value.trim();
+                detallesTextarea.value = (previo ? previo + '\n• ' : '• ') + texto;
+                detallesTextarea.focus();
+            });
+        });
 
-            const submitButton = reservaForm.querySelector('[type="submit"]');
-            const ventanaWhatsApp = window.open('about:blank', '_blank');
-            if (submitButton) submitButton.disabled = true;
-
+        // Restablecer borrador si el usuario inició sesión recientemente
+        const borradorJSON = sessionStorage.getItem('reserva_draft');
+        if (borradorJSON) {
             try {
-                const respuesta = await fetch(reservaForm.action || window.location.href, {
+                const borrador = JSON.parse(borradorJSON);
+                if (borrador.nombre && document.getElementById('nombre')) document.getElementById('nombre').value = borrador.nombre;
+                if (borrador.telefono && document.getElementById('telefono')) document.getElementById('telefono').value = borrador.telefono;
+                if (borrador.fecha && document.getElementById('fecha')) document.getElementById('fecha').value = borrador.fecha;
+                if (borrador.hora) {
+                    const horaBorrador = reservationTimeInputs.find(input => input.value === borrador.hora);
+                    if (horaBorrador) {
+                        horaBorrador.checked = true;
+                        actualizarHorarioSeleccionado();
+                    }
+                }
+                if (borrador.detalles && document.getElementById('detalles')) document.getElementById('detalles').value = borrador.detalles;
+                if (borrador.tipo_reserva) actualizarModalidad(borrador.tipo_reserva);
+                sessionStorage.removeItem('reserva_draft');
+            } catch (err) {}
+        }
+
+        // Date input min = hoy
+        const fechaReserva = document.getElementById('fecha');
+        if (fechaReserva) fechaReserva.min = hoyISO();
+
+        // Control del Modal de Pago
+        const abrirModalPago = (reservaId, totalTexto) => {
+            if (!paymentModalOverlay) return;
+            document.getElementById('payModalReservaId').textContent = `Reserva #${reservaId}`;
+            document.getElementById('payModalTotal').textContent = totalTexto;
+            document.getElementById('payActionReservaId').value = reservaId;
+            paymentModalOverlay.hidden = false;
+        };
+
+        const cerrarModalPago = () => {
+            if (paymentModalOverlay) paymentModalOverlay.hidden = true;
+        };
+
+        const btnClosePaymentModal = document.getElementById('btnClosePaymentModal');
+        if (btnClosePaymentModal) btnClosePaymentModal.addEventListener('click', cerrarModalPago);
+
+        // Pestañas de Métodos de Pago
+        document.querySelectorAll('.payment-method-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.payment-method-tab').forEach(t => t.classList.remove('is-active'));
+                tab.classList.add('is-active');
+                const metodo = tab.dataset.method;
+                const hiddenMetodo = document.getElementById('selectedMetodoPago');
+                if (hiddenMetodo) hiddenMetodo.value = metodo;
+
+                document.querySelectorAll('.payment-method-details').forEach(det => det.hidden = true);
+                const activeDetails = document.getElementById(`method${metodo}Details`);
+                if (activeDetails) activeDetails.hidden = false;
+            });
+        });
+
+        // Envío del Formulario de Pago desde el Modal
+        const paymentExecutionForm = document.getElementById('paymentExecutionForm');
+        if (paymentExecutionForm) {
+            paymentExecutionForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const reservaId = document.getElementById('payActionReservaId')?.value;
+                if (!reservaId) return;
+
+                const btnSubmitPayment = document.getElementById('btnSubmitPayment');
+                if (btnSubmitPayment) {
+                    btnSubmitPayment.disabled = true;
+                    btnSubmitPayment.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando pago seguro...';
+                }
+
+                try {
+                    const formData = new FormData(paymentExecutionForm);
+                    const respuesta = await fetch(`/reserva/pagar/${reservaId}/`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    const resultado = await respuesta.json();
+                    if (!respuesta.ok || !resultado.ok) {
+                        throw new Error(resultado.error || 'No se pudo procesar el pago.');
+                    }
+
+                    cerrarModalPago();
+                    lanzarConfetti(3500);
+
+                    // Mensaje lindo y animado tras completar el pago
+                    if (window.Swal) {
+                        await Swal.fire({
+                            customClass: {
+                                popup: 'sweet-celebration-dialog',
+                                confirmButton: 'luxury-btn-gold'
+                            },
+                            icon: 'success',
+                            title: resultado.title || '¡Pago Recibido con Éxito! 🎉🍰',
+                            html: `
+                                <div class="sweet-payment-celebration">
+                                    <div class="cake-pulse-icon">🍰💖</div>
+                                    <p class="sweet-message-text">${escapeHTML(resultado.message)}</p>
+                                    <div class="sweet-receipt-pill">
+                                        <strong>Reserva #${escapeHTML(resultado.reservation_id)}</strong> · Total Pagado: <strong>${escapeHTML(resultado.total)} COP</strong>
+                                    </div>
+                                    <p class="sweet-pickup-info"><i class="fas fa-calendar-check"></i> Fecha de entrega: <strong>${escapeHTML(resultado.fecha_recogida)}</strong> a las <strong>${escapeHTML(resultado.hora_recogida)}</strong></p>
+                                </div>
+                            `,
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="fas fa-receipt"></i> Ver Comprobante y Pedido',
+                            cancelButtonText: '<i class="fab fa-whatsapp"></i> Hablar por WhatsApp',
+                            buttonsStyling: false
+                        }).then(result => {
+                            if (result.isConfirmed && resultado.next_url) {
+                                window.location.assign(resultado.next_url);
+                            } else {
+                                window.open(`https://wa.me/${window.PRISMA?.whatsapp || '573118689862'}?text=${encodeURIComponent('Hola Prisma 👋 Ya completé el pago de mi pedido #' + resultado.reservation_id)}`, '_blank');
+                                if (resultado.next_url) window.location.assign(resultado.next_url);
+                            }
+                        });
+                    }
+                } catch (err) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error en el pago',
+                            text: err.message || 'No se pudo completar el pago.',
+                            confirmButtonColor: '#df9f28'
+                        });
+                    }
+                } finally {
+                    if (btnSubmitPayment) {
+                        btnSubmitPayment.disabled = false;
+                        btnSubmitPayment.innerHTML = '<i class="fas fa-check-circle"></i> Completar Pago Ahora';
+                    }
+                }
+            });
+        }
+
+        // Envío AJAX del formulario de reserva principal
+        if (reservaForm.dataset.reservaAjax === 'true') {
+            reservaForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (reservaForm.dataset.submitted === 'true') return;
+
+                const modalidadElegida = document.querySelector('input[name="tipo_reserva"]:checked')?.value || document.getElementById('tipo_reserva')?.value || 'Mesa';
+                const usuarioLogueado = reservaForm.dataset.userLoggedIn === 'true';
+
+                // REGLA CLAVE: Solo si quiere reservar postre para llevar debe iniciar sesión
+                if (modalidadElegida === 'Para llevar' && !usuarioLogueado) {
+                    // Guardar borrador en sessionStorage para que no pierda lo seleccionado
+                    const draft = {
+                        nombre: document.getElementById('nombre')?.value || '',
+                        telefono: document.getElementById('telefono')?.value || '',
+                        fecha: document.getElementById('fecha')?.value || '',
+                        hora: reservaForm.querySelector('input[name="hora"]:checked')?.value || '',
+                        detalles: document.getElementById('detalles')?.value || '',
+                        tipo_reserva: 'Para llevar'
+                    };
+                    sessionStorage.setItem('reserva_draft', JSON.stringify(draft));
+
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: '¡Casi Listo para tu Pedido! 🍰🔒',
+                            html: `
+                                <p style="font-size:1.05rem; color:#4a3435; line-height:1.5;">
+                                    Para reservar tu postre <strong>para llevar</strong> es necesario <strong>iniciar sesión</strong> o registrarte para completar tu pago seguro.
+                                </p>
+                                <p class="text-muted small">
+                                    ¡Tus datos y postres seleccionados han sido guardados para que continúes sin interrupción!
+                                </p>
+                            `,
+                            showDenyButton: true,
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión',
+                            denyButtonText: '<i class="fas fa-user-plus"></i> Crear Cuenta',
+                            cancelButtonText: 'Seguir editando',
+                            confirmButtonColor: '#df9f28',
+                            denyButtonColor: '#c45d6e',
+                            cancelButtonColor: '#8a8a8a',
+                        }).then(r => {
+                            if (r.isConfirmed) {
+                                window.location.assign(window.PRISMA?.urls?.login ? `${window.PRISMA.urls.login}?next=${encodeURIComponent(window.location.pathname)}` : '/usuarios/login/');
+                            } else if (r.isDenied) {
+                                window.location.assign(window.PRISMA?.urls?.registro ? `${window.PRISMA.urls.registro}?next=${encodeURIComponent(window.location.pathname)}` : '/usuarios/registro/');
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                if (!reservaForm.reportValidity()) return;
+
+                const submitButton = reservaForm.querySelector('[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando reserva...';
+                }
+
+                try {
+                    const respuesta = await fetch(reservaForm.action || window.location.href, {
+                        method: 'POST',
+                        body: new FormData(reservaForm),
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    const resultado = await respuesta.json();
+                    if (!respuesta.ok || !resultado.ok) {
+                        throw new Error(resultado.error || 'No se pudo registrar la reserva.');
+                    }
+
+                    reservaForm.dataset.submitted = 'true';
+
+                    // Si es PARA LLEVAR: Abrir modal de pago interactivo
+                    if (resultado.reservation_type === 'Para llevar') {
+                        abrirModalPago(resultado.reservation_id, resultado.total);
+                    } else {
+                        // Si es MESA: Mostrar alerta animada festiva
+                        lanzarConfetti(2800);
+                        if (window.Swal) {
+                            await Swal.fire({
+                                customClass: {
+                                    popup: 'sweet-celebration-dialog',
+                                    confirmButton: 'luxury-btn-gold'
+                                },
+                                icon: 'success',
+                                title: resultado.title || '¡Solicitud de Mesa Recibida! 🥂✨',
+                                html: `
+                                    <div class="sweet-payment-celebration">
+                                        <p class="sweet-message-text">${escapeHTML(resultado.message)}</p>
+                                        <div class="sweet-receipt-pill">
+                                            <strong>Reserva #${escapeHTML(resultado.reservation_id)}</strong> · Total estimado: <strong>${escapeHTML(resultado.total)} COP</strong>
+                                        </div>
+                                        <p class="sweet-pickup-info">📅 Fecha: <strong>${escapeHTML(resultado.fecha_formateada)}</strong> a las <strong>${escapeHTML(resultado.hora_formateada)}</strong></p>
+                                    </div>
+                                `,
+                                showCancelButton: true,
+                                confirmButtonText: '<i class="fas fa-eye"></i> Ver mi Reserva',
+                                cancelButtonText: '<i class="fab fa-whatsapp"></i> Confirmar por WhatsApp',
+                                buttonsStyling: false
+                            }).then(choice => {
+                                if (choice.isConfirmed && resultado.next_url) {
+                                    window.location.assign(resultado.next_url);
+                                } else if (resultado.whatsapp_url) {
+                                    window.open(resultado.whatsapp_url, '_blank');
+                                    if (resultado.next_url) window.location.assign(resultado.next_url);
+                                }
+                            });
+                        }
+                    }
+                } catch (error) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'No se pudo registrar',
+                            text: error.message || 'Ocurrió un error al enviar la reserva.',
+                            confirmButtonColor: '#df9f28'
+                        });
+                    } else {
+                        mostrarNotificacion(error.message || 'Ocurrió un error al enviar la reserva.');
+                    }
+                } finally {
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = '<span class="btn-text">Confirmar mi Reserva</span> <i class="fas fa-arrow-right"></i>';
+                    }
+                }
+            });
+        }
+    }
+
+    // Manejo interactivo en la vista de detalle del cliente (detalle.html)
+    const btnOpenPayFromDetail = document.getElementById('btnOpenPayFromDetail');
+    if (btnOpenPayFromDetail) {
+        btnOpenPayFromDetail.addEventListener('click', () => {
+            const payBox = document.getElementById('payBoxSection');
+            if (payBox) payBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }
+
+    const inlinePayForm = document.getElementById('inlinePayForm');
+    if (inlinePayForm) {
+        inlinePayForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = inlinePayForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando pago...';
+            }
+            try {
+                const resp = await fetch(inlinePayForm.action, {
                     method: 'POST',
-                    body: new FormData(reservaForm),
+                    body: new FormData(inlinePayForm),
                     headers: { 'Accept': 'application/json' },
                     credentials: 'same-origin',
                 });
-                const resultado = await respuesta.json();
-                if (!respuesta.ok || !resultado.ok) {
-                    throw new Error(resultado.error || 'No se pudo registrar la reserva.');
-                }
+                const res = await resp.json();
+                if (!resp.ok || !res.ok) throw new Error(res.error || 'No se pudo completar el pago.');
 
-                mostrarNotificacion(resultado.message);
-                if (ventanaWhatsApp) {
-                    ventanaWhatsApp.location.href = resultado.whatsapp_url;
-                } else {
-                    window.location.assign(resultado.whatsapp_url);
+                lanzarConfetti(3000);
+                if (window.Swal) {
+                    await Swal.fire({
+                        customClass: { popup: 'sweet-celebration-dialog', confirmButton: 'luxury-btn-gold' },
+                        icon: 'success',
+                        title: res.title || '¡Pago Recibido con Éxito! 🎉🍰',
+                        html: `
+                            <div class="sweet-payment-celebration">
+                                <div class="cake-pulse-icon">🍰💖</div>
+                                <p class="sweet-message-text">${escapeHTML(res.message)}</p>
+                                <div class="sweet-receipt-pill">
+                                    <strong>Reserva #${escapeHTML(res.reservation_id)}</strong> · Total: <strong>${escapeHTML(res.total)} COP</strong>
+                                </div>
+                            </div>
+                        `,
+                        confirmButtonText: 'Continuar',
+                        buttonsStyling: false
+                    });
                 }
-                reservaForm.reset();
-                if (detalles) detalles.dispatchEvent(new Event('input'));
-                actualizarResumenReserva();
-                if (fechaEntrega) fechaEntrega.min = hoyISO();
-            } catch (error) {
-                if (ventanaWhatsApp) ventanaWhatsApp.close();
-                mostrarNotificacion(error.message || 'Ocurrió un error al enviar la reserva.');
+                window.location.reload();
+            } catch (err) {
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: 'Error en el pago', text: err.message, confirmButtonColor: '#df9f28' });
+                }
             } finally {
-                if (submitButton) submitButton.disabled = false;
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    }
+
+    const formCancelarCliente = document.getElementById('formCancelarCliente');
+    if (formCancelarCliente) {
+        formCancelarCliente.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '¿Confirmas cancelar tu reserva?',
+                    text: 'Tus postres reservados serán liberados. Si ya pagaste, gestionaremos la devolución de tu dinero.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, cancelar reserva',
+                    cancelButtonText: 'Mantener mi reserva',
+                    confirmButtonColor: '#c45d6e',
+                    cancelButtonColor: '#8a8a8a',
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        formCancelarCliente.submit();
+                    }
+                });
+            } else if (confirm('¿Confirmas que deseas cancelar esta reserva?')) {
+                formCancelarCliente.submit();
             }
         });
     }

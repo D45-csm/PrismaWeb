@@ -1,156 +1,492 @@
 {% extends 'base_prisma.html' %}
-{% load static %}
+{% load l10n %}
 
-{% block title %}Reservas - Prisma{% endblock %}
-{% block body_attrs %} class="reservas-page"{% endblock %}
+{% block title %}Reservas - Prisma | El arte del postre{% endblock %}
+{% block body_attrs %} class="customer-area reservas-luxury-page"{% endblock %}
 
 {% block content %}
-
     {% include 'partials/header_cliente.html' with active='reservas' titles=True %}
 
-    <!-- Hero de Reservas -->
-    <section class="reservas-hero">
-        <div class="reservas-blob blob-1"></div>
-        <div class="reservas-blob blob-2"></div>
-        <div class="reservas-blob blob-3"></div>
-        <div class="container reservas-hero-content">
-            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo" class="reservas-hero-logo">
-            <span class="reservas-eyebrow"><i class="fas fa-calendar-check"></i> Reservas Prisma</span>
-            <h1>Reserva tu postre especial</h1>
-            <p>Cuéntanos la ocasión y lo preparamos fresco, con los sabores que quieras, listo para el día que lo necesitas.</p>
-            <div class="reservas-chip-row">
-                <span class="reservas-chip chip-rojo"><i class="fas fa-clock"></i> Lista en 48h</span>
-                <span class="reservas-chip chip-teal"><i class="fas fa-leaf"></i> Ingredientes frescos</span>
-                <span class="reservas-chip chip-morado"><i class="fas fa-paint-brush"></i> A tu gusto</span>
-            </div>
+    <section class="luxury-reservas-hero">
+        <div class="luxury-hero-decor decor-top-left"></div>
+        <div class="luxury-hero-decor decor-bottom-right"></div>
+        <div class="container text-center luxury-hero-content">
+            <span class="luxury-eyebrow">
+                <i class="fas fa-sparkles"></i> EXPERIENCIA ARTESANAL PRISMA
+            </span>
+            <h1 class="luxury-hero-title">Reserva tu momento en Prisma</h1>
+            <p class="luxury-hero-subtitle">
+                Elige cómo disfrutar, cuéntanos cuándo vienes y nosotros nos encargamos del resto.
+            </p>
         </div>
     </section>
 
-    <!-- Contenido principal -->
-    <section class="reservas-section">
-        <div class="container reservas-container">
-
-            <!-- Columna izquierda: por qué reservar -->
-            <div class="reservas-info">
-                <h2>¿Por qué reservar con Prisma?</h2>
-                <div class="reservas-benefit-list">
-                    <div class="reservas-benefit">
-                        <div class="benefit-icon icon-rojo"><i class="fas fa-birthday-cake"></i></div>
-                        <div>
-                            <h3>Postres personalizados</h3>
-                            <p>Elige sabor, tamaño y decoración para tu ocasión especial.</p>
-                        </div>
+    <main class="luxury-reservas-main">
+        <div class="container luxury-reservas-grid">
+            <aside class="luxury-info-panel">
+                <div class="luxury-brand-card">
+                    <div class="luxury-brand-badge">
+                        <i class="fas fa-crown"></i> Calidad Artesanal
                     </div>
-                    <div class="reservas-benefit">
-                        <div class="benefit-icon icon-teal"><i class="fas fa-truck"></i></div>
-                        <div>
-                            <h3>Entregas puntuales</h3>
-                            <p>Coordinamos la hora exacta de recogida o domicilio contigo.</p>
-                        </div>
-                    </div>
-                    <div class="reservas-benefit">
-                        <div class="benefit-icon icon-verde"><i class="fas fa-seedling"></i></div>
-                        <div>
-                            <h3>Ingredientes frescos</h3>
-                            <p>Preparamos cada postre el mismo día de su entrega.</p>
-                        </div>
-                    </div>
-                    <div class="reservas-benefit">
-                        <div class="benefit-icon icon-magenta"><i class="fas fa-heart"></i></div>
-                        <div>
-                            <h3>Atención dedicada</h3>
-                            <p>Te acompañamos por WhatsApp desde la reserva hasta la entrega.</p>
-                        </div>
-                    </div>
+                    <h2>Una reserva sencilla</h2>
+                    <p class="luxury-brand-desc">
+                        Selecciona mesa o pedido para llevar. Prepararemos tus postres frescos para la fecha que elijas.
+                    </p>
+                    <a href="{% url 'consultar_reserva' %}" class="luxury-link-btn">
+                        <i class="fas fa-receipt"></i> ¿Ya tienes una reserva? Consúltala aquí
+                    </a>
                 </div>
+            </aside>
 
-                <div class="reservas-quote">
-                    <i class="fas fa-quote-left"></i>
-                    <p>Cada postre se prepara el mismo día de la entrega, pensado especialmente para tu ocasión.</p>
-                    <span>— Equipo Prisma</span>
+            <section class="luxury-form-section">
+                <div class="luxury-form-card shadow-luxury">
+
+                    <div class="form-card-header">
+                        <span class="form-pretitle">Tu próxima experiencia dulce</span>
+                        <h2 class="form-title">Planea tu visita</h2>
+                        <p class="form-subtitle">Solo necesitamos unos datos para dejar todo listo.</p>
+                    </div>
+
+                    {% include 'partials/messages.html' %}
+
+                    <!-- BANNER PERSISTENTE TRAS CREAR RESERVA -->
+                    <section id="reservaResultadoPersistente" class="reserva-persistent-result"
+                             aria-live="polite" tabindex="-1" hidden>
+                        <span class="reserva-persistent-result-icon"><i class="fas fa-calendar-check" aria-hidden="true"></i></span>
+                        <h3 id="reservaResultadoTitulo"></h3>
+                        <p id="reservaResultadoTexto"></p>
+                        <a id="reservaResultadoEnlace" href="" class="luxury-btn-primary"></a>
+                    </section>
+
+                    <form id="reservaForm" data-reserva-ajax="true" method="post" action="{% url 'reservas' %}"
+                          data-user-logged-in="{% if user.is_authenticated %}true{% else %}false{% endif %}">
+                        {% csrf_token %}
+
+                        <!-- PASO 1: MODALIDAD INTERACTIVA (TARJETAS GRANDES) -->
+                        <div class="form-section-block">
+                            <label class="form-section-label">
+                                <span class="step-dot">1</span> ¿Cómo deseas disfrutar de Prisma?
+                            </label>
+                            <div class="modality-cards-group">
+                                <!-- Opción Mesa -->
+                                <label class="modality-card is-selected" for="modalidad_mesa" id="modalityCardMesa">
+                                    <input type="radio" name="tipo_reserva" id="modalidad_mesa" value="Mesa" checked>
+                                    <div class="modality-badge public-badge">
+                                        <i class="fas fa-unlock-alt"></i> Público · Sin Registro
+                                    </div>
+                                    <div class="modality-icon"><i class="fas fa-utensils"></i></div>
+                                    <h3 class="modality-name">Con Mesa</h3>
+                                    <p class="modality-desc">
+                                        Disfruta en nuestro acogedor local. No requieres iniciar sesión ni pagar anticipado.
+                                    </p>
+                                    <div class="modality-check"><i class="fas fa-check-circle"></i></div>
+                                </label>
+
+                                <!-- Opción Para Llevar -->
+                                <label class="modality-card" for="modalidad_llevar" id="modalityCardLlevar">
+                                    <input type="radio" name="tipo_reserva" id="modalidad_llevar" value="Para llevar">
+                                    <div class="modality-badge secure-badge">
+                                        <i class="fas fa-shield-halved"></i> Requiere Inicio de Sesión
+                                    </div>
+                                    <div class="modality-icon"><i class="fas fa-bag-shopping"></i></div>
+                                    <h3 class="modality-name">Para Llevar</h3>
+                                    <p class="modality-desc">
+                                        Empacamos tu postre fresco y listo para recoger. Requiere iniciar sesión y completar pago.
+                                    </p>
+                                    <div class="modality-check"><i class="fas fa-check-circle"></i></div>
+                                </label>
+                            </div>
+
+                            <!-- AVISO DINÁMICO DE AUTENTICACIÓN PARA LLEVAR -->
+                            <div id="takeawayAuthNotice" class="takeaway-auth-notice" hidden>
+                                {% if user.is_authenticated %}
+                                    <div class="auth-notice-box is-logged-in">
+                                        <i class="fas fa-circle-check text-success"></i>
+                                        <div>
+                                            <strong>Sesión activa como: {{ user.username }}</strong>
+                                            <p>Al registrar tu pedido podrás completar tu pago seguro en línea con Nequi, Daviplata o Tarjeta.</p>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="auth-notice-box is-required">
+                                        <i class="fas fa-lock text-warning"></i>
+                                        <div>
+                                            <strong>Inicio de sesión requerido para pedidos para llevar</strong>
+                                            <p>Para asegurar tu postre y procesar tu pago seguro necesitas tener una cuenta activa.</p>
+                                            <div class="auth-notice-actions">
+                                                <a href="{% url 'login' %}?next={% url 'reservas' %}" class="btn-notice-login" id="btnNoticeLogin">
+                                                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                                                </a>
+                                                <a href="{% url 'registro' %}?next={% url 'reservas' %}" class="btn-notice-register">
+                                                    <i class="fas fa-user-plus"></i> Crear Cuenta
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- PASO 2: DATOS DEL CLIENTE, FECHA Y HORA -->
+                        <div class="form-section-block">
+                            <label class="form-section-label">
+                                <span class="step-dot">2</span> Tus Datos y Horario
+                            </label>
+
+                            <div class="form-grid-2">
+                                <div class="form-group-luxury">
+                                    <label for="nombre">Nombre Completo *</label>
+                                    <div class="input-luxury-wrap">
+                                        <i class="far fa-user input-ico"></i>
+                                        <input type="text" id="nombre" name="nombre" maxlength="100"
+                                               value="{% if user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% endif %}"
+                                               placeholder="Tu nombre y apellido" required>
+                                    </div>
+                                </div>
+                                <div class="form-group-luxury">
+                                    <label for="telefono">Teléfono / WhatsApp *</label>
+                                    <div class="input-luxury-wrap">
+                                        <i class="fas fa-phone-alt input-ico"></i>
+                                        <input type="tel" id="telefono" name="telefono" maxlength="30"
+                                               value="{% if user.is_authenticated and user.telefono %}{{ user.telefono }}{% endif %}"
+                                               placeholder="300 123 4567" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group-luxury reservation-date-field">
+                                <label for="fecha">Fecha de Reserva o Recogida *</label>
+                                <div class="input-luxury-wrap">
+                                    <i class="far fa-calendar-alt input-ico"></i>
+                                    <input type="date" id="fecha" name="fecha" required>
+                                </div>
+                            </div>
+
+                            <fieldset class="reservation-time-fieldset">
+                                <legend>Elige un horario *</legend>
+                                <p class="form-hint-text" id="horarioReservaAyuda">
+                                    Estamos disponibles de 2:00 p. m. a 6:30 p. m.
+                                </p>
+                                <div class="reservation-time-list" role="group" aria-describedby="horarioReservaAyuda">
+                                    <label class="reservation-time-option" for="hora_1400">
+                                        <input type="radio" id="hora_1400" name="hora" value="14:00" required>
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>2:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1430">
+                                        <input type="radio" id="hora_1430" name="hora" value="14:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>2:30 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1500">
+                                        <input type="radio" id="hora_1500" name="hora" value="15:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>3:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1530">
+                                        <input type="radio" id="hora_1530" name="hora" value="15:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>3:30 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1600">
+                                        <input type="radio" id="hora_1600" name="hora" value="16:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>4:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1630">
+                                        <input type="radio" id="hora_1630" name="hora" value="16:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>4:30 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1700">
+                                        <input type="radio" id="hora_1700" name="hora" value="17:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>5:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1730">
+                                        <input type="radio" id="hora_1730" name="hora" value="17:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>5:30 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1800">
+                                        <input type="radio" id="hora_1800" name="hora" value="18:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>6:00 p. m.</span>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1830">
+                                        <input type="radio" id="hora_1830" name="hora" value="18:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>6:30 p. m.</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Selector de Número de Personas (Solo para Mesa) -->
+                            <div class="form-group-luxury" id="groupNumeroPersonas">
+                                <label for="numero_personas">
+                                    Número de personas en mesa *
+                                    <small class="text-muted">(Máximo 50 comensales)</small>
+                                </label>
+                                <div class="guests-interactive-selector">
+                                    <div class="guest-pills" id="guestPills">
+                                        <button type="button" class="guest-pill" data-guests="1">1</button>
+                                        <button type="button" class="guest-pill is-active" data-guests="2">2 personas</button>
+                                        <button type="button" class="guest-pill" data-guests="4">4 personas</button>
+                                        <button type="button" class="guest-pill" data-guests="6">6 personas</button>
+                                        <button type="button" class="guest-pill" data-guests="8">8+</button>
+                                    </div>
+                                    <div class="input-luxury-wrap guest-manual-input">
+                                        <input type="number" id="numero_personas" name="numero_personas"
+                                               min="1" max="50" value="2" placeholder="Cant.">
+                                        <span class="unit-tag">personas</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section-block">
+                            <div class="products-header-flex">
+                                <div>
+                                    <label class="form-section-label mb-0">
+                                        <span class="step-dot">3</span> Selección de Postres Artesanales
+                                    </label>
+                                    <p class="form-hint-text">Elige los postres que deseas disfrutar en tu visita o llevar contigo.</p>
+                                </div>
+                                <span class="badge-cap-luxury">Hasta 5 productos</span>
+                            </div>
+
+                            {% if productos %}
+                                <a href="{% url 'productos' %}#productosGrid" class="choose-dessert-link">
+                                    <i class="fas fa-cookie-bite" aria-hidden="true"></i>
+                                    <span>Elige tu postre</span>
+                                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                                </a>
+                            {% else %}
+                                <p class="reserva-productos-empty">No hay postres disponibles en este momento.</p>
+                            {% endif %}
+
+                            <div class="selected-products-panel">
+                                <h4 class="selected-panel-title">
+                                    <i class="fas fa-receipt"></i> Postres en tu reserva
+                                </h4>
+                                <div class="reserva-productos-list is-interactive" id="reservaProductosList">
+                                    {% for slot in slots_productos %}
+                                        <article class="reserva-producto-card{% if slot == 1 %} is-visible{% endif %}"
+                                                 data-reserva-producto-slot="{{ slot }}">
+                                            <div class="reserva-producto-card-heading">
+                                                <span class="reserva-producto-index">{{ slot|stringformat:"02d" }}</span>
+                                                <span>Producto <strong>{{ slot }}</strong></span>
+                                                <button type="button" class="reserva-producto-remove"
+                                                        data-remove-reserva-producto aria-label="Quitar producto {{ slot }}">
+                                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                            <div class="reserva-producto-fields">
+                                                <div class="form-group-luxury flex-2">
+                                                    <label for="producto_id_{{ slot }}">Producto</label>
+                                                    <div class="input-luxury-wrap">
+                                                        <i class="fas fa-cake-candles input-ico"></i>
+                                                        <select id="producto_id_{{ slot }}" name="producto_id_{{ slot }}"
+                                                                {% if slot == 1 %}required{% endif %}>
+                                                            <option value="">Selecciona un postre...</option>
+                                                            {% for producto in productos %}
+                                                                <option value="{{ producto.pk }}" data-price="{{ producto.precio|unlocalize }}">{{ producto.nombre }} (${{ producto.precio|floatformat:0 }})</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group-luxury flex-1">
+                                                    <label for="cantidad_{{ slot }}">Cantidad</label>
+                                                    <div class="input-luxury-wrap qty-stepper-wrap">
+                                                        <button type="button" class="qty-btn-minus" data-target="cantidad_{{ slot }}">-</button>
+                                                        <input type="number" id="cantidad_{{ slot }}" name="cantidad_{{ slot }}"
+                                                               min="1" max="50" value="1" aria-label="Cantidad">
+                                                        <button type="button" class="qty-btn-plus" data-target="cantidad_{{ slot }}">+</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p class="reserva-producto-subtotal" data-reserva-line-total aria-live="polite"></p>
+                                        </article>
+                                    {% empty %}
+                                        <p class="reserva-productos-empty">No hay productos disponibles actualmente.</p>
+                                    {% endfor %}
+                                </div>
+
+                                {% if productos %}
+                                    <button type="button" class="luxury-btn-outline reserva-add-postre-btn" id="addReservaProducto" hidden>
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i> Agregar postre
+                                    </button>
+                                    <p class="reserva-productos-hint" id="reservaProductosHint" aria-live="polite">
+                                        Elige al menos un producto para continuar.
+                                    </p>
+                                {% endif %}
+
+                                <!-- RESUMEN TOTAL ESTIMADO -->
+                                <div class="luxury-total-card">
+                                    <div class="total-row-main">
+                                        <div>
+                                            <span class="total-label">Total Estimado</span>
+                                            <small class="total-note" id="totalNoteText">
+                                                Para llevar requiere pago anticipado. Mesas no requieren pago previo.
+                                            </small>
+                                        </div>
+                                        <strong class="total-value" id="reservaTotalEstimate">$0</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PASO 4: INDICACIONES Y DETALLES ESPECIALES -->
+                        <div class="form-section-block">
+                            <label for="detalles" class="form-section-label">
+                                <span class="step-dot">4</span> Detalles e Indicaciones Especiales <small>(Opcional)</small>
+                            </label>
+                            <!-- Interactive Chips -->
+                            <div class="chips-container-reserva" id="chipsReserva">
+                                <button type="button" class="reserva-chip-btn" data-text="Es para regalo con empaque especial">
+                                    🎁 Es para regalo
+                                </button>
+                                <button type="button" class="reserva-chip-btn" data-text="Favor incluir velita de cumpleaños">
+                                    🕯️ Con velita
+                                </button>
+                                <button type="button" class="reserva-chip-btn" data-text="Mensaje personalizado en el postre: ">
+                                    ✍️ Mensaje en postre
+                                </button>
+                                <button type="button" class="reserva-chip-btn" data-text="Empaque refrigerado para viaje">
+                                    ❄️ Empaque para viaje
+                                </button>
+                                <button type="button" class="reserva-chip-btn" data-text="Celebración de aniversario en pareja">
+                                    🌸 Celebración de aniversario
+                                </button>
+                            </div>
+                            <div class="input-luxury-wrap">
+                                <textarea id="detalles" name="detalles" rows="3" maxlength="500"
+                                          placeholder="Cuéntanos cualquier preferencia, alergia o mensaje para tu reserva..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- BOTÓN PRINCIPAL DE ENVÍO -->
+                        <div class="form-submit-block">
+                            <button type="submit" id="btnSubmitReserva" class="luxury-btn-gold btn-full"
+                                    {% if not productos %} disabled{% endif %}>
+                                <span class="btn-text">Confirmar mi Reserva</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                            <p class="form-privacy-note">
+                                <i class="fas fa-shield-heart"></i>
+                                Tu reserva está respaldada por el equipo artesanal de Prisma. Sin cargos ocultos.
+                            </p>
+                        </div>
+                    </form>
                 </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- FLOATING ACTION BUTTON (Estilo Imagen 11 y 12: COTIZAR MI PASTEL / RESERVA) -->
+    <aside class="luxury-floating-dock" aria-label="Acciones rápidas">
+        <a href="#reservaForm" class="floating-gold-pill" id="floatingBookPill">
+            <i class="fas fa-sparkles"></i> RESERVAR AHORA
+        </a>
+        <a href="https://wa.me/{{ whatsapp_destino }}?text=Hola%20Prisma%20%F0%9F%91%8B%20Quisiera%20m%C3%A1s%20informaci%C3%B3n%20sobre%20las%20reservas."
+           target="_blank" rel="noopener noreferrer" class="floating-chat-bubble" aria-label="Hablar por WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+        </a>
+    </aside>
+
+    <!-- MODAL DE PAGO INTERACTIVO (PARA RESERVAS PARA LLEVAR) -->
+    <div class="payment-modal-overlay" id="paymentModalOverlay" hidden>
+        <div class="payment-modal-dialog">
+            <div class="payment-modal-header">
+                <div class="payment-modal-badge"><i class="fas fa-lock"></i> Pago Seguro Prisma</div>
+                <button type="button" class="payment-modal-close" id="btnClosePaymentModal" aria-label="Cerrar">&times;</button>
             </div>
+            <div class="payment-modal-body">
+                <div class="payment-summary-box">
+                    <span class="summary-kicker">PEDIDO PARA LLEVAR</span>
+                    <h3 id="payModalReservaId">Reserva #...</h3>
+                    <div class="summary-total-badge">
+                        <span>Total a Pagar:</span>
+                        <strong id="payModalTotal">$0 COP</strong>
+                    </div>
+                </div>
 
-            <!-- Columna derecha: formulario -->
-            <div class="reservas-form-card">
-                <span class="form-card-tag">Completa tu reserva</span>
-                <h2>Cuéntanos los detalles</h2>
+                <div class="payment-methods-selector">
+                    <label class="payment-method-tab is-active" data-method="Nequi">
+                        <input type="radio" name="pay_method_option" value="Nequi" checked>
+                        <span class="method-ico ico-nequi">🟣</span>
+                        <span class="method-name">Nequi</span>
+                    </label>
+                    <label class="payment-method-tab" data-method="Daviplata">
+                        <input type="radio" name="pay_method_option" value="Daviplata">
+                        <span class="method-ico ico-daviplata">🟡</span>
+                        <span class="method-name">Daviplata</span>
+                    </label>
+                    <label class="payment-method-tab" data-method="Tarjeta">
+                        <input type="radio" name="pay_method_option" value="Tarjeta">
+                        <span class="method-ico ico-card">💳</span>
+                        <span class="method-name">Tarjeta</span>
+                    </label>
+                    <label class="payment-method-tab" data-method="Bancolombia">
+                        <input type="radio" name="pay_method_option" value="Bancolombia">
+                        <span class="method-ico ico-bancolombia">🏦</span>
+                        <span class="method-name">Bancolombia</span>
+                    </label>
+                </div>
 
-                <form id="reservaForm" method="post">
+                <!-- Formulario de detalles de pago -->
+                <form id="paymentExecutionForm" method="post">
                     {% csrf_token %}
-                    <div class="form-group-icon">
-                        <label for="nombre">Nombre completo</label>
-                        <div class="input-wrap">
-                            <i class="fas fa-user"></i>
-                            <input type="text" id="nombre" name="nombre" maxlength="100" placeholder="Tu nombre" required>
+                    <input type="hidden" id="payActionReservaId" name="reserva_id" value="">
+                    <input type="hidden" id="selectedMetodoPago" name="metodo_pago" value="Nequi">
+
+                    <div id="methodNequiDetails" class="payment-method-details">
+                        <div class="method-instruction">
+                            <i class="fas fa-qrcode"></i>
+                            <p>Envía tu pago a la línea oficial Nequi de Prisma: <strong>311 868 9862</strong></p>
+                        </div>
+                        <div class="form-group-luxury">
+                            <label for="nequiNumero">Número de celular o referencia de pago</label>
+                            <input type="text" class="input-luxury" id="nequiNumero" placeholder="Ej. 311 868 9862 o Ref. 123456" required>
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group-icon">
-                            <label for="telefono">Teléfono</label>
-                            <div class="input-wrap">
-                                <i class="fas fa-phone"></i>
-                                <input type="tel" id="telefono" name="telefono" maxlength="30" placeholder="300 123 4567" required>
-                            </div>
+                    <div id="methodDaviplataDetails" class="payment-method-details" hidden>
+                        <div class="method-instruction">
+                            <i class="fas fa-mobile-screen"></i>
+                            <p>Transfiere por Daviplata a la línea oficial: <strong>311 868 9862</strong></p>
                         </div>
-
-                        <div class="form-group-icon">
-                            <label for="fecha">Fecha de entrega</label>
-                            <div class="input-wrap">
-                                <i class="fas fa-calendar-alt"></i>
-                                <input type="date" id="fecha" name="fecha" required>
-                            </div>
+                        <div class="form-group-luxury">
+                            <label for="daviplataNumero">Número Daviplata o comprobante</label>
+                            <input type="text" class="input-luxury" id="daviplataNumero" placeholder="Ej. 311 868 9862">
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group-icon">
-                            <label for="postre">Postre deseado</label>
-                            <div class="input-wrap">
-                                <i class="fas fa-ice-cream"></i>
-                                <select id="postre" name="postre" required>
-                                    <option value="" disabled selected>Selecciona un postre</option>
-                                    <option value="Manzana Verde Cheesecake" data-precio="25000">Manzana Verde Cheesecake</option>
-                                    <option value="Café Chocolate" data-precio="28000">Café Chocolate</option>
-                                    <option value="Fresa Chocolate" data-precio="32000">Fresa Chocolate</option>
-                                    <option value="Postre Personalizado" data-precio="0">Postre Personalizado (a cotizar)</option>
-                                </select>
-                            </div>
+                    <div id="methodTarjetaDetails" class="payment-method-details" hidden>
+                        <div class="form-group-luxury">
+                            <label for="cardNum">Número de tarjeta</label>
+                            <input type="text" class="input-luxury" id="cardNum" placeholder="4500 •••• •••• ••••" maxlength="19">
                         </div>
-
-                        <div class="form-group-icon">
-                            <label for="cantidad">Cantidad de postres</label>
-                            <div class="input-wrap qty-wrap">
-                                <button type="button" class="qty-btn-reserva" id="qtyMenos" aria-label="Restar">−</button>
-                                <input type="number" id="cantidad" name="cantidad" min="1" max="50" value="1" required>
-                                <button type="button" class="qty-btn-reserva" id="qtyMas" aria-label="Sumar">+</button>
+                        <div class="form-grid-2">
+                            <div class="form-group-luxury">
+                                <label for="cardExp">Vencimiento</label>
+                                <input type="text" class="input-luxury" id="cardExp" placeholder="MM/AA" maxlength="5">
+                            </div>
+                            <div class="form-group-luxury">
+                                <label for="cardCvc">CVC</label>
+                                <input type="text" class="input-luxury" id="cardCvc" placeholder="123" maxlength="4">
                             </div>
                         </div>
                     </div>
 
-                    <div class="reservas-summary" id="reservasSummary">
-                        <i class="fas fa-shopping-basket"></i>
-                        <span>Vas a reservar <strong id="summaryQty">1</strong> postre(s) de <strong id="summaryPostre">selecciona un postre</strong></span>
+                    <div id="methodBancolombiaDetails" class="payment-method-details" hidden>
+                        <div class="method-instruction">
+                            <i class="fas fa-building-columns"></i>
+                            <p>Cuenta de Ahorros Bancolombia Prisma: <strong>123-456789-01</strong></p>
+                        </div>
+                        <div class="form-group-luxury">
+                            <label for="bancoRef">Número de comprobante Bancolombia</label>
+                            <input type="text" class="input-luxury" id="bancoRef" placeholder="Ej. 987654">
+                        </div>
                     </div>
 
-                    <div class="form-group-icon detalles-group">
-                        <label for="detalles"><i class="fas fa-pen-to-square"></i> ¿Cómo quieres tu reserva? <small>(opcional)</small></label>
-                        <textarea id="detalles" name="detalles" rows="4" maxlength="500" placeholder="Cuéntanos la ocasión, mensaje en el postre, sabores, alergias u hora preferida de entrega…"></textarea>
-                        <div class="pz-chips" id="detallesChips"></div>
-                        <div class="pz-counter"><span id="detallesCount">0</span>/500</div>
-                    </div>
-
-                    <button type="submit" class="btn-primary btn-full">
-                        Enviar Reserva <i class="fas fa-paper-plane"></i>
+                    <button type="submit" id="btnSubmitPayment" class="luxury-btn-gold btn-full mt-3">
+                        <i class="fas fa-check-circle"></i> Completar Pago Ahora
                     </button>
                 </form>
-
-                <p class="form-note"><i class="fas fa-shield-alt"></i> Tus datos están seguros con nosotros</p>
             </div>
-
         </div>
-    </section>
+    </div>
 
     {% include 'partials/footer_cliente.html' %}
 {% endblock %}
