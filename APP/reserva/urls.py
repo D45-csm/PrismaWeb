@@ -9,7 +9,9 @@ urlpatterns = [
         views.consultar_notificacion_reserva,
         name='consultar_notificacion_reserva',
     ),
+    path('mis-reservas/', views.mis_reservas, name='mis_reservas'),
     path('consultar/', views.consultar_reserva, name='consultar_reserva'),
     path('consultar/<int:pk>/', views.reserva_cliente, name='reserva_cliente'),
+    path('pagar/<int:pk>/', views.pagar_reserva_cliente, name='pagar_reserva_cliente'),
     path('', views.reservas_view, name='reservas'),
 ]
