@@ -511,16 +511,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         grid.innerHTML = lista.map(p => `
-            <div class="product-card">
-                <img src="${imgUrl(p.img)}" alt="${p.nombre}" loading="lazy" decoding="async">
-                <div class="product-overlay">
-                    <button class="btn-buy-now" onclick="abrirModal(${p.id})">
-                        <i class="fas fa-cart-shopping"></i> Comprar Ahora
-                    </button>
-                </div>
-                <div class="product-body">
-                    <h3>${p.nombre}</h3>
+            <div class="product-card catalog-card">
+                <img src="${imgUrl(p.img)}" alt="${escapeHTML(p.nombre)}" loading="lazy" decoding="async">
+                <span class="catalog-favorite-icon" aria-hidden="true"><i class="far fa-star"></i></span>
+                <div class="product-body catalog-card-body">
+                    <span class="catalog-category">${escapeHTML(p.categoria_nombre || capitalizar(p.categoria || 'otros'))}</span>
+                    <h3>${escapeHTML(p.nombre)}</h3>
                     <span class="price">$${p.precio.toLocaleString('es-CO')}</span>
+                    <button class="catalog-cart-button" onclick="abrirModal(${p.id})" aria-label="Seleccionar ${escapeHTML(p.nombre)}">
+                        <i class="fas fa-cart-shopping" aria-hidden="true"></i>
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -531,14 +531,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('temporadaGrid');
         if (!grid) return;
         grid.innerHTML = temporada.map(p => `
-            <div class="seasonal-card">
-                <img src="${imgUrl(p.img)}" alt="${p.nombre}" loading="lazy" decoding="async">
-                <div class="seasonal-body">
-                    <h3>${p.nombre}</h3>
-                    <p>${p.desc}</p>
+            <div class="seasonal-card catalog-card">
+                <img src="${imgUrl(p.img)}" alt="${escapeHTML(p.nombre)}" loading="lazy" decoding="async">
+                <div class="seasonal-body catalog-card-body">
+                    <span class="catalog-category">${escapeHTML(p.categoria_nombre || capitalizar(p.categoria || 'otros'))}</span>
+                    <h3>${escapeHTML(p.nombre)}</h3>
                     <span class="price">$${p.precio.toLocaleString('es-CO')}</span>
-                    <button class="btn-add" onclick="abrirModal(${p.id}, 'temporada')">
-                        <i class="fas fa-cart-shopping"></i> Comprar Ahora
+                    <button class="catalog-cart-button" onclick="abrirModal(${p.id}, 'temporada')" aria-label="Seleccionar ${escapeHTML(p.nombre)}">
+                        <i class="fas fa-cart-shopping" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
@@ -652,6 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     let categoriaActiva = 'todos';
     let textoBusqueda = '';
+    let ordenProductos = 'recientes';
     const normalizarBusqueda = (texto) => texto
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
@@ -661,16 +662,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const termino = normalizarBusqueda(textoBusqueda);
         const filtrados = productos.filter(producto => {
             const coincideCategoria = categoriaActiva === 'todos' || producto.categoria === categoriaActiva;
-            const contenido = normalizarBusqueda(`${producto.nombre} ${producto.categoria} ${producto.desc || ''}`);
-            return coincideCategoria && (!termino || contenido.includes(termino));
+            const contenido = normalizarBusqueda(`${producto.nombre} ${producto.categoria_nombre || producto.categoria} ${producto.desc || ''}`);
+            const coincideBusqueda = !termino || contenido.includes(termino);
+            return coincideCategoria && coincideBusqueda;
         });
+        if (ordenProductos === 'precio-menor') {
+            filtrados.sort((a, b) => a.precio - b.precio);
+        } else if (ordenProductos === 'precio-mayor') {
+            filtrados.sort((a, b) => b.precio - a.precio);
+        } else if (ordenProductos === 'nombre') {
+            filtrados.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+        }
+        const contador = document.getElementById('catalogResultCount');
+        if (contador) {
+            const cantidad = filtrados.length;
+            contador.textContent = `${cantidad} ${cantidad === 1 ? 'producto encontrado' : 'productos encontrados'}`;
+        }
         renderProductos(filtrados);
     };
     const filtrarProductos = (categoria) => {
-        categoriaActiva = categoria;
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        const btnActivo = document.querySelector(`.filter-btn[data-categoria="${categoria}"]`);
-        if (btnActivo) btnActivo.classList.add('active');
+        categoriaActiva = categoriaActiva === categoria ? 'todos' : categoria;
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.classList.remove('active', 'catalog-featured-filter');
+            b.setAttribute('aria-pressed', 'false');
+        });
+        if (categoriaActiva !== 'todos') {
+            const btnActivo = document.querySelector(`.filter-btn[data-categoria="${categoriaActiva}"]`);
+            if (btnActivo) {
+                btnActivo.classList.add('active');
+                btnActivo.setAttribute('aria-pressed', 'true');
+            }
+        }
         actualizarProductosFiltrados();
     };
 
@@ -711,6 +733,13 @@ document.addEventListener('DOMContentLoaded', () => {
             textoBusqueda = sInput.value;
             sInput.addEventListener('input', (e) => {
                 textoBusqueda = e.target.value;
+                actualizarProductosFiltrados();
+            });
+        }
+        const ordenSelect = document.getElementById('catalogSort');
+        if (ordenSelect) {
+            ordenSelect.addEventListener('change', (e) => {
+                ordenProductos = e.target.value;
                 actualizarProductosFiltrados();
             });
         }
