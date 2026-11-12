@@ -1,37 +1,55 @@
 {% extends 'base_prisma.html' %}
-{% load static %}
 
 {% block title %}Productos - Prisma{% endblock %}
 {% block body_attrs %} class="customer-area catalog-page"{% endblock %}
 
 {% block content %}
-    {% include 'partials/header_cliente.html' with active='productos' %}
-    <!-- Page Header -->
-    <section class="page-header">
-        <div class="container">
-            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo" class="page-header-logo">
-            <h1>Nuestros Productos</h1>
-            <p>Descubre nuestra selección de postres artesanales</p>
+    {% include 'partials/header_cliente.html' with active='productos' catalog_search=True %}
+    <section class="catalog-hero">
+        <div class="container catalog-hero-content">
+            <h1>Catálogo de Productos <i class="far fa-heart" aria-hidden="true"></i></h1>
+            <p>Descubre nuestra deliciosa selección de pasteles y postres artesanales.</p>
         </div>
     </section>
 
-        <!-- Products Section -->
     <section class="products-section">
         <div class="container">
             {% if productos %}
-                <!-- Filters -->
-                <div class="filters">
-                    <input type="search" id="searchInput" class="search-input" value="{{ search_query }}"
-                           maxlength="100" placeholder="Buscar postres..." aria-label="Buscar postres">
-                    <div class="filter-buttons">
-                        <button class="filter-btn active" data-categoria="todos" onclick="filtrarProductos('todos')">Todos</button>
-                        {% for categoria in categorias %}
-                            <button class="filter-btn" data-categoria="{{ categoria.slug }}" onclick="filtrarProductos('{{ categoria.slug }}')">{{ categoria.nombre }}</button>
-                        {% endfor %}
+                <div class="catalog-tools">
+                    <label class="catalog-search">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="search" id="searchInput" class="search-input" value="{{ search_query }}"
+                               maxlength="100" placeholder="Buscar productos..." aria-label="Buscar productos">
+                    </label>
+
+                    <div class="catalog-controls">
+                        <div class="catalog-category-filters">
+                            <span class="catalog-filter-label">Filtrar por:</span>
+                            <div class="filter-buttons">
+                                {% for categoria in categorias %}
+                                    <button class="filter-btn{% if forloop.first %} catalog-featured-filter{% endif %}"
+                                            data-categoria="{{ categoria.slug }}" aria-pressed="false"
+                                            onclick="filtrarProductos('{{ categoria.slug }}')">{{ categoria.nombre }}</button>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
+
                 </div>
 
-                <!-- Grid donde se pintan los productos (datos reales desde la base de datos) -->
+                <div class="catalog-results-toolbar">
+                    <p class="catalog-result-count" id="catalogResultCount" aria-live="polite">
+                        {{ productos|length }} productos encontrados
+                    </p>
+                    <label class="catalog-sort">
+                        <select id="catalogSort" aria-label="Ordenar productos">
+                            <option value="recientes">Más Recientes</option>
+                            <option value="precio-menor">Menor precio</option>
+                            <option value="precio-mayor">Mayor precio</option>
+                            <option value="nombre">Nombre A-Z</option>
+                        </select>
+                    </label>
+                </div>
                 <div class="product-grid" id="productosGrid" aria-live="polite"></div>
             {% else %}
                 <div class="sin-productos-card">
