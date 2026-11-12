@@ -201,6 +201,17 @@ class ProductoSeguridadTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'css/style.css')
 
+    def test_catalogo_publico_muestra_busqueda_orden_y_filtros(self):
+        response = self.client.get(reverse('productos'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Catálogo de Productos')
+        self.assertContains(response, 'catalog-header-search')
+        self.assertContains(response, 'id="headerProductSearch"')
+        self.assertContains(response, 'id="searchInput"')
+        self.assertContains(response, 'id="catalogSort"')
+        self.assertContains(response, 'id="catalogResultCount"')
+
     def test_busqueda_del_catalogo_se_precarga_al_llegar_desde_la_portada(self):
         response = self.client.get(reverse('productos'), {'q': 'Torta'})
 
@@ -208,6 +219,15 @@ class ProductoSeguridadTests(TestCase):
         self.assertEqual(response.context['search_query'], 'Torta')
         self.assertContains(response, 'id="searchInput"')
         self.assertContains(response, 'value="Torta"')
+
+    def test_catalogo_de_temporada_incluye_nombre_legible_de_categoria(self):
+        self.producto.disponible_temporada = True
+        self.producto.save(update_fields=['disponible_temporada'])
+
+        response = self.client.get(reverse('temporada'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['temporada_data'][0]['categoria_nombre'], 'Postres')
 
     def test_portada_muestra_busqueda_y_navegacion_principal(self):
         response = self.client.get(reverse('base_cliente'))
