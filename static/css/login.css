@@ -76,7 +76,7 @@ body {
     min-height: 650px;
 
     /* Puedes cambiar esta imagen por la que quieras */
-    background-image: url("../img/imagen_login.jpeg");
+    background-image: url("../img/hero_fade/imagen_login.jpeg");
     background-size: cover;
     background-position: center;
     display: flex;

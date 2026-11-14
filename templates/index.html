@@ -6,7 +6,7 @@
 
 {% block extra_head %}
     <!-- Preload de la imagen principal del Hero para renderizado inmediato sin retraso -->
-    <link rel="preload" as="image" href="{% static 'img/frutas.png' %}" fetchpriority="high">
+    <link rel="preload" as="image" href="{% static 'img/hero_gallery/hero_postre_manzana.webp' %}" fetchpriority="high">
 {% endblock %}
 
 {% block content %}
@@ -15,11 +15,11 @@
     <section class="hero" aria-label="Descubre Prisma">
         <div class="hero-carousel" id="homeCarousel" role="group" aria-label="Promociones destacadas" aria-roledescription="carrusel">
             <article class="hero-slide is-active" aria-hidden="false">
-                <img class="hero-slide-image" src="{% static 'img/frutas.png' %}" alt="Postres artesanales frescos de Prisma" fetchpriority="high" decoding="async">
+                <img class="hero-slide-image" src="{% static 'img/hero_gallery/hero_postre_manzana.webp' %}" alt="Postre de manzana verde" fetchpriority="high" decoding="async">
                 <div class="hero-content container">
-                    <span class="hero-eyebrow">HECHO CON CARIÑO, SERVIDO CON ARTE</span>
-                    <h1>Un momento dulce, hecho en Prisma</h1>
-                    <p>Cheesecakes y postres artesanales para convertir cualquier día en una ocasión especial.</p>
+                    <span class="hero-eyebrow">EL SABOR QUE NOS INSPIRA</span>
+                    <h1><span>Un momento</span><span>Dulce,</span><span>hecho</span><span>en <em>Prisma</em></span></h1>
+                    <p>Descubre nuestros postres artesanales, preparados para convertir cualquier día en una ocasión especial.</p>
                     <a href="{% url 'productos' %}" class="hero-cta">
                         Explorar catálogo <i class="fas fa-arrow-right" aria-hidden="true"></i>
                     </a>
@@ -27,49 +27,112 @@
             </article>
 
             <article class="hero-slide" aria-hidden="true">
-                <img class="hero-slide-image" src="{% static 'img/manzana_verde.jpeg' %}" alt="Postres de manzana verde" loading="eager" decoding="async">
+                <img class="hero-slide-image" data-src="{% static 'img/hero_gallery/hero_fresa_chocolate.webp' %}" alt="Postre artesanal de fresa y chocolate" decoding="async">
                 <div class="hero-content container">
-                    <span class="hero-eyebrow">EDICIONES QUE DURAN LO QUE UNA TEMPORADA</span>
-                    <h2>La temporada sabe mejor en Prisma</h2>
-                    <p>Descubre postres con sabores frescos, inspirados en lo mejor de cada temporada.</p>
+                    <span class="hero-eyebrow">FRUTA, CHOCOLATE Y MUCHO ARTE</span>
+                    <h2>Un antojo hecho para disfrutar</h2>
+                    <p>Déjate conquistar por nuestros postres de fruta, con todo el sabor y el cuidado de Prisma.</p>
+                    <a href="{% url 'productos' %}" class="hero-cta">
+                        Explorar catálogo <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </article>
+
+            <article class="hero-slide" aria-hidden="true">
+                <img class="hero-slide-image" data-src="{% static 'img/hero_gallery/hero_postre_naranja.webp' %}" alt="Postre artesanal de naranja" decoding="async">
+                <div class="hero-content container">
+                    <span class="hero-eyebrow">UN TOQUE CÍTRICO Y ESPECIAL</span>
+                    <h2>La naranja también se disfruta en postre</h2>
+                    <p>Una creación llena de color para quienes buscan sabores diferentes y memorables.</p>
+                    <a href="{% url 'productos' %}" class="hero-cta">
+                        Descubrir productos <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </article>
+
+            <article class="hero-slide" aria-hidden="true">
+                <img class="hero-slide-image" data-src="{% static 'img/hero_gallery/hero_postre_mora.webp' %}" alt="Postre artesanal de mora servido en su plato" decoding="async">
+                <div class="hero-content container">
+                    <span class="hero-eyebrow">UN SABOR FRUTAL E INTENSO</span>
+                    <h2>Déjate sorprender por la mora</h2>
+                    <p>Un postre lleno de color y sabor para disfrutar algo diferente.</p>
+                    <a href="{% url 'productos' %}" class="hero-cta">
+                        Descubrir mora <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </article>
+
+            <article class="hero-slide" aria-hidden="true">
+                <img class="hero-slide-image" data-src="{% static 'img/hero_gallery/hero_postre_limon.webp' %}" alt="Postre artesanal de limón servido en su plato" decoding="async">
+                <div class="hero-content container">
+                    <span class="hero-eyebrow">FRESCURA EN CADA BOCADO</span>
+                    <h2>El toque cítrico del limón</h2>
+                    <p>Suave, fresco y con el equilibrio perfecto para un momento dulce.</p>
+                    <a href="{% url 'productos' %}" class="hero-cta">
+                        Descubrir limón <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </article>
+
+            <article class="hero-slide" aria-hidden="true">
+                <img class="hero-slide-image" data-src="{% static 'img/hero_gallery/hero_postre_coco.webp' %}" alt="Postre artesanal de coco servido en su plato" decoding="async">
+                <div class="hero-content container">
+                    <span class="hero-eyebrow">UN MOMENTO TROPICAL</span>
+                    <h2>La dulzura especial del coco</h2>
+                    <p>Una creación cremosa con un sabor que invita a disfrutar sin prisa.</p>
+                    <a href="{% url 'productos' %}" class="hero-cta">
+                        Descubrir coco <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </article>
+
+            <article class="hero-slide" aria-hidden="true">
+                <img class="hero-slide-image" data-src="{% static 'img/hero_gallery/postre_feijoa_carrusel.webp' %}" alt="Dos feijoas verdes servidas en un plato blanco" decoding="async">
+                <div class="hero-content container">
+                    <span class="hero-eyebrow">UN SABOR ÚNICO DE NUESTRA TIERRA</span>
+                    <h2>Descubre la feijoa en versión dulce</h2>
+                    <p>Una fruta especial convertida en una creación artesanal de Prisma.</p>
+                    <a href="{% url 'productos' %}" class="hero-cta">
+                        Descubrir feijoa <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </article>
+
+            <article class="hero-slide hero-slide--christmas" aria-hidden="true">
+                <img class="hero-slide-image" data-src="{% static 'img/hero_gallery/postre_temporada_navidad.webp' %}" alt="Postre artesanal de temporada navideña" decoding="async">
+                <div class="hero-content container">
+                    <span class="hero-eyebrow">UNA EDICIÓN PARA COMPARTIR</span>
+                    <h2>La magia de Navidad, hecha postre</h2>
+                    <p>Descubre nuestra creación de temporada y celebra con un detalle dulce de Prisma.</p>
                     <a href="{% url 'temporada' %}" class="hero-cta">
-                        Explorar temporada <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                    </a>
-                </div>
-            </article>
-
-            <article class="hero-slide" aria-hidden="true">
-                <img class="hero-slide-image" src="{% static 'img/imagen_registro.jpeg' %}" alt="Postres artesanales de frutos rojos" loading="eager" decoding="async">
-                <div class="hero-content container">
-                    <span class="hero-eyebrow">LOS QUE SIEMPRE SE ANTOJAN</span>
-                    <h2>Un favorito para cada antojo</h2>
-                    <p>Manzana verde, café con chocolate y fresa: encuentra ese postre que se siente hecho para ti.</p>
-                    <a href="#favoritos" class="hero-cta">
-                        Ver nuestros favoritos <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                    </a>
-                </div>
-            </article>
-
-            <article class="hero-slide" aria-hidden="true">
-                <img class="hero-slide-image" src="{% static 'img/torta.png' %}" alt="Tortas artesanales para reservar" loading="eager" decoding="async">
-                <div class="hero-content container">
-                    <span class="hero-eyebrow">TU MOMENTO PRISMA EMPIEZA AQUÍ</span>
-                    <h2>Reserva tus postres favoritos</h2>
-                    <p>Elige lo que más se te antoja y reserva con tiempo. Nosotros lo preparamos con todo el cariño.</p>
-                    <a href="{% url 'reservas' %}" class="hero-cta">
-                        Crear mi reserva <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        Ver temporada <i class="fas fa-arrow-right" aria-hidden="true"></i>
                     </a>
                 </div>
             </article>
 
             <div class="hero-carousel-controls" aria-label="Controles del carrusel">
+                <button class="hero-carousel-toggle" type="button" aria-label="Pausar carrusel" aria-pressed="false" title="Pausar carrusel">
+                    <i class="fas fa-pause" aria-hidden="true"></i>
+                </button>
                 <div class="hero-carousel-dots" role="group" aria-label="Elegir imagen">
-                    <button class="hero-carousel-dot is-active" type="button" aria-label="Mostrar imagen 1" aria-pressed="true"></button>
-                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar imagen 2" aria-pressed="false"></button>
-                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar imagen 3" aria-pressed="false"></button>
-                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar imagen 4" aria-pressed="false"></button>
+                    <button class="hero-carousel-dot is-active" type="button" aria-label="Mostrar manzana" aria-pressed="true"></button>
+                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar fresa y chocolate" aria-pressed="false"></button>
+                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar naranja" aria-pressed="false"></button>
+                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar mora" aria-pressed="false"></button>
+                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar limón" aria-pressed="false"></button>
+                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar coco" aria-pressed="false"></button>
+                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar feijoa" aria-pressed="false"></button>
+                    <button class="hero-carousel-dot" type="button" aria-label="Mostrar temporada de Navidad" aria-pressed="false"></button>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <section class="brand-story" id="nosotros" aria-labelledby="brandStoryTitle">
+        <div class="container">
+            <span class="brand-story-eyebrow">EL ARTE DEL POSTRE</span>
+            <h2 id="brandStoryTitle">Más que postres, <span>creamos momentos.</span></h2>
+            <p>En Prisma elaboramos cada postre artesanalmente, con cariño y creatividad, para hacer especial cualquier ocasión.</p>
         </div>
     </section>
 
@@ -84,31 +147,81 @@
             <div class="featured-grid">
                 <div class="featured-card">
                     <div class="featured-image">
-                        <img src="{% static 'img/manzana_verde.jpeg' %}" alt="Manzana Verde" loading="lazy" decoding="async">
+                        <img src="{% static 'img/hero_gallery/postre_manzana.webp' %}" alt="Postre de manzana verde servido en su plato" loading="lazy" decoding="async">
                     </div>
                     <div class="featured-info">
-                        <h3>Manzana Verde</h3>
-                        <p>La frescura de la manzana verde en un postre que siempre provoca.</p>
+                        <h3>Cheesecake Manzana</h3>
+                        <p>La frescura de la manzana verde en un postre que siempre provoca ¡PRUEBALOS!</p>
                         <span class="price">$15,000</span>
                     </div>
                 </div>
-                <div class="featured-card featured-card--cafe">
+                <div class="featured-card">
                     <div class="featured-image">
-                        <img src="{% static 'img/imagen_inicio.jpeg' %}" alt="Postres de chocolate de Prisma" loading="lazy" decoding="async">
+                        <img src="{% static 'img/hero_gallery/fresa_chocolate.webp' %}" alt="Postre artesanal de fresa y chocolate en su plato" loading="lazy" decoding="async">
                     </div>
                     <div class="featured-info">
-                        <h3>Café Chocolate</h3>
-                        <p>Notas de café y chocolate para un antojo profundo e irresistible.</p>
-                        <span class="price">$15,000</span>
-                    </div>
-                </div>
-                <div class="featured-card featured-card--berry">
-                    <div class="featured-image">
-                        <img src="{% static 'img/fresa_chocolate.jpeg' %}" alt="Fresa Chocolate" loading="lazy" decoding="async">
-                    </div>
-                    <div class="featured-info">
-                        <h3>Fresa Chocolate</h3>
+                        <h3>Cheesecake Fresa</h3>
                         <p>Fresa y chocolate se encuentran en cada bocado lleno de sabor.</p>
+                        <span class="price">$15,000</span>
+                    </div>
+                </div>
+                <div class="featured-card">
+                    <div class="featured-image">
+                        <img src="{% static 'img/hero_gallery/postre_naranja.webp' %}" alt="Postre artesanal de naranja en su plato" loading="lazy" decoding="async">
+                    </div>
+                    <div class="featured-info">
+                        <h3>Cheesecake Naranja</h3>
+                        <p>Un toque cítrico y especial para quienes disfrutan sabores diferentes.</p>
+                        <span class="price">$15,000</span>
+                    </div>
+                </div>
+                <div class="featured-card">
+                    <div class="featured-image">
+                        <img src="{% static 'img/hero_gallery/postre_mora.webp' %}" alt="Postre artesanal de mora servido en su plato" loading="lazy" decoding="async">
+                    </div>
+                    <div class="featured-info">
+                        <h3>Cheesecake Mora</h3>
+                        <p>Un postre frutal de mora para disfrutar en cualquier momento.</p>
+                        <span class="price">$15,000</span>
+                    </div>
+                </div>
+                <div class="featured-card">
+                    <div class="featured-image">
+                        <img src="{% static 'img/hero_gallery/postre_limon.webp' %}" alt="Postre artesanal de limón servido en su plato" loading="lazy" decoding="async">
+                    </div>
+                    <div class="featured-info">
+                        <h3>Cheesecake Limón</h3>
+                        <p>Suave, fresco y con el punto cítrico perfecto.</p>
+                        <span class="price">$15,000</span>
+                    </div>
+                </div>
+                <div class="featured-card">
+                    <div class="featured-image">
+                        <img src="{% static 'img/hero_gallery/postre_coco.webp' %}" alt="Postre artesanal de coco servido en su plato" loading="lazy" decoding="async">
+                    </div>
+                    <div class="featured-info">
+                        <h3>Cheesecake Coco</h3>
+                        <p>Una creación cremosa con el sabor tropical del coco.</p>
+                        <span class="price">$15,000</span>
+                    </div>
+                </div>
+                <div class="featured-card">
+                    <div class="featured-image">
+                        <img src="{% static 'img/hero_gallery/postre_feijoa_carrusel.webp' %}" alt="Dos feijoas verdes servidas en un plato blanco" loading="lazy" decoding="async">
+                    </div>
+                    <div class="featured-info">
+                        <h3>Cheesecake Feijoa</h3>
+                        <p>El sabor especial de la feijoa en un postre artesanal.</p>
+                        <span class="price">$15,000</span>
+                    </div>
+                </div>
+                <div class="featured-card">
+                    <div class="featured-image">
+                        <img src="{% static 'img/hero_gallery/postre_temporada_navidad.webp' %}" alt="Postre artesanal especial de Navidad servido en su plato" loading="lazy" decoding="async">
+                    </div>
+                    <div class="featured-info">
+                        <h3>Temporada Navideña</h3>
+                        <p>Un postre festivo para compartir y celebrar en familia.</p>
                         <span class="price">$15,000</span>
                     </div>
                 </div>

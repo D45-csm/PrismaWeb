@@ -64,12 +64,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (carousel) {
         const slides = [...carousel.querySelectorAll('.hero-slide')];
         const dots = [...carousel.querySelectorAll('.hero-carousel-dot')];
+        const autoplayToggle = carousel.querySelector('.hero-carousel-toggle');
         let currentSlide = 0;
         let timer = null;
         let isPaused = false;
+        let isInView = true;
 
         const showSlide = (nextSlide) => {
             currentSlide = (nextSlide + slides.length) % slides.length;
+            const image = slides[currentSlide].querySelector('.hero-slide-image');
+            if (image && image.dataset.src) {
+                image.src = image.dataset.src;
+                image.loading = 'eager';
+                image.fetchPriority = 'high';
+                delete image.dataset.src;
+            }
             slides.forEach((slide, index) => {
                 const isActive = index === currentSlide;
                 slide.classList.toggle('is-active', isActive);
@@ -82,16 +91,51 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
 
+        const preloadNextSlide = () => {
+            const nextImage = slides[(currentSlide + 1) % slides.length].querySelector('.hero-slide-image');
+            if (!nextImage || !nextImage.dataset.src) return;
+            nextImage.src = nextImage.dataset.src;
+            nextImage.loading = 'eager';
+            nextImage.fetchPriority = 'low';
+            delete nextImage.dataset.src;
+        };
+
         const stopAutoplay = () => {
             window.clearInterval(timer);
             timer = null;
         };
         const startAutoplay = () => {
             stopAutoplay();
-            if (!isPaused && !prefersReducedMotion && !document.hidden && slides.length > 1) {
-                timer = window.setInterval(() => showSlide(currentSlide + 1), 4500);
+            if (!isPaused && isInView && !prefersReducedMotion && !document.hidden && slides.length > 1) {
+                preloadNextSlide();
+                timer = window.setInterval(() => {
+                    showSlide(currentSlide + 1);
+                    preloadNextSlide();
+                }, 6000);
             }
         };
+
+        if (autoplayToggle) {
+            const autoplayIcon = autoplayToggle.querySelector('i');
+            const updateAutoplayToggle = () => {
+                const label = isPaused ? 'Reanudar carrusel' : 'Pausar carrusel';
+                autoplayToggle.setAttribute('aria-label', label);
+                autoplayToggle.title = label;
+                autoplayToggle.setAttribute('aria-pressed', String(isPaused));
+                if (autoplayIcon) {
+                    autoplayIcon.classList.toggle('fa-play', isPaused);
+                    autoplayIcon.classList.toggle('fa-pause', !isPaused);
+                }
+            };
+
+            autoplayToggle.hidden = prefersReducedMotion || slides.length < 2;
+            autoplayToggle.addEventListener('click', () => {
+                isPaused = !isPaused;
+                updateAutoplayToggle();
+                if (isPaused) stopAutoplay();
+                else startAutoplay();
+            });
+        }
 
         dots.forEach((dot, index) => {
             dot.addEventListener('click', () => {
@@ -99,38 +143,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 startAutoplay();
             });
         });
-        carousel.addEventListener('mouseenter', () => {
-            isPaused = true;
-            stopAutoplay();
-        });
-        carousel.addEventListener('mouseleave', () => {
-            isPaused = false;
-            startAutoplay();
-        });
-        carousel.addEventListener('focusin', () => {
-            isPaused = true;
-            stopAutoplay();
-        });
-        carousel.addEventListener('focusout', (event) => {
-            if (!carousel.contains(event.relatedTarget)) {
-                isPaused = false;
-                startAutoplay();
-            }
-        });
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 stopAutoplay();
                 return;
             }
-            isPaused = false;
             startAutoplay();
         });
+        if ('IntersectionObserver' in window) {
+            const carouselObserver = new IntersectionObserver(([entry]) => {
+                isInView = entry.isIntersecting;
+                if (isInView) startAutoplay();
+                else stopAutoplay();
+            }, { threshold: 0.1 });
+            carouselObserver.observe(carousel);
+        }
         window.addEventListener('pagehide', () => {
-            isPaused = false;
             stopAutoplay();
         });
         window.addEventListener('pageshow', () => {
-            isPaused = false;
             startAutoplay();
         });
         startAutoplay();

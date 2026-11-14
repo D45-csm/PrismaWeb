@@ -222,7 +222,20 @@ class ProductoSeguridadTests(TestCase):
         self.assertNotContains(response, 'Mis reservas')
         self.assertContains(response, 'Explorar catálogo')
         self.assertEqual(response.content.count(b'class="hero-carousel-dot is-active"'), 1)
-        self.assertEqual(response.content.count(b'class="hero-carousel-dot"'), 3)
+        self.assertEqual(response.content.count(b'<button class="hero-carousel-dot'), 9)
+        for image in (
+            'img/hero_gallery/postre_manzana_focus.webp',
+            'img/hero_gallery/fresa_chocolate_focus.webp',
+            'img/hero_gallery/postre_naranja_nuevo.webp',
+            'img/hero_gallery/blueberry_dessert.webp',
+            'img/hero_gallery/postre_feijoa_nuevo.webp',
+            'img/hero_gallery/postre_coco.webp',
+            'img/hero_gallery/postre_limon.webp',
+            'img/hero_gallery/postre_mora.webp',
+            'img/hero_gallery/postre_navidad.webp',
+        ):
+            self.assertContains(response, image)
+        self.assertNotContains(response, 'img/hero_gallery/calabaza.webp')
         self.assertNotContains(response, 'hero-carousel-arrow')
         self.assertNotContains(response, 'hero-scroll-hint')
         self.assertNotContains(response, 'aria-label="Favoritos"')

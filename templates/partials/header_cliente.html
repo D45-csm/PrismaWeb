@@ -5,10 +5,22 @@
             <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
         </a>
 
+        <nav class="nav-menu" id="navMenu" aria-label="Navegación principal">
+            <ul>
+                <li><a class="{% if active == 'inicio' %}active{% endif %}" href="{% url 'base_cliente' %}"><i class="nav-link-icon nav-icon-home fas fa-house" aria-hidden="true"></i>Inicio</a></li>
+                <li><a class="{% if active == 'productos' %}active{% endif %}" href="{% url 'productos' %}"><i class="nav-link-icon nav-icon-products fas fa-cake-candles" aria-hidden="true"></i>Catálogo</a></li>
+                <li><a class="{% if active == 'reservas' %}active{% endif %}" href="{% url 'reservas' %}"><i class="nav-link-icon nav-icon-reservations far fa-calendar-check" aria-hidden="true"></i>Reservas</a></li>
+                <li><a href="{% url 'base_cliente' %}#nosotros">Nosotros</a></li>
+                <li><a class="{% if active == 'contactos' %}active{% endif %}" href="{% url 'contactos' %}"><i class="nav-link-icon nav-icon-contact fas fa-comment-dots" aria-hidden="true"></i>Contacto</a></li>
+            </ul>
+        </nav>
+
         {% if active == 'inicio' %}
             <form class="header-search-form" action="{% url 'productos' %}" method="get" role="search">
                 <label class="sr-only" for="headerProductSearch">Buscar productos</label>
-                <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                <label class="header-search-trigger" for="headerProductSearch" aria-hidden="true">
+                    <i class="fas fa-magnifying-glass"></i>
+                </label>
                 <input type="search" id="headerProductSearch" name="q" placeholder="Buscar productos..."
                        maxlength="100" autocomplete="off">
                 <button type="submit" aria-label="Buscar productos">
@@ -16,15 +28,6 @@
                 </button>
             </form>
         {% endif %}
-
-        <nav class="nav-menu" id="navMenu" aria-label="Navegación principal">
-            <ul>
-                <li><a class="{% if active == 'inicio' %}active{% endif %}" href="{% url 'base_cliente' %}"><i class="nav-link-icon nav-icon-home fas fa-house" aria-hidden="true"></i>Inicio</a></li>
-                <li><a class="{% if active == 'productos' %}active{% endif %}" href="{% url 'productos' %}"><i class="nav-link-icon nav-icon-products fas fa-cake-candles" aria-hidden="true"></i>Catálogo</a></li>
-                <li><a class="{% if active == 'reservas' %}active{% endif %}" href="{% url 'reservas' %}"><i class="nav-link-icon nav-icon-reservations far fa-calendar-check" aria-hidden="true"></i>Reservas</a></li>
-                <li><a class="{% if active == 'contactos' %}active{% endif %}" href="{% url 'contactos' %}"><i class="nav-link-icon nav-icon-contact fas fa-comment-dots" aria-hidden="true"></i>Contacto</a></li>
-            </ul>
-        </nav>
 
         <div class="header-actions">
             <a href="{% url 'reservas' %}" class="header-action-btn" title="Notificaciones de reserva" aria-label="Notificaciones">
