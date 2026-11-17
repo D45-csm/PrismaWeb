@@ -2,14 +2,16 @@
 <header id="header" class="luxury-header luxury-header--customer{% if active == 'inicio' %} luxury-header--hero{% endif %}">
     <div class="container header-container">
         <a class="logo luxury-logo" href="{% url 'base_cliente' %}" aria-label="Prisma, inicio">
-            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma">
+            <img src="{% static 'img/logo_prisma_header.png' %}" alt="Prisma">
         </a>
 
-        {% if active == 'inicio' %}
-            <form class="header-search-form" action="{% url 'productos' %}" method="get" role="search">
+        {% if active == 'inicio' or catalog_search %}
+            <form class="header-search-form{% if catalog_search %} catalog-header-search{% endif %}"
+                  action="{% url 'productos' %}" method="get" role="search">
                 <label class="sr-only" for="headerProductSearch">Buscar productos</label>
                 <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
                 <input type="search" id="headerProductSearch" name="q" placeholder="Buscar productos..."
+                       value="{% if catalog_search %}{{ search_query }}{% endif %}"
                        maxlength="100" autocomplete="off">
                 <button type="submit" aria-label="Buscar productos">
                     <i class="fas fa-arrow-right" aria-hidden="true"></i>
@@ -27,9 +29,6 @@
         </nav>
 
         <div class="header-actions">
-            <a href="{% url 'reservas' %}" class="header-action-btn" title="Notificaciones de reserva" aria-label="Notificaciones">
-                <i class="far fa-bell"></i>
-            </a>
             <a href="{% url 'carrito' %}" class="btn-cart header-action-btn" aria-label="Ver carrito">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="cart-count">0</span>

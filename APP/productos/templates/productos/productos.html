@@ -1,37 +1,69 @@
 {% extends 'base_prisma.html' %}
-{% load static %}
 
 {% block title %}Productos - Prisma{% endblock %}
 {% block body_attrs %} class="customer-area catalog-page"{% endblock %}
 
 {% block content %}
-    {% include 'partials/header_cliente.html' with active='productos' %}
-    <!-- Page Header -->
-    <section class="page-header">
-        <div class="container">
-            <img src="{% static 'img/logo_prisma.png' %}" alt="Prisma Logo" class="page-header-logo">
-            <h1>Nuestros Productos</h1>
-            <p>Descubre nuestra selección de postres artesanales</p>
+    {% include 'partials/header_cliente.html' with active='productos' catalog_search=True %}
+    <section class="catalog-hero">
+        <div class="container catalog-hero-content">
+            <h1>Catálogo de Productos <i class="far fa-heart" aria-hidden="true"></i></h1>
+            <p>Descubre nuestra deliciosa selección de pasteles y postres artesanales.</p>
         </div>
     </section>
 
-        <!-- Products Section -->
     <section class="products-section">
         <div class="container">
             {% if productos %}
-                <!-- Filters -->
-                <div class="filters">
-                    <input type="search" id="searchInput" class="search-input" value="{{ search_query }}"
-                           maxlength="100" placeholder="Buscar postres..." aria-label="Buscar postres">
-                    <div class="filter-buttons">
-                        <button class="filter-btn active" data-categoria="todos" onclick="filtrarProductos('todos')">Todos</button>
-                        {% for categoria in categorias %}
-                            <button class="filter-btn" data-categoria="{{ categoria.slug }}" onclick="filtrarProductos('{{ categoria.slug }}')">{{ categoria.nombre }}</button>
-                        {% endfor %}
+                <div class="catalog-tools">
+                    <label class="catalog-search">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="search" id="searchInput" class="search-input" value="{{ search_query }}"
+                               maxlength="100" placeholder="Buscar productos..." aria-label="Buscar productos">
+                    </label>
+
+                    <div class="catalog-controls">
+                        <div class="catalog-category-filters">
+                            <span class="catalog-filter-label">Filtrar por:</span>
+                            <div class="filter-buttons">
+                                {% for categoria in categorias %}
+                                    <button class="filter-btn"
+                                            data-categoria="{{ categoria.slug }}" aria-pressed="false"
+                                            onclick="filtrarProductos('{{ categoria.slug }}')">{{ categoria.nombre }}</button>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
+
                 </div>
 
-                <!-- Grid donde se pintan los productos (datos reales desde la base de datos) -->
+                <div class="catalog-results-toolbar">
+                    <p class="catalog-result-count" id="catalogResultCount" aria-live="polite">
+                        {{ productos|length }} productos encontrados
+                    </p>
+                    <div class="catalog-sort" id="catalogSortControl">
+                        <button class="catalog-sort-trigger" id="catalogSortTrigger" type="button"
+                                aria-label="Ordenar productos" aria-haspopup="listbox"
+                                aria-expanded="false" aria-controls="catalogSortMenu">
+                            <span id="catalogSortLabel">Más recientes</span>
+                        </button>
+                        <div class="catalog-sort-menu" id="catalogSortMenu" role="listbox"
+                             aria-label="Ordenar productos" hidden>
+                            <div class="catalog-sort-option is-selected" id="sortRecentOption"
+                                 role="option" tabindex="-1" data-value="recientes" aria-selected="true">
+                                Más recientes
+                            </div>
+                            <div class="catalog-sort-option" id="sortNameOption" role="option"
+                                 tabindex="-1" data-value="nombre" aria-selected="false">
+                                Nombre A-Z
+                            </div>
+                        </div>
+                        <select class="catalog-sort-native" id="catalogSort" aria-hidden="true" tabindex="-1">
+                            <option value="recientes">Más recientes</option>
+                            <option value="nombre">Nombre A-Z</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="product-grid" id="productosGrid" aria-live="polite"></div>
             {% else %}
                 <div class="sin-productos-card">
@@ -45,36 +77,41 @@
 
     <!-- MODAL DE PRODUCTO -->
     <div class="product-modal-overlay" id="productModal">
-        <div class="product-modal">
-            <button class="modal-close" onclick="cerrarModal()">&times;</button>
+        <div class="product-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <button class="modal-close" type="button" onclick="cerrarModal()" aria-label="Cerrar detalles del producto">&times;</button>
             <div class="modal-content">
                 <div class="modal-gallery">
                     <div class="modal-thumbs" id="modalThumbs"></div>
                     <div class="modal-main-image">
-                        <button class="modal-nav prev" onclick="navegarGaleria(-1)"><i class="fas fa-chevron-left"></i></button>
                         <img id="modalMainImage" src="" alt="">
-                        <button class="modal-nav next" onclick="navegarGaleria(1)"><i class="fas fa-chevron-right"></i></button>
-                        <div class="modal-dots" id="modalDots"></div>
                     </div>
                 </div>
                 <div class="modal-info">
                     <h2 id="modalTitle"></h2>
-                    <div class="modal-price" id="modalPrice"></div>
-                    
-                    <div class="modal-size-selector">
-                        <div class="modal-section-label">Tamaño</div>
-                        <div class="size-options" id="sizeOptions">
-                            <div class="size-option active" data-size="personal">Personal</div>
-                            <div class="size-option" data-size="mediano">Mediana 12 porciones</div>
-                            <div class="size-option" data-size="grande">Grande 20 porciones</div>
+                    <p class="modal-description" id="modalDescription"></p>
+                    <div class="modal-price">
+                        <span class="modal-price-label">Precio por unidad</span>
+                        <strong id="modalPrice"></strong>
+                    </div>
+
+                    <div class="modal-quantity-section">
+                        <label class="modal-section-label" for="modalQuantity">Cantidad de postres</label>
+                        <div class="modal-quantity-row">
+                            <div class="modal-quantity-selector">
+                                <button class="modal-quantity-btn" type="button" onclick="ajustarCantidadModal(-1)" aria-label="Restar un postre">−</button>
+                                <input class="modal-quantity-input" id="modalQuantity" type="number" min="1" step="1" value="1"
+                                       inputmode="numeric" required aria-label="Cantidad de postres">
+                                <button class="modal-quantity-btn" type="button" onclick="ajustarCantidadModal(1)" aria-label="Agregar un postre más">+</button>
+                            </div>
+                            <span class="modal-total" id="modalTotal" aria-live="polite"></span>
                         </div>
                     </div>
-                    
-                    <button class="modal-add-btn" onclick="agregarDesdeModal()">
-                        AGREGAR AL CARRITO
+
+                    <button class="modal-add-btn" type="button" onclick="agregarDesdeModal()">
+                        <i class="fas fa-cart-shopping" aria-hidden="true"></i>
+                        Agregar al carrito
                     </button>
-                    
-                    <div class="modal-description" id="modalDescription"></div>
+
                     <div class="modal-whatsapp">
                         Por favor confirmar la compra en el WhatsApp <a href="https://wa.me/573118689862" target="_blank">3118689862</a>
                     </div>

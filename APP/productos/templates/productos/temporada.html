@@ -39,36 +39,42 @@
 
     <!-- MODAL DE PRODUCTO -->
     <div class="product-modal-overlay" id="productModal">
-        <div class="product-modal">
-            <button class="modal-close" onclick="cerrarModal()">&times;</button>
+        <div class="product-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <button class="modal-close" type="button" onclick="cerrarModal()" aria-label="Cerrar detalles del producto">&times;</button>
             <div class="modal-content">
                 <div class="modal-gallery">
                     <div class="modal-thumbs" id="modalThumbs"></div>
                     <div class="modal-main-image">
-                        <button class="modal-nav prev" onclick="navegarGaleria(-1)"><i class="fas fa-chevron-left"></i></button>
                         <img id="modalMainImage" src="" alt="">
-                        <button class="modal-nav next" onclick="navegarGaleria(1)"><i class="fas fa-chevron-right"></i></button>
-                        <div class="modal-dots" id="modalDots"></div>
                     </div>
                 </div>
                 <div class="modal-info">
                     <h2 id="modalTitle"></h2>
-                    <div class="modal-price" id="modalPrice"></div>
+                    <p class="modal-description" id="modalDescription"></p>
 
-                    <div class="modal-size-selector">
-                        <div class="modal-section-label">Tamaño</div>
-                        <div class="size-options" id="sizeOptions">
-                            <div class="size-option active" data-size="personal">Personal</div>
-                            <div class="size-option" data-size="mediano">Mediana 12 porciones</div>
-                            <div class="size-option" data-size="grande">Grande 20 porciones</div>
+                    <div class="modal-price">
+                        <span class="modal-price-label">Precio por unidad</span>
+                        <strong id="modalPrice"></strong>
+                    </div>
+
+                    <div class="modal-quantity-section">
+                        <label class="modal-section-label" for="modalQuantity">Cantidad de postres</label>
+                        <div class="modal-quantity-row">
+                            <div class="modal-quantity-selector">
+                                <button class="modal-quantity-btn" type="button" onclick="ajustarCantidadModal(-1)" aria-label="Restar un postre">−</button>
+                                <input class="modal-quantity-input" id="modalQuantity" type="number" min="1" step="1" value="1"
+                                       inputmode="numeric" required aria-label="Cantidad de postres">
+                                <button class="modal-quantity-btn" type="button" onclick="ajustarCantidadModal(1)" aria-label="Agregar un postre más">+</button>
+                            </div>
+                            <span class="modal-total" id="modalTotal" aria-live="polite"></span>
                         </div>
                     </div>
 
-                    <button class="modal-add-btn" onclick="agregarDesdeModal()">
-                        AGREGAR AL CARRITO
+                    <button class="modal-add-btn" type="button" onclick="agregarDesdeModal()">
+                        <i class="fas fa-cart-shopping" aria-hidden="true"></i>
+                        Agregar al carrito
                     </button>
 
-                    <div class="modal-description" id="modalDescription"></div>
                     <div class="modal-whatsapp">
                         Por favor confirmar la compra en el WhatsApp <a href="https://wa.me/573118689862" target="_blank">3118689862</a>
                     </div>
