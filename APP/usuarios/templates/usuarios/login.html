@@ -2,15 +2,15 @@
 {% load static %}
 
 {% block title %}Iniciar sesión - Prisma{% endblock %}
-{% block body_attrs %} class="auth-page"{% endblock %}
+{% block body_attrs %} class="auth-page login-page"{% endblock %}
 
 {% block content %}
     <div class="auth-container customer-auth-container">
         <div class="auth-image">
+            <img class="auth-product-image" src="{% static 'img/imagen_login_producto.png' %}" alt="">
             <div class="auth-image-overlay"></div>
             <div class="auth-image-text">
-                <h2>Bienvenido a Prisma</h2>
-                <p>Un acceso seguro para nuestros clientes y equipo autorizado</p>
+                <h2>¡Bienvenido<br>de nuevo!</h2>
             </div>
         </div>
 
