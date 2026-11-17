@@ -666,7 +666,7 @@ input[type="submit"]:focus-visible,
 .contact-hero {
     position: relative;
     overflow: hidden;
-    padding: 170px 0 90px;
+    padding: 84px 0 42px;
     background: linear-gradient(120deg, rgba(15,155,142,.96) 0%, rgba(47,111,208,.96) 55%, rgba(106,44,145,.96) 100%);
     text-align: center;
 }
@@ -682,25 +682,30 @@ input[type="submit"]:focus-visible,
     position: relative;
     padding: 0 0 90px;
 }
+.contact-section > .container,
+.contact-hub,
+.contact-channel-column,
+.contact-location-grid {
+    min-width: 0;
+}
 .contact-hub {
     display: grid;
-    grid-template-columns: 1.1fr 1.4fr;
-    gap: 40px;
-    margin-top: -60px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 34px;
+    margin-top: 0;
     position: relative;
     z-index: 3;
 }
 
 .contact-panel {
-    background: linear-gradient(160deg, #ffffff 0%, #fbfaf6 100%);
-    border: 1px solid rgba(15, 155, 142, .14);
-    border-top: 4px solid #0f9b8e;
-    border-radius: 24px;
-    padding: 38px 34px;
-    box-shadow: 0 18px 44px rgba(29, 49, 56, .11);
-    margin-top: 60px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 12px 0 0;
+    box-shadow: none;
+    margin-top: 0;
 }
-.contact-panel h2 { font-size: 1.6rem; margin-bottom: 26px; letter-spacing: -.02em; }
+.contact-panel h2 { font-size: 1.6rem; margin-bottom: 20px; letter-spacing: -.02em; }
 .contact-panel-eyebrow {
     display: inline-flex;
     align-items: center;
@@ -716,7 +721,7 @@ input[type="submit"]:focus-visible,
     border-radius: 999px;
     border: 1px solid rgba(0, 0, 0, 0.04);
 }
-.contact-info-list { display: flex; flex-direction: column; gap: 20px; margin-bottom: 24px; }
+.contact-info-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 0; }
 .info-item { display: flex; align-items: center; gap: 14px; color: var(--negro); }
 .info-item .info-icon {
     flex-shrink: 0;
@@ -745,7 +750,7 @@ input[type="submit"]:focus-visible,
 
 /* Tarjeta del Mapa Interactivo Google Maps */
 .contact-map-wrapper {
-    margin-top: 20px;
+    margin-top: 0;
     border-radius: 18px;
     overflow: hidden;
     background: var(--blanco);
@@ -806,15 +811,35 @@ input[type="submit"]:focus-visible,
 }
 .contact-map-container {
     width: 100%;
-    height: 300px;
+    height: 360px;
     position: relative;
     background: #e2e8f0;
 }
 .contact-map-container iframe {
     display: block;
     width: 100%;
-    height: 100%;
+    height: 320px;
     filter: saturate(1.05) contrast(1.02);
+}
+.contact-location-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 900px;
+    margin-inline: auto;
+    align-items: center;
+}
+.contact-location-grid .contact-map-wrapper {
+    display: flex;
+    min-width: 0;
+    width: 100%;
+    flex-direction: column;
+}
+.contact-location-grid .contact-map-container {
+    flex: 1;
+    min-height: 300px;
+    height: auto;
 }
 .contact-map-actions {
     display: flex;
@@ -864,9 +889,18 @@ input[type="submit"]:focus-visible,
     transform: translateY(0) scale(0.98);
 }
 
-.contact-channel-column { display: flex; flex-direction: column; gap: 30px; margin-top: 60px; }
+.contact-channel-column {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+    margin-top: 0;
+}
 .contact-channel-section > h2,
-.social-channel-section > h2 { margin: 0; font-size: 1.55rem; line-height: 1.2; }
+.social-channel-section > h2 {
+    margin: 0;
+    font-size: 1.45rem;
+    line-height: 1.2;
+}
 .contact-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; margin-top: 18px; }
 .contact-card {
     display: flex;
@@ -876,7 +910,7 @@ input[type="submit"]:focus-visible,
     background: linear-gradient(180deg, rgba(255,255,255,.99), rgba(255,249,244,.98));
     padding: 26px 18px;
     border-radius: 20px;
-    box-shadow: 0 16px 35px rgba(44,44,44,.08);
+    box-shadow: 0 14px 34px rgba(80,80,80,.14);
     transition: transform .38s cubic-bezier(.2,.7,.25,1), box-shadow .38s ease, border-color .38s ease;
     cursor: pointer;
     text-align: center;
@@ -900,9 +934,10 @@ input[type="submit"]:focus-visible,
 .contact-card p { min-height: 2.8em; margin: 0; color: var(--gris); font-size: .88rem; overflow-wrap: anywhere; }
 .contact-card-action { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; color: var(--magenta); font-size: .82rem; font-weight: 700; }
 .contact-card:hover {
-    box-shadow: 0 18px 38px rgba(44,44,44,.12);
+    box-shadow: 0 18px 40px rgba(80,80,80,.2);
     transform: translateY(-6px);
 }
+.contact-page .contact-card:hover { border-bottom-color: #b7aaa8; }
 .whatsapp .card-icon { background: linear-gradient(135deg, #25D366, #128C7E); }
 .whatsapp:hover { border-bottom-color: #25D366; }
 .instagram .card-icon { background: linear-gradient(135deg, var(--magenta), var(--morado)); }
@@ -915,6 +950,28 @@ input[type="submit"]:focus-visible,
 .nequi:hover { border-bottom-color: #DA298A; }
 .daviplata .card-icon { background: linear-gradient(135deg, #FFD100, var(--naranja)); }
 .daviplata:hover { border-bottom-color: #FFD100; }
+
+.contact-store {
+    display: flex;
+    justify-content: center;
+    justify-self: stretch;
+    min-width: 0;
+    width: 100%;
+    height: clamp(350px, 36vw, 440px);
+    margin: 0;
+    border-radius: 12px;
+    background: #eee8e4;
+    box-shadow: 0 14px 34px rgba(80,80,80,.14);
+    overflow: hidden;
+}
+.contact-store img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+}
 
 .whatsapp-float {
     position: fixed;
@@ -2129,12 +2186,14 @@ input[type="submit"]:focus-visible,
     .reservas-container { grid-template-columns: 1fr; margin-top: 0; }
     .reservas-info, .reservas-form-card { margin-top: 40px; }
     .contact-hub { grid-template-columns: 1fr; margin-top: 0; }
-    .contact-panel { margin-top: 40px; }
-    .contact-channel-column { margin-top: 0; }
+    .contact-panel { margin-top: 0; }
+    .contact-channel-column { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0; }
 }
 
 @media (max-width: 768px) {
     .mobile-menu-btn { display: flex; }
+    .contact-location-grid { grid-template-columns: 1fr; }
+    .contact-store { justify-self: center; width: 100%; }
     .luxury-header .header-container { gap: 10px; }
     .luxury-header .mobile-menu-btn.header-action-btn {
         flex: 0 0 42px;
@@ -3078,7 +3137,8 @@ input[type="submit"]:focus-visible,
     .page-header h1 { font-size: 2.2rem; }
     .contact-hero-content h1 { font-size: 2.2rem; }
     .contact-grid { grid-template-columns: 1fr; }
-    .contact-panel, .reservas-info, .reservas-form-card { padding: 30px 22px; }
+    .contact-panel { padding: 12px 0 0; }
+    .reservas-info, .reservas-form-card { padding: 30px 22px; }
     .auth-page { padding: max(10px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom)); }
     .auth-container, .customer-auth-container { border-radius: 18px; }
     .auth-image { min-height: 150px; }
@@ -3818,14 +3878,17 @@ input[type="submit"]:focus-visible,
 }
 
 @media (max-width: 600px) {
-    .contact-hero { padding: 132px 0 76px; }
+    .contact-hero { padding: 100px 0 40px; }
     .contact-hero-content h1 { font-size: clamp(2.4rem, 10vw, 3.2rem); }
     .contact-section { padding-bottom: 60px; }
-    .contact-panel { margin-top: 24px; padding: 28px 22px; border-radius: 20px; }
+    .contact-panel { margin-top: 0; padding: 12px 0 0; border-radius: 0; }
     .contact-panel h2,
     .contact-channel-section > h2,
     .social-channel-section > h2 { font-size: 1.35rem; }
     .contact-info-list { gap: 16px; margin-bottom: 22px; }
+    .contact-channel-column { grid-template-columns: 1fr; gap: 26px; }
+    .contact-location-grid { gap: 20px; }
+    .contact-store { height: clamp(280px, 90vw, 380px); }
     .contact-map-header { align-items: flex-start; }
     .contact-map-header-title { flex-wrap: wrap; }
     .contact-map-container { height: 250px; }
@@ -6001,9 +6064,8 @@ padding: 34px 0 72px;
     background: rgba(188, 119, 119, .3);
 }
 .contact-page .contact-panel {
-    border-color: rgba(188, 119, 119, .2);
-    border-top-color: #bc7777;
-    box-shadow: 0 18px 44px rgba(72, 48, 47, .1);
+    border: 0;
+    box-shadow: none;
 }
 .customer-area .luxury-form-card,
 .customer-area .reservation-panel,
@@ -6075,5 +6137,260 @@ padding: 34px 0 72px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+}
+
+/* Login page */
+.login-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse at 2% 12%, rgba(185, 231, 255, .76), transparent 42%),
+        radial-gradient(ellipse at 98% 90%, rgba(235, 190, 255, .74), transparent 48%),
+        linear-gradient(125deg, #eaf8ff 0%, #f6efff 55%, #f9e9ff 100%);
+}
+.login-page .customer-auth-container {
+    display: grid;
+    width: 100%;
+    min-height: 100vh;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(24px, 4vw, 64px);
+    padding: clamp(24px, 5vw, 72px);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+.login-page .customer-auth-container .auth-image {
+    display: block;
+    position: relative;
+    min-width: 0;
+    min-height: min(78vh, 700px);
+    overflow: hidden;
+    isolation: auto;
+    background: transparent;
+}
+.login-page .auth-product-image {
+    position: absolute;
+    z-index: 0;
+    inset: 22% 5% 0;
+    width: 90%;
+    height: 78%;
+    margin-top: 30px ;
+    object-fit: contain;
+    object-position: center bottom;
+    mix-blend-mode: normal;
+}
+.login-page .auth-image-overlay {
+    background: linear-gradient(180deg, transparent 52%, rgba(238, 225, 255, .13));
+    pointer-events: none;
+}
+.login-page .auth-image-text {
+    position: absolute;
+    inset: 7% 8% auto;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    color: #241139;
+    text-align: center;
+    text-shadow: none;
+}
+.login-page .auth-image-text h2 {
+    margin: 0;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2.4rem, 4.1vw, 4.15rem);
+    font-weight: 700;
+    letter-spacing: -.035em;
+    line-height: 1.02;
+}
+.login-page .auth-image-text p {
+    max-width: 34ch;
+    margin-top: 12px;
+    color: #503c60;
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: clamp(.85rem, 1.1vw, 1rem);
+    line-height: 1.5;
+    opacity: .9;
+}
+.login-page .customer-auth-container .customer-auth-panel {
+    width: min(100%, 590px);
+    max-width: 590px;
+    margin: 0 auto;
+    padding: clamp(30px, 4vw, 52px);
+    border: 1px solid rgba(255, 255, 255, .8);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .86);
+    box-shadow: 0 18px 48px rgba(62, 42, 87, .14);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+.login-page .customer-auth-panel .auth-logo {
+    margin-bottom: 20px;
+}
+.login-page .customer-auth-panel .auth-logo img {
+    flex-basis: 68px;
+    width: 68px;
+    min-width: 68px;
+    max-width: 68px;
+    height: 68px;
+    min-height: 68px;
+    max-height: 68px;
+    padding: 3px;
+    border-color: rgba(176, 25, 126, .12);
+    box-shadow: 0 6px 16px rgba(75, 40, 75, .12);
+}
+.login-page .customer-auth-panel > h2 {
+    margin-bottom: 6px;
+    color: #211625;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2.1rem, 3vw, 2.8rem);
+    line-height: 1.12;
+    letter-spacing: 0;
+}
+.login-page .customer-auth-panel .auth-subtitle {
+    margin-bottom: 24px;
+    color: #433c46;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: .98rem;
+    line-height: 1.5;
+}
+.login-page .customer-auth-panel .form-group {
+    margin-bottom: 18px;
+}
+.login-page .customer-auth-panel .form-group label {
+    margin-bottom: 7px;
+    color: #211d23;
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: .9rem;
+    font-weight: 700;
+}
+.login-page .customer-auth-panel .form-group input {
+    min-height: 48px;
+    padding: 11px 15px;
+    border: 1.5px solid #e1dce5;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .68);
+    box-shadow: none;
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: .92rem;
+}
+.login-page .customer-auth-panel .form-group input:focus {
+    border-color: #b648a3;
+    box-shadow: 0 0 0 3px rgba(176, 25, 126, .1);
+}
+.login-page .customer-auth-panel .customer-password-toggle {
+    color: #a63d9a;
+}
+.login-page .customer-auth-panel .customer-login-form-options {
+    margin: 2px 0 18px;
+}
+.login-page .customer-auth-panel .remember-me {
+    color: #302a33;
+    font-size: .85rem;
+}
+.login-page .customer-auth-panel .remember-me input {
+    accent-color: #8d438f;
+}
+.login-page .customer-auth-panel .btn-primary {
+    min-height: 48px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ffdb13, #ffc900);
+    color: #211b13;
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: .95rem;
+    font-weight: 700;
+    box-shadow: 0 6px 13px rgba(109, 83, 14, .25);
+}
+.login-page .customer-auth-panel .btn-primary:hover {
+    background: linear-gradient(180deg, #ffe33a, #ffd00a);
+    box-shadow: 0 8px 17px rgba(109, 83, 14, .28);
+}
+.login-page .customer-auth-panel .auth-switch {
+    gap: 8px;
+    margin-top: 17px;
+    color: #514953;
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: .82rem;
+    line-height: 1.5;
+}
+.login-page .customer-auth-panel .auth-switch a {
+    color: #a52c91;
+    font-weight: 700;
+}
+.login-page .customer-auth-panel .auth-switch a:hover {
+    color: #7e1d70;
+}
+.login-page .customer-auth-panel .back-home {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 16px auto 0;
+    padding: 9px 16px;
+    border: 1px solid rgba(141, 67, 143, .28);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .62);
+    color: #75407b;
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: .84rem;
+    font-weight: 650;
+    text-decoration: none;
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+.login-page .customer-auth-panel .back-home:hover {
+    border-color: rgba(141, 67, 143, .5);
+    background: #f8effa;
+    color: #54265c;
+}
+.login-page .customer-auth-panel .back-home i {
+    color: inherit;
+}
+
+@media (max-width: 850px) {
+    .login-page .customer-auth-container {
+        min-height: 100vh;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+        padding: 20px;
+    }
+    .login-page .customer-auth-container .auth-image {
+        width: min(100%, 590px);
+        min-height: 250px;
+        margin: 0 auto;
+        overflow: hidden;
+    }
+    .login-page .auth-product-image {
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    .login-page .auth-image-text {
+        inset: 7% 6% auto;
+    }
+    .login-page .auth-image-text h2 {
+        font-size: clamp(2rem, 7vw, 3rem);
+    }
+    .login-page .customer-auth-container .customer-auth-panel {
+        width: min(100%, 590px);
+        padding: clamp(26px, 6vw, 40px);
+    }
+}
+
+@media (max-width: 480px) {
+    .login-page .customer-auth-container {
+        gap: 14px;
+        padding: 12px;
+    }
+    .login-page .customer-auth-container .auth-image {
+        min-height: 205px;
+    }
+    .login-page .customer-auth-container .customer-auth-panel {
+        padding: 24px 20px;
+        border-radius: 18px;
+    }
+    .login-page .customer-auth-panel .auth-switch {
+        font-size: .78rem;
     }
 }
