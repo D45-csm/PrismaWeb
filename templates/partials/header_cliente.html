@@ -5,11 +5,13 @@
             <img src="{% static 'img/logo_prisma_header.png' %}" alt="Prisma">
         </a>
 
-        {% if active == 'inicio' %}
-            <form class="header-search-form" action="{% url 'productos' %}" method="get" role="search">
+        {% if active == 'inicio' or catalog_search %}
+            <form class="header-search-form{% if catalog_search %} catalog-header-search{% endif %}"
+                  action="{% url 'productos' %}" method="get" role="search">
                 <label class="sr-only" for="headerProductSearch">Buscar productos</label>
                 <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
                 <input type="search" id="headerProductSearch" name="q" placeholder="Buscar productos..."
+                       value="{% if catalog_search %}{{ search_query }}{% endif %}"
                        maxlength="100" autocomplete="off">
                 <button type="submit" aria-label="Buscar productos">
                     <i class="fas fa-arrow-right" aria-hidden="true"></i>

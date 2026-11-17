@@ -208,6 +208,7 @@ def _producto_a_json(producto):
         'desc': producto.descripcion,
         'precio': float(producto.precio),
         'categoria': slugify(producto.categoria.nombre) if producto.categoria_id else 'otros',
+        'categoria_nombre': producto.categoria.nombre if producto.categoria_id else 'Otros',
         'img': imagenes[0],
         'imgs': imagenes,
     }
