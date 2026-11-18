@@ -240,12 +240,19 @@ class AccesoUsuarioTests(TestCase):
             response,
             'https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=juansebastiangirataguarin12%40gmail.com&amp;su=Consulta%20para%20Prisma',
         )
-        self.assertContains(response, 'tel:+573118689862')
+        self.assertContains(response, 'https://wa.me/573118689862')
         self.assertContains(response, '@prisma_pasteleria1')
-        self.assertContains(response, 'TikTok · @pasteleriaprisma')
+        self.assertContains(response, '@pasteleriaprisma')
         self.assertContains(response, 'fab fa-tiktok')
         self.assertContains(response, 'fab fa-instagram')
         self.assertContains(response, 'https://maps.app.goo.gl/MkcuMJTPRKyRcEWt6?g_st=ic')
+        self.assertContains(response, 'alt="Interior de la pastelería Prisma"')
+        self.assertLess(
+            response.content.index(b'alt="Interior de la pasteler'),
+            response.content.index(b'class="contact-map-wrapper"'),
+        )
+        self.assertNotContains(response, 'Nuestras sedes')
+        self.assertNotContains(response, 'Enlaces del pie de página')
         self.assertContains(
             response,
             'https://mail.google.com/mail/?view=cm&amp;fs=1&amp;to=juansebastiangirataguarin12%40gmail.com&amp;su=Consulta%20para%20Prisma',
