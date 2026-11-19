@@ -70,8 +70,16 @@ def _validar_disponibilidad_insumos(productos_lineas):
 
                 # Si hay movimientos registrados en el inventario para este insumo, verificar stock
                 if Movimiento.objects.filter(insumo=insumo).exists():
-                    entradas = Movimiento.objects.filter(insumo=insumo, accion='ENTRADA').aggregate(total=Sum('cantidad'))['total'] or Decimal('0')
-                    salidas = Movimiento.objects.filter(insumo=insumo, accion='SALIDA').aggregate(total=Sum('cantidad'))['total'] or Decimal('0')
+                    movimientos_activos = Movimiento.objects.filter(
+                        insumo=insumo,
+                        estado=Movimiento.Estado.ACTIVO,
+                    )
+                    entradas = movimientos_activos.filter(
+                        accion='ENTRADA',
+                    ).aggregate(total=Sum('cantidad'))['total'] or Decimal('0')
+                    salidas = movimientos_activos.filter(
+                        accion='SALIDA',
+                    ).aggregate(total=Sum('cantidad'))['total'] or Decimal('0')
                     stock_disponible = Decimal(str(entradas)) - Decimal(str(salidas))
                     requerido = Decimal(str(ri.cantidad_insumo)) * Decimal(str(cantidad))
                     if stock_disponible < requerido:
