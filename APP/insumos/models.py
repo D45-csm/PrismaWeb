@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator
 
 # Create your models here.
 class CategoriaInsumo(models.Model):
@@ -20,6 +21,12 @@ class Insumo(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True, null=True)
     unidad_medida= models.CharField(max_length=20, choices=unidad_medida_choices)
+    stock_minimo = models.DecimalField(
+        max_digits=10,
+        decimal_places=3,
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
     categoria = models.ForeignKey(CategoriaInsumo, on_delete=models.CASCADE)
     proveedor_referencia = models.ForeignKey(
         'proveedores.Proveedor',
