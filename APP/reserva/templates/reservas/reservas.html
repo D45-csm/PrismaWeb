@@ -71,13 +71,13 @@
                                 <!-- Opción Mesa -->
                                 <label class="modality-card is-selected" for="modalidad_mesa" id="modalityCardMesa">
                                     <input type="radio" name="tipo_reserva" id="modalidad_mesa" value="Mesa" checked>
-                                    <div class="modality-badge public-badge">
-                                        <i class="fas fa-unlock-alt"></i> Público · Sin Registro
+                                    <div class="modality-badge secure-badge">
+                                        <i class="fas fa-shield-halved"></i> Requiere Inicio de Sesión
                                     </div>
                                     <div class="modality-icon"><i class="fas fa-utensils"></i></div>
                                     <h3 class="modality-name">Con Mesa</h3>
                                     <p class="modality-desc">
-                                        Disfruta en nuestro acogedor local. No requieres iniciar sesión ni pagar anticipado.
+                                        Disfruta en nuestro acogedor local. Requiere iniciar sesión y pagar antes de confirmar.
                                     </p>
                                     <div class="modality-check"><i class="fas fa-check-circle"></i></div>
                                 </label>
@@ -91,28 +91,28 @@
                                     <div class="modality-icon"><i class="fas fa-bag-shopping"></i></div>
                                     <h3 class="modality-name">Para Llevar</h3>
                                     <p class="modality-desc">
-                                        Empacamos tu postre fresco y listo para recoger. Requiere iniciar sesión y completar pago.
+                                        Empacamos tu postre fresco y listo para recoger. Requiere iniciar sesión y pagar antes de confirmar.
                                     </p>
                                     <div class="modality-check"><i class="fas fa-check-circle"></i></div>
                                 </label>
                             </div>
 
-                            <!-- AVISO DINÁMICO DE AUTENTICACIÓN PARA LLEVAR -->
-                            <div id="takeawayAuthNotice" class="takeaway-auth-notice" hidden>
+                            <!-- AVISO DINÁMICO DE AUTENTICACIÓN -->
+                            <div id="reservationAuthNotice" class="takeaway-auth-notice"{% if user.is_authenticated %} hidden{% endif %}>
                                 {% if user.is_authenticated %}
                                     <div class="auth-notice-box is-logged-in">
                                         <i class="fas fa-circle-check text-success"></i>
                                         <div>
                                             <strong>Sesión activa como: {{ user.username }}</strong>
-                                            <p>Al registrar tu pedido podrás completar tu pago seguro en línea con Nequi, Daviplata o Tarjeta.</p>
+                                            <p>Al registrar tu reserva podrás realizar el pago con Nequi, Llave o Daviplata; los datos aparecerán en el siguiente paso.</p>
                                         </div>
                                     </div>
                                 {% else %}
                                     <div class="auth-notice-box is-required">
                                         <i class="fas fa-lock text-warning"></i>
                                         <div>
-                                            <strong>Inicio de sesión requerido para pedidos para llevar</strong>
-                                            <p>Para asegurar tu postre y procesar tu pago seguro necesitas tener una cuenta activa.</p>
+                                            <strong>Inicia sesión para realizar una reserva</strong>
+                                            <p>Necesitas una cuenta activa para reservar y enviar el comprobante de pago.</p>
                                             <div class="auth-notice-actions">
                                                 <a href="{% url 'login' %}?next={% url 'reservas' %}" class="btn-notice-login" id="btnNoticeLogin">
                                                     <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
@@ -317,7 +317,7 @@
                                         <div>
                                             <span class="total-label">Total Estimado</span>
                                             <small class="total-note" id="totalNoteText">
-                                                Para llevar requiere pago anticipado. Mesas no requieren pago previo.
+                                                Todas las reservas requieren iniciar sesión y pagar antes de confirmarse.
                                             </small>
                                         </div>
                                         <strong class="total-value" id="reservaTotalEstimate">$0</strong>
@@ -359,7 +359,7 @@
                         <div class="form-submit-block">
                             <button type="submit" id="btnSubmitReserva" class="luxury-btn-gold btn-full"
                                     {% if not productos %} disabled{% endif %}>
-                                <span class="btn-text">Confirmar mi Reserva</span>
+                                <span class="btn-text">Confirmar y Continuar al Pago</span>
                                 <i class="fas fa-arrow-right"></i>
                             </button>
                             <p class="form-privacy-note">
@@ -393,7 +393,7 @@
             </div>
             <div class="payment-modal-body">
                 <div class="payment-summary-box">
-                    <span class="summary-kicker">PEDIDO PARA LLEVAR</span>
+                    <span class="summary-kicker" id="payModalReservaType">RESERVA PRISMA</span>
                     <h3 id="payModalReservaId">Reserva #...</h3>
                     <div class="summary-total-badge">
                         <span>Total a Pagar:</span>
@@ -401,87 +401,81 @@
                     </div>
                 </div>
 
-                <div class="payment-methods-selector">
+                <div class="payment-methods-selector reservation-payment-methods">
                     <label class="payment-method-tab is-active" data-method="Nequi">
                         <input type="radio" name="pay_method_option" value="Nequi" checked>
                         <span class="method-ico ico-nequi">🟣</span>
                         <span class="method-name">Nequi</span>
+                    </label>
+                    <label class="payment-method-tab" data-method="Llave">
+                        <input type="radio" name="pay_method_option" value="Llave">
+                        <span class="method-ico">🔑</span>
+                        <span class="method-name">Llave</span>
                     </label>
                     <label class="payment-method-tab" data-method="Daviplata">
                         <input type="radio" name="pay_method_option" value="Daviplata">
                         <span class="method-ico ico-daviplata">🟡</span>
                         <span class="method-name">Daviplata</span>
                     </label>
-                    <label class="payment-method-tab" data-method="Tarjeta">
-                        <input type="radio" name="pay_method_option" value="Tarjeta">
-                        <span class="method-ico ico-card">💳</span>
-                        <span class="method-name">Tarjeta</span>
-                    </label>
-                    <label class="payment-method-tab" data-method="Bancolombia">
-                        <input type="radio" name="pay_method_option" value="Bancolombia">
-                        <span class="method-ico ico-bancolombia">🏦</span>
-                        <span class="method-name">Bancolombia</span>
-                    </label>
                 </div>
 
                 <!-- Formulario de detalles de pago -->
-                <form id="paymentExecutionForm" method="post">
+                <form id="paymentExecutionForm" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <input type="hidden" id="payActionReservaId" name="reserva_id" value="">
                     <input type="hidden" id="selectedMetodoPago" name="metodo_pago" value="Nequi">
 
-                    <div id="methodNequiDetails" class="payment-method-details">
-                        <div class="method-instruction">
-                            <i class="fas fa-qrcode"></i>
-                            <p>Envía tu pago a la línea oficial Nequi de Prisma: <strong>311 868 9862</strong></p>
-                        </div>
-                        <div class="form-group-luxury">
-                            <label for="nequiNumero">Número de celular o referencia de pago</label>
-                            <input type="text" class="input-luxury" id="nequiNumero" placeholder="Ej. 311 868 9862 o Ref. 123456" required>
-                        </div>
-                    </div>
-
-                    <div id="methodDaviplataDetails" class="payment-method-details" hidden>
-                        <div class="method-instruction">
-                            <i class="fas fa-mobile-screen"></i>
-                            <p>Transfiere por Daviplata a la línea oficial: <strong>311 868 9862</strong></p>
-                        </div>
-                        <div class="form-group-luxury">
-                            <label for="daviplataNumero">Número Daviplata o comprobante</label>
-                            <input type="text" class="input-luxury" id="daviplataNumero" placeholder="Ej. 311 868 9862">
-                        </div>
-                    </div>
-
-                    <div id="methodTarjetaDetails" class="payment-method-details" hidden>
-                        <div class="form-group-luxury">
-                            <label for="cardNum">Número de tarjeta</label>
-                            <input type="text" class="input-luxury" id="cardNum" placeholder="4500 •••• •••• ••••" maxlength="19">
-                        </div>
-                        <div class="form-grid-2">
-                            <div class="form-group-luxury">
-                                <label for="cardExp">Vencimiento</label>
-                                <input type="text" class="input-luxury" id="cardExp" placeholder="MM/AA" maxlength="5">
+                    <div class="reservation-payment-accounts" aria-label="Cuentas para realizar el pago">
+                        <p class="payment-account-intro">Transfiere el total exacto a la cuenta correspondiente y copia el número para evitar errores.</p>
+                        <div class="payment-account-grid">
+                            <div class="payment-account-card is-selected" data-payment-account="Nequi">
+                                <div>
+                                    <span class="payment-account-name">Nequi</span>
+                                    <strong class="payment-account-number" data-payment-number>3026493531</strong>
+                                </div>
+                                <button class="payment-account-copy" type="button" data-copy-payment aria-label="Copiar número de Nequi">
+                                    <i class="fas fa-copy" aria-hidden="true"></i> Copiar
+                                </button>
+                                <span class="payment-copy-status" data-copy-status aria-live="polite"></span>
                             </div>
-                            <div class="form-group-luxury">
-                                <label for="cardCvc">CVC</label>
-                                <input type="text" class="input-luxury" id="cardCvc" placeholder="123" maxlength="4">
+                            <div class="payment-account-card" data-payment-account="Llave">
+                                <div>
+                                    <span class="payment-account-name">Llave</span>
+                                    <strong class="payment-account-number" data-payment-number>3143983857</strong>
+                                </div>
+                                <button class="payment-account-copy" type="button" data-copy-payment aria-label="Copiar número de Llave">
+                                    <i class="fas fa-copy" aria-hidden="true"></i> Copiar
+                                </button>
+                                <span class="payment-copy-status" data-copy-status aria-live="polite"></span>
+                            </div>
+                            <div class="payment-account-card" data-payment-account="Daviplata">
+                                <div>
+                                    <span class="payment-account-name">Daviplata</span>
+                                    <strong class="payment-account-number" data-payment-number>3143983857</strong>
+                                </div>
+                                <button class="payment-account-copy" type="button" data-copy-payment aria-label="Copiar número de Daviplata">
+                                    <i class="fas fa-copy" aria-hidden="true"></i> Copiar
+                                </button>
+                                <span class="payment-copy-status" data-copy-status aria-live="polite"></span>
                             </div>
                         </div>
                     </div>
-
-                    <div id="methodBancolombiaDetails" class="payment-method-details" hidden>
-                        <div class="method-instruction">
-                            <i class="fas fa-building-columns"></i>
-                            <p>Cuenta de Ahorros Bancolombia Prisma: <strong>123-456789-01</strong></p>
-                        </div>
-                        <div class="form-group-luxury">
-                            <label for="bancoRef">Número de comprobante Bancolombia</label>
-                            <input type="text" class="input-luxury" id="bancoRef" placeholder="Ej. 987654">
-                        </div>
+                    <div class="form-group-luxury">
+                        <label for="paymentReference">Referencia o número de transacción</label>
+                        <input type="text" class="input-luxury" id="paymentReference"
+                               name="referencia" maxlength="100" required>
+                    </div>
+                    <div class="form-group-luxury mt-3">
+                        <label for="paymentReceiptFile">Comprobante (PNG, JPG, JPEG o PDF)</label>
+                        <input type="file" class="input-luxury" id="paymentReceiptFile"
+                               name="comprobante_archivo"
+                               accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"
+                               required>
+                        <small class="form-text text-muted">Adjunta la imagen o el PDF del pago realizado.</small>
                     </div>
 
                     <button type="submit" id="btnSubmitPayment" class="luxury-btn-gold btn-full mt-3">
-                        <i class="fas fa-check-circle"></i> Completar Pago Ahora
+                        <i class="fas fa-paper-plane"></i> Enviar comprobante
                     </button>
                 </form>
             </div>

@@ -1,4 +1,6 @@
 import logging
+import mimetypes
+import os
 import re
 import smtplib
 from datetime import date, time
@@ -6,19 +8,22 @@ from decimal import Decimal
 from urllib.parse import quote
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives, send_mail
 from django.db import transaction
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Q
-from django.http import Http404, JsonResponse
+from django.db.models import Prefetch, Q
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from .models import DetalleReserva, Reserva
 from APP.productos.models import Producto
+from APP.usuarios.models import Usuario
+from APP.ventas.models import Comprobante
 from APP.usuarios.permissions import (
     exigir_permiso,
     usuario_puede_acceder,
@@ -192,11 +197,7 @@ def _guardar_reserva(request, reserva=None):
             reserva = Reserva.objects.create(
                 **datos,
                 usuario=request.user if request.user.is_authenticated else None,
-                estado=(
-                    'Pendiente de pago'
-                    if datos['tipo_reserva'] == 'Para llevar'
-                    else 'Pendiente'
-                ),
+                estado='Pendiente de pago',
             )
         else:
             lineas_anteriores = sorted(
@@ -230,16 +231,16 @@ def _guardar_reserva(request, reserva=None):
             if cambio_reserva:
                 reserva.pago_confirmado = False
                 reserva.fecha_pago_confirmado = None
-                reserva.estado = (
-                    'Pendiente de pago'
-                    if datos['tipo_reserva'] == 'Para llevar'
-                    else 'Pendiente'
-                )
+                reserva.estado = 'Pendiente de pago'
                 fields.extend([
                     'pago_confirmado',
                     'fecha_pago_confirmado',
                     'estado',
                 ])
+                Comprobante.objects.filter(
+                    reserva=reserva,
+                    estado__in=('Pendiente de confirmación', 'Confirmado'),
+                ).update(estado='Rechazado')
             reserva.save(update_fields=fields)
             reserva.lineas.all().delete()
         DetalleReserva.objects.bulk_create([
@@ -346,8 +347,168 @@ def _notificar_reserva(reserva, request, confirmada=False):
     return sent
 
 
+def _notificar_comprobante(comprobante, request):
+    reserva = comprobante.reserva
+    destinatarios = {
+        email.strip()
+        for email in (settings.RESERVAS_EMAIL_DESTINO, )
+        if email and email.strip()
+    }
+    usuarios = Usuario.objects.filter(is_active=True).exclude(
+        email='',
+    ).prefetch_related('groups__permissions', 'user_permissions')
+    for usuario in usuarios:
+        email = usuario.email.strip()
+        if email and (
+            usuario.is_superuser
+            or usuario_puede_acceder(usuario, 'reserva.view_reserva')
+        ):
+            destinatarios.add(email)
+
+    if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+        logger.error(
+            'No se notificó el comprobante #%s: faltan las credenciales SMTP.',
+            comprobante.pk,
+        )
+        return False
+    if not destinatarios:
+        logger.error(
+            'No se notificó el comprobante #%s: no hay destinatarios configurados.',
+            comprobante.pk,
+        )
+        return False
+
+    url_reserva = request.build_absolute_uri(
+        reverse('reserva_cliente', args=[reserva.pk]),
+    )
+    cuerpo = '\n'.join([
+        f'Nuevo comprobante pendiente de validación para la reserva #{reserva.pk}.',
+        f'Cliente: {reserva.nombre_cliente}',
+        f'Método de pago: {reserva.metodo_pago or "No especificado"}',
+        f'Referencia: {comprobante.referencia}',
+        (
+            'Archivo del comprobante: '
+            + request.build_absolute_uri(
+                reverse('ver_comprobante_cliente', args=[comprobante.pk]),
+            )
+            if comprobante.direccion_comprobante
+            else 'Archivo del comprobante: no adjunto'
+        ),
+        f'Total: {_formatear_cop(reserva.total)} COP',
+        f'Revisar comprobante y reserva: {url_reserva}',
+    ])
+    try:
+        sent = send_mail(
+            f'Nuevo comprobante Prisma - Reserva #{reserva.pk}',
+            cuerpo,
+            settings.DEFAULT_FROM_EMAIL,
+            sorted(destinatarios),
+            fail_silently=False,
+        ) == 1
+    except (OSError, smtplib.SMTPException, ValueError):
+        logger.exception(
+            'Falló la notificación del comprobante #%s.',
+            comprobante.pk,
+        )
+        return False
+    if not sent:
+        logger.error('No se pudo notificar el comprobante #%s.', comprobante.pk)
+    return sent
+
+
+def _notificar_estado_comprobante_cliente(comprobante, request, aprobado, motivo=''):
+    reserva = comprobante.reserva
+    cliente = reserva.usuario
+    if not cliente or usuario_puede_entrar_panel(cliente):
+        logger.error(
+            'No se notificó el estado del comprobante #%s: no hay una cuenta de cliente vinculada.',
+            comprobante.pk,
+        )
+        return False
+
+    destinatario = cliente.email.strip()
+    if not destinatario:
+        logger.error(
+            'No se notificó el estado del comprobante #%s: el cliente no tiene correo.',
+            comprobante.pk,
+        )
+        return False
+    if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+        logger.error(
+            'No se notificó el estado del comprobante #%s: faltan las credenciales SMTP.',
+            comprobante.pk,
+        )
+        return False
+
+    url_reserva = request.build_absolute_uri(
+        reverse('reserva_cliente', args=[reserva.pk]),
+    )
+    estado = 'aprobado' if aprobado else 'rechazado'
+    contexto = {
+        'cliente': cliente,
+        'reserva': reserva,
+        'comprobante': comprobante,
+        'aprobado': aprobado,
+        'motivo': motivo,
+        'url_reserva': url_reserva,
+    }
+    cuerpo = '\n'.join([
+        f'Hola {cliente.get_full_name() or cliente.username},',
+        '',
+        f'El comprobante de la reserva #{reserva.pk} fue {estado}.',
+        *([] if aprobado else [
+            f'Motivo del rechazo: {motivo}',
+            'Puedes corregirlo y enviar un nuevo comprobante desde tu reserva.',
+        ]),
+        '',
+        f'Ver los detalles de la reserva: {url_reserva}',
+    ])
+    mensaje = EmailMultiAlternatives(
+        subject=f'Comprobante {estado} · Reserva Prisma #{reserva.pk}',
+        body=cuerpo,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[destinatario],
+    )
+    mensaje.attach_alternative(
+        render_to_string('reservas/email_estado_comprobante.html', contexto),
+        'text/html',
+    )
+    try:
+        enviado = mensaje.send(fail_silently=False) == 1
+    except (OSError, smtplib.SMTPException, ValueError):
+        logger.exception(
+            'Falló la notificación de estado del comprobante #%s al cliente.',
+            comprobante.pk,
+        )
+        return False
+    if not enviado:
+        logger.error(
+            'No se pudo enviar el estado del comprobante #%s al cliente.',
+            comprobante.pk,
+        )
+    return enviado
+
+
 def _es_administrador(user):
     return usuario_puede_entrar_panel(user)
+
+
+def _validar_archivo_comprobante(archivo):
+    extension = os.path.splitext(archivo.name)[1].lower()
+    firmas = {
+        '.png': lambda contenido: contenido.startswith(b'\x89PNG\r\n\x1a\n'),
+        '.jpg': lambda contenido: contenido.startswith(b'\xff\xd8\xff'),
+        '.jpeg': lambda contenido: contenido.startswith(b'\xff\xd8\xff'),
+        '.pdf': lambda contenido: contenido.startswith(b'%PDF-'),
+    }
+    if extension not in firmas:
+        return 'Adjunta una imagen PNG, JPG o JPEG, o un documento PDF.'
+
+    contenido = archivo.read(8)
+    archivo.seek(0)
+    if not firmas[extension](contenido):
+        return 'El contenido del archivo no coincide con su formato.'
+    return None
 
 
 def _render_reserva_form(request, template='reservas/reservas.html', **context):
@@ -396,10 +557,9 @@ def reservas_view(request):
     if request.method == 'GET':
         return _render_reserva_form(request)
 
-    modalidad = request.POST.get('tipo_reserva', 'Para llevar' if 'postre' in request.POST else '').strip()
-    if modalidad == 'Para llevar' and not request.user.is_authenticated:
+    if not request.user.is_authenticated:
         login_url = f"{reverse('login')}?next={reverse('reservas')}"
-        error_msg = 'Para reservar tu postre para llevar debes iniciar sesión y después completar tu pago.'
+        error_msg = 'Para realizar una reserva debes iniciar sesión y completar el pago anticipado.'
         if 'application/json' in request.headers.get('Accept', ''):
             return JsonResponse({
                 'ok': False,
@@ -415,7 +575,6 @@ def reservas_view(request):
             reserva = _guardar_reserva(request)
         except ValueError as error:
             return _error_reserva(request, str(error))
-        email_sent = _notificar_reserva(reserva, request)
         request.session[f'reserva_{reserva.pk}_access'] = True
         es_para_llevar = reserva.tipo_reserva == 'Para llevar'
         return JsonResponse({
@@ -425,16 +584,18 @@ def reservas_view(request):
                 if es_para_llevar else '¡Recibimos tu solicitud de mesa!'
             ),
             'message': (
-                'Tu pedido quedó guardado exitosamente. Ahora completa tu pago para asegurar la preparación de tus postres.'
+                'Completa tu pago y envía el comprobante para que Prisma pueda validar y confirmar tu solicitud.'
                 if es_para_llevar else
-                'Recibimos tu solicitud de mesa. Te contactaremos por WhatsApp para darte la bienvenida y confirmar detalles.'
+                'Completa tu pago y envía el comprobante para que Prisma pueda validar y confirmar tu reserva de mesa.'
             ),
-            'email_sent': email_sent,
+            'email_sent': False,
+            'email_pending': True,
             'total': _formatear_cop(reserva.total),
             'reservation_type': reserva.tipo_reserva,
             'reservation_id': reserva.pk,
             'pago_confirmado': reserva.pago_confirmado,
-            'require_payment': es_para_llevar and not reserva.pago_confirmado,
+            'require_payment': not reserva.pago_confirmado,
+            'payment_url': reverse('pagar_reserva_cliente', args=[reserva.pk]),
             'next_url': reverse('reserva_cliente', args=[reserva.pk]),
             'whatsapp_url': _url_whatsapp_reserva(reserva),
             'fecha_formateada': reserva.fecha_reserva.strftime('%d/%m/%Y'),
@@ -507,49 +668,15 @@ def reservas_view(request):
             precio_unitario=precio_unitario,
         )
 
-    total = precio_unitario * cantidad
-    precio_texto = f'${total:,}'.replace(',', '.') if precio_unitario else 'A cotizar'
-    fecha_formateada = fecha_reserva.strftime('%d/%m/%Y')
     whatsapp_url = _url_whatsapp_reserva(reserva)
     request.session[f'reserva_{reserva.pk}_access'] = True
 
-    email_sent = False
-    if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
-        logger.error('No se envió la reserva #%s: faltan las credenciales SMTP.', reserva.pk)
-    else:
-        asunto = f'Nueva reserva Prisma #{reserva.pk}'
-        cuerpo = '\n'.join([
-            f'Reserva #{reserva.pk}',
-            f'Cliente: {nombre}',
-            f'Teléfono: {telefono}',
-            f'Fecha de entrega: {fecha_formateada}',
-            f'Postre: {postre}',
-            f'Cantidad: {cantidad}',
-            f'Precio estimado: {precio_texto}',
-            f'Indicaciones: {detalles or "Sin indicaciones especiales."}',
-        ])
-        try:
-            email_sent = send_mail(
-                asunto,
-                cuerpo,
-                settings.DEFAULT_FROM_EMAIL,
-                [settings.RESERVAS_EMAIL_DESTINO],
-                fail_silently=False,
-            ) == 1
-            if not email_sent:
-                logger.error('No se pudo enviar el correo de la reserva #%s.', reserva.pk)
-        except (OSError, smtplib.SMTPException, ValueError):
-            logger.exception('Falló el envío de correo de la reserva #%s.', reserva.pk)
-
-    mensaje = (
-        'Tu pedido quedó registrado y se notificó al equipo. Completa tu pago seguro para confirmar.'
-        if email_sent else
-        'Tu pedido quedó registrado. Completa tu pago seguro para confirmar.'
-    )
+    mensaje = 'Completa tu pago y envía el comprobante para que Prisma pueda validar y confirmar la reserva.'
 
     return JsonResponse({
         'ok': True,
-        'email_sent': email_sent,
+        'email_sent': False,
+        'email_pending': True,
         'message': mensaje,
         'title': '¡Pedido para llevar registrado!',
         'total': _formatear_cop(reserva.total),
@@ -557,6 +684,7 @@ def reservas_view(request):
         'reservation_id': reserva.pk,
         'pago_confirmado': reserva.pago_confirmado,
         'require_payment': not reserva.pago_confirmado,
+        'payment_url': reverse('pagar_reserva_cliente', args=[reserva.pk]),
         'next_url': reverse('reserva_cliente', args=[reserva.pk]),
         'whatsapp_url': whatsapp_url,
     }, status=201)
@@ -587,7 +715,13 @@ def consultar_reserva(request):
 def mis_reservas(request):
     reservas = (
         Reserva.objects.filter(usuario=request.user)
-        .prefetch_related('lineas')
+        .prefetch_related(
+            'lineas',
+            Prefetch(
+                'comprobantes',
+                queryset=Comprobante.objects.order_by('-pk'),
+            ),
+        )
         .order_by('-fecha_realizacion', '-pk')
     )
     return render(request, 'reservas/mis_reservas.html', {'reservas': reservas})
@@ -604,72 +738,136 @@ def pagar_reserva_cliente(request, pk):
     if not tiene_acceso:
         return JsonResponse({'ok': False, 'error': 'No tienes permiso para pagar esta reserva.'}, status=403)
 
-    if reserva.tipo_reserva != 'Para llevar':
-        return JsonResponse({'ok': False, 'error': 'Las reservas de mesa no requieren pago anticipado.'}, status=400)
-
     if reserva.estado in ('Cancelada', 'Realizada', 'No asistió'):
         return JsonResponse({'ok': False, 'error': 'Esta reserva ya no admite pagos.'}, status=400)
 
     if reserva.pago_confirmado:
-        return JsonResponse({'ok': True, 'message': 'El pago de este pedido ya estaba verificado previamente.', 'pago_confirmado': True})
+        return JsonResponse({'ok': True, 'message': 'El pago de esta reserva ya estaba verificado previamente.', 'pago_confirmado': True})
 
-    metodo = request.POST.get('metodo_pago', 'Nequi').strip() or 'Nequi'
+    comprobante_pendiente = Comprobante.objects.filter(
+        reserva=reserva,
+        estado='Pendiente de confirmación',
+    ).first()
+    if comprobante_pendiente and comprobante_pendiente.direccion_comprobante:
+        return JsonResponse({
+            'ok': True,
+            'title': 'Comprobante pendiente de validación',
+            'message': 'Ya recibimos tu comprobante. Prisma validará el pago y actualizará el estado de tu reserva.',
+            'reservation_id': reserva.pk,
+            'pago_confirmado': False,
+            'next_url': reverse('reserva_cliente', args=[reserva.pk]),
+        })
 
-    with transaction.atomic():
-        reserva.pago_confirmado = True
-        reserva.fecha_pago_confirmado = timezone.now()
-        reserva.estado = 'Confirmada'
-        reserva.metodo_pago = metodo
-        reserva.notificacion_consultada = False
-        reserva.save(update_fields=[
-            'pago_confirmado',
-            'fecha_pago_confirmado',
-            'estado',
-            'metodo_pago',
-            'notificacion_consultada',
-        ])
-        try:
-            from APP.ventas.models import Comprobante
-            Comprobante.objects.create(
-                reserva=reserva,
-                estado='Confirmado',
-                direccion_comprobante=f'comprobantes/{metodo.lower()}_{reserva.pk}.pdf',
-            )
-        except Exception:
-            pass
+    metodo = request.POST.get('metodo_pago', '').strip()
+    referencia = request.POST.get('referencia', '').strip()
+    if metodo not in ('Nequi', 'Daviplata', 'Llave'):
+        return JsonResponse({'ok': False, 'error': 'Selecciona un método de pago válido.'}, status=400)
+    if not referencia or len(referencia) > 100:
+        return JsonResponse({'ok': False, 'error': 'Ingresa una referencia de pago válida (máximo 100 caracteres).'}, status=400)
+    archivo = request.FILES.get('comprobante_archivo')
+    if not archivo:
+        return JsonResponse({
+            'ok': False,
+            'error': 'Adjunta el comprobante de pago para enviarlo a validación.',
+        }, status=400)
+    error_archivo = _validar_archivo_comprobante(archivo)
+    if error_archivo:
+        return JsonResponse({'ok': False, 'error': error_archivo}, status=400)
 
-    _notificar_reserva(reserva, request, confirmada=True)
+    try:
+        with transaction.atomic():
+            reserva.metodo_pago = metodo
+            reserva.save(update_fields=['metodo_pago'])
+            if comprobante_pendiente:
+                comprobante = comprobante_pendiente
+                comprobante.referencia = referencia
+                comprobante.direccion_comprobante = archivo
+                comprobante.save(update_fields=['referencia', 'direccion_comprobante'])
+            else:
+                comprobante = Comprobante.objects.create(
+                    reserva=reserva,
+                    estado='Pendiente de confirmación',
+                    referencia=referencia,
+                    direccion_comprobante=archivo,
+                )
+    except OSError:
+        logger.exception('No se pudo guardar el comprobante para la reserva #%s.', pk)
+        return JsonResponse({
+            'ok': False,
+            'error': 'No se pudo guardar el archivo. Intenta con otro archivo o contacta al administrador.',
+        }, status=500)
 
+    email_sent = _notificar_comprobante(comprobante, request)
     mensaje_lindo = (
-        '¡Pago recibido con éxito! 🎉🍰✨ '
-        'Tu pedido está 100% confirmado. En Prisma estamos seleccionando los mejores '
-        'ingredientes artesanales para que tu postre esté fresco, delicioso y listo para recoger '
-        f'el {reserva.fecha_reserva.strftime("%d/%m/%Y")}'
-        + (f' a las {reserva.hora.strftime("%H:%M")}' if reserva.hora else '')
-        + '. ¡Muchísimas gracias por confiar en nosotros para endulzar tus momentos especiales!'
+        (
+            'El archivo se subió correctamente y se notificó al administrador. '
+            'Tu pago está pendiente de validación.'
+        )
+        if email_sent else
+        (
+            'El archivo se subió correctamente, pero no se pudo enviar el aviso al administrador. '
+            'Tu pago sigue pendiente de validación.'
+        )
     )
 
     if 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
             'ok': True,
-            'title': '¡Pago Recibido con Éxito! 🎉🍰',
+            'title': '¡Comprobante enviado con éxito!',
             'message': mensaje_lindo,
             'reservation_id': reserva.pk,
             'total': _formatear_cop(reserva.total),
             'metodo_pago': metodo,
             'estado': reserva.estado,
-            'pago_confirmado': True,
-            'fecha_recogida': reserva.fecha_reserva.strftime('%d/%m/%Y'),
-            'hora_recogida': reserva.hora.strftime('%H:%M') if reserva.hora else '',
+            'pago_confirmado': False,
+            'email_sent': email_sent,
             'next_url': reverse('reserva_cliente', args=[reserva.pk]),
         })
     messages.success(request, mensaje_lindo)
     return redirect('reserva_cliente', pk=pk)
 
 
+@require_http_methods(['GET'])
+def ver_comprobante_cliente(request, pk):
+    comprobante = get_object_or_404(
+        Comprobante.objects.select_related('reserva'),
+        pk=pk,
+    )
+    reserva = comprobante.reserva
+    if reserva is None or not comprobante.direccion_comprobante:
+        raise Http404
+
+    tiene_acceso = (
+        request.session.get(f'reserva_{reserva.pk}_access')
+        or (
+            request.user.is_authenticated
+            and reserva.usuario_id == request.user.pk
+        )
+        or usuario_puede_entrar_panel(request.user)
+    )
+    if not tiene_acceso:
+        return redirect('consultar_reserva')
+
+    nombre_archivo = os.path.basename(comprobante.direccion_comprobante.name)
+    content_type = mimetypes.guess_type(nombre_archivo)[0] or 'application/octet-stream'
+    if content_type not in ('image/png', 'image/jpeg', 'application/pdf'):
+        content_type = 'application/octet-stream'
+    response = FileResponse(
+        comprobante.direccion_comprobante.open('rb'),
+        as_attachment=True,
+        filename=nombre_archivo,
+        content_type=content_type,
+    )
+    response['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+
 @require_http_methods(['GET', 'POST'])
 def reserva_cliente(request, pk):
-    reserva = get_object_or_404(Reserva.objects.prefetch_related('lineas'), pk=pk)
+    reserva = get_object_or_404(
+        Reserva.objects.select_related('usuario').prefetch_related('lineas', 'comprobantes'),
+        pk=pk,
+    )
     tiene_acceso = (
         request.session.get(f'reserva_{pk}_access')
         or (request.user.is_authenticated and reserva.usuario_id == request.user.pk)
@@ -692,6 +890,10 @@ def reserva_cliente(request, pk):
             else:
                 reserva.estado = 'Cancelada'
                 reserva.save(update_fields=['estado'])
+                Comprobante.objects.filter(
+                    reserva=reserva,
+                    estado='Pendiente de confirmación',
+                ).update(estado='Rechazado')
                 if reserva.pago_confirmado:
                     msg = 'La reserva fue cancelada correctamente. Nuestro equipo se comunicará contigo para gestionar la devolución correspondiente.'
                 else:
@@ -718,28 +920,45 @@ def reserva_cliente(request, pk):
                     reserva=reserva,
                     slots_editables=_slots_editables(reserva),
                     whatsapp_url=_url_whatsapp_reserva(reserva),
+                    comprobante_pendiente=reserva.comprobantes.filter(
+                        estado='Pendiente de confirmación',
+                    ).order_by('-pk').first(),
+                    comprobante_rechazado=reserva.comprobantes.filter(
+                        estado='Rechazado',
+                    ).order_by('-pk').first(),
+                    comprobante_confirmado=reserva.comprobantes.filter(
+                        estado='Confirmado',
+                    ).order_by('-pk').first(),
                 )
             messages.success(
                 request,
                 (
-                    'Los cambios se guardaron. Debes volver a pagar el pedido para '
-                    'que Prisma lo confirme.'
-                    if reserva.tipo_reserva == 'Para llevar'
-                    and reserva.estado == 'Pendiente de pago'
-                    else 'Los cambios se guardaron. Prisma debe confirmar nuevamente la mesa.'
-                    if reserva.tipo_reserva == 'Mesa'
-                    and reserva.estado == 'Pendiente'
+                    'Los cambios se guardaron. Debes volver a enviar el comprobante de pago '
+                    'para que Prisma confirme la reserva.'
+                    if reserva.estado == 'Pendiente de pago'
                     else 'La reserva fue actualizada correctamente.'
                 ),
             )
             return redirect('reserva_cliente', pk=pk)
         return _error_reserva(request, 'No se reconoció la acción solicitada.')
 
+    comprobante_pendiente = reserva.comprobantes.filter(
+        estado='Pendiente de confirmación',
+    ).order_by('-pk').first()
+    comprobante_rechazado = reserva.comprobantes.filter(
+        estado='Rechazado',
+    ).order_by('-pk').first()
+    comprobante_confirmado = reserva.comprobantes.filter(
+        estado='Confirmado',
+    ).order_by('-pk').first()
     return _render_reserva_form(
         request,
         'reservas/detalle.html',
         reserva=reserva,
         slots_editables=_slots_editables(reserva),
+        comprobante_pendiente=comprobante_pendiente,
+        comprobante_rechazado=comprobante_rechazado,
+        comprobante_confirmado=comprobante_confirmado,
     )
 
 
@@ -757,23 +976,95 @@ def gestion_reservas(request):
             except ValueError as error:
                 messages.error(request, str(error))
                 return _render_gestion_reservas(request)
-            if _notificar_reserva(reserva, request):
-                messages.success(request, f'Reserva #{reserva.pk} registrada y notificada.')
-            else:
-                messages.warning(
-                    request,
-                    f'Reserva #{reserva.pk} registrada, pero no se pudo enviar la notificación.',
-                )
+            messages.success(
+                request,
+                f'Reserva #{reserva.pk} registrada como pendiente de pago. '
+                'No se enviará el correo hasta recibir el comprobante.',
+            )
             return redirect('gestion_reservas')
-        if accion == 'confirmar_pago':
+        if accion == 'rechazar_comprobante':
             exigir_permiso(request, 'reserva.change_reserva')
-            reserva = _reserva_posteada(request)
-            if reserva.tipo_reserva != 'Para llevar':
-                messages.error(request, 'La reserva de mesa no requiere pago anticipado.')
-            elif reserva.estado in ('Cancelada', 'Realizada', 'No asistió'):
+            comprobante_id = request.POST.get('comprobante_id', '')
+            if not comprobante_id.isdecimal() or len(comprobante_id) > 18:
+                raise Http404
+            comprobante = get_object_or_404(
+                Comprobante.objects.select_related('reserva'),
+                pk=int(comprobante_id),
+            )
+            reserva = comprobante.reserva
+            if reserva is None:
+                raise Http404
+            if comprobante.estado != 'Pendiente de confirmación':
+                messages.error(
+                    request,
+                    'Este comprobante ya fue revisado y no se puede rechazar nuevamente.',
+                )
+            elif not comprobante.direccion_comprobante:
+                messages.error(request, 'No se puede rechazar un comprobante sin archivo adjunto.')
+            elif reserva.estado in ('Cancelada', 'Realizada', 'No asistió') or reserva.pago_confirmado:
+                messages.error(request, 'Esta reserva ya no admite cambios en el comprobante.')
+            else:
+                motivo = request.POST.get('motivo_rechazo', '').strip()
+                if not motivo:
+                    messages.error(request, 'Escribe el motivo del rechazo para informar al cliente.')
+                elif len(motivo) > 500:
+                    messages.error(request, 'El motivo del rechazo no puede superar los 500 caracteres.')
+                else:
+                    comprobante.estado = 'Rechazado'
+                    comprobante.motivo_rechazo = motivo
+                    comprobante.save(update_fields=['estado', 'motivo_rechazo'])
+                    correo_cliente_enviado = _notificar_estado_comprobante_cliente(
+                        comprobante,
+                        request,
+                        aprobado=False,
+                        motivo=motivo,
+                    )
+                    if correo_cliente_enviado:
+                        messages.success(
+                            request,
+                            f'Comprobante de la reserva #{reserva.pk} rechazado; se informó al cliente.',
+                        )
+                    else:
+                        messages.warning(
+                            request,
+                            f'Comprobante de la reserva #{reserva.pk} rechazado, pero no se pudo enviar el correo al cliente.',
+                        )
+            return redirect('gestion_reservas')
+        if accion in ('confirmar_pago', 'aprobar_comprobante'):
+            exigir_permiso(request, 'reserva.change_reserva')
+            if accion == 'aprobar_comprobante':
+                comprobante_id = request.POST.get('comprobante_id', '')
+                if not comprobante_id.isdecimal() or len(comprobante_id) > 18:
+                    raise Http404
+                comprobante = get_object_or_404(
+                    Comprobante.objects.select_related('reserva'),
+                    pk=int(comprobante_id),
+                )
+                reserva = comprobante.reserva
+                if reserva is None:
+                    raise Http404
+            else:
+                reserva = _reserva_posteada(request)
+                comprobante = Comprobante.objects.filter(
+                    reserva=reserva,
+                    estado='Pendiente de confirmación',
+                ).exclude(
+                    direccion_comprobante='',
+                ).order_by('-pk').first()
+
+            if reserva.estado in ('Cancelada', 'Realizada', 'No asistió'):
                 messages.error(request, 'Esta reserva ya no admite pagos.')
             elif reserva.pago_confirmado:
                 messages.info(request, 'El pago de este pedido ya estaba confirmado.')
+            elif (
+                comprobante is None
+                or comprobante.estado != 'Pendiente de confirmación'
+                or not comprobante.direccion_comprobante
+            ):
+                messages.error(
+                    request,
+                    'No se puede aprobar la reserva hasta recibir un comprobante pendiente con archivo adjunto.',
+                )
             else:
                 reserva.pago_confirmado = True
                 reserva.fecha_pago_confirmado = timezone.now()
@@ -785,15 +1076,24 @@ def gestion_reservas(request):
                     'estado',
                     'notificacion_consultada',
                 ])
-                if _notificar_reserva(reserva, request, confirmada=True):
+                comprobante.estado = 'Confirmado'
+                comprobante.save(update_fields=['estado'])
+                correo_reserva_enviado = _notificar_reserva(reserva, request, confirmada=True)
+                correo_cliente_enviado = _notificar_estado_comprobante_cliente(
+                    comprobante,
+                    request,
+                    aprobado=True,
+                )
+                if correo_reserva_enviado and correo_cliente_enviado:
                     messages.success(
                         request,
-                        f'Pago verificado y pedido #{reserva.pk} confirmado.',
+                        f'Comprobante aprobado, reserva #{reserva.pk} confirmada y cliente notificado.',
                     )
                 else:
                     messages.warning(
                         request,
-                        f'Pago verificado y pedido #{reserva.pk} confirmado; no se pudo enviar el correo.',
+                        f'Comprobante aprobado y reserva #{reserva.pk} confirmada; '
+                        'no se pudieron enviar todos los correos de notificación.',
                     )
             return redirect('gestion_reservas')
         if accion == 'editar':
@@ -815,18 +1115,12 @@ def gestion_reservas(request):
             estado = request.POST.get('estado', '')
             if (
                 estado == 'Confirmada'
-                and reserva.tipo_reserva == 'Para llevar'
                 and not reserva.pago_confirmado
             ):
                 messages.error(
                     request,
-                    'Verifica primero el pago anticipado antes de confirmar este pedido.',
+                    'Verifica primero el pago anticipado antes de confirmar esta reserva.',
                 )
-            elif (
-                estado == 'Pendiente de pago'
-                and reserva.tipo_reserva != 'Para llevar'
-            ):
-                messages.error(request, 'Las reservas de mesa no requieren pago anticipado.')
             elif (
                 estado == 'Pendiente de pago'
                 and reserva.pago_confirmado
@@ -837,11 +1131,11 @@ def gestion_reservas(request):
                 )
             elif (
                 estado == 'Pendiente'
-                and reserva.tipo_reserva == 'Para llevar'
+                and not reserva.pago_confirmado
             ):
                 messages.error(
                     request,
-                    'Los pedidos para llevar deben permanecer pendientes de pago hasta su verificación.',
+                    'Las reservas deben permanecer pendientes de pago hasta que el comprobante sea verificado.',
                 )
             elif estado in ('Realizada', 'No asistió'):
                 messages.error(request, 'Registra el resultado desde la acción de asistencia.')
@@ -880,6 +1174,10 @@ def gestion_reservas(request):
             else:
                 reserva.estado = 'Cancelada'
                 reserva.save(update_fields=['estado'])
+                Comprobante.objects.filter(
+                    reserva=reserva,
+                    estado='Pendiente de confirmación',
+                ).update(estado='Rechazado')
                 if reserva.pago_confirmado:
                     messages.success(
                         request,
@@ -977,6 +1275,14 @@ def _render_gestion_reservas(request, reserva_editar=None):
         ),
         start=Decimal('0.00'),
     )
+    reservas_con_comprobante_pendiente = set(
+        Comprobante.objects.filter(
+            estado='Pendiente de confirmación',
+            reserva__isnull=False,
+        ).exclude(
+            direccion_comprobante='',
+        ).values_list('reserva_id', flat=True)
+    )
     return _render_reserva_form(
         request,
         'reservas/gestion.html',
@@ -987,6 +1293,17 @@ def _render_gestion_reservas(request, reserva_editar=None):
         total_alertas_nuevas=Reserva.objects.filter(notificacion_consultada=False).count(),
         alertas_recientes=Reserva.objects.filter(
             notificacion_consultada=False,
+        ).order_by('-pk')[:5],
+        total_comprobantes_pendientes=Comprobante.objects.filter(
+            estado='Pendiente de confirmación',
+            reserva__isnull=False,
+        ).count(),
+        reservas_con_comprobante_pendiente=reservas_con_comprobante_pendiente,
+        comprobantes_pendientes=Comprobante.objects.select_related(
+            'reserva',
+        ).filter(
+            estado='Pendiente de confirmación',
+            reserva__isnull=False,
         ).order_by('-pk')[:5],
         canales_reserva=Reserva.choices_canal,
         total_recaudado=total_recaudado,

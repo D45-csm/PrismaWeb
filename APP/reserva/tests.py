@@ -1,8 +1,12 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+import os
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 from urllib.parse import unquote
 
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -48,7 +52,7 @@ class ReservaSubmissionTests(TestCase):
         self.assertTrue(response.json()['require_login'])
         self.assertIn('iniciar sesión', response.json()['error'])
 
-    def test_reserva_is_saved_emailed_and_returns_whatsapp_link(self):
+    def test_reserva_is_saved_without_email_until_receipt_is_sent(self):
         self.client.force_login(self.user)
         response = self.client.post(
             reverse('reservas'),
@@ -57,7 +61,8 @@ class ReservaSubmissionTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 201)
-        self.assertTrue(response.json()['email_sent'])
+        self.assertFalse(response.json()['email_sent'])
+        self.assertTrue(response.json()['email_pending'])
         self.assertIn('wa.me/573118689862', response.json()['whatsapp_url'])
         reserva = Reserva.objects.get()
         self.assertEqual(reserva.nombre_cliente, 'Cliente Prisma')
@@ -66,8 +71,7 @@ class ReservaSubmissionTests(TestCase):
         self.assertEqual(detalle.cantidad, 2)
         self.assertEqual(detalle.precio_unitario, Decimal('15000'))
         self.assertEqual(reserva.hora, None)
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, ['reservas@example.com'])
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_invalid_reserva_does_not_save_or_send_email(self):
         self.client.force_login(self.user)
@@ -85,7 +89,7 @@ class ReservaSubmissionTests(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
     @override_settings(EMAIL_HOST_USER='', EMAIL_HOST_PASSWORD='')
-    def test_missing_email_credentials_are_reported_without_losing_reserva(self):
+    def test_missing_email_credentials_do_not_send_before_receipt(self):
         self.client.force_login(self.user)
         response = self.client.post(
             reverse('reservas'),
@@ -95,8 +99,9 @@ class ReservaSubmissionTests(TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertFalse(response.json()['email_sent'])
+        self.assertTrue(response.json()['email_pending'])
         self.assertEqual(Reserva.objects.count(), 1)
-        self.assertIn('Completa tu pago', response.json()['message'])
+        self.assertEqual(len(mail.outbox), 0)
 
 
 class ReservaRelationsTests(TestCase):
@@ -146,6 +151,10 @@ class ReservaRelationsTests(TestCase):
     EMAIL_HOST_PASSWORD='test-password',
     DEFAULT_FROM_EMAIL='sender@example.com',
     RESERVAS_EMAIL_DESTINO='reservas@example.com',
+    STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    },
 )
 class ReservaWorkflowTests(TestCase):
     def setUp(self):
@@ -176,6 +185,40 @@ class ReservaWorkflowTests(TestCase):
             'detalles': 'Celebración familiar',
         }
 
+    def archivo_comprobante(self, name='pago.png', contenido=b'\x89PNG\r\n\x1a\ncontenido'):
+        content_type = (
+            'application/pdf' if name.lower().endswith('.pdf')
+            else 'image/jpeg' if name.lower().endswith(('.jpg', '.jpeg'))
+            else 'image/png'
+        )
+        return SimpleUploadedFile(name, contenido, content_type=content_type)
+
+    def crear_reserva_con_comprobante(self, tipo_reserva='Mesa'):
+        self.client.force_login(self.user)
+        data = self.datos_reserva()
+        data.update(
+            tipo_reserva=tipo_reserva,
+            numero_personas='4' if tipo_reserva == 'Mesa' else '',
+        )
+        response = self.client.post(
+            reverse('reservas'),
+            data,
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(response.status_code, 201)
+        reserva = Reserva.objects.get()
+        pago_response = self.client.post(
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+            {
+                'metodo_pago': 'Nequi',
+                'referencia': 'ref-pendiente-123',
+                'comprobante_archivo': self.archivo_comprobante(),
+            },
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(pago_response.status_code, 200)
+        return reserva, reserva.comprobantes.get()
+
     def test_public_reservation_and_lookup_pages_render(self):
         response = self.client.get(reverse('reservas'))
         lookup_response = self.client.get(reverse('consultar_reserva'))
@@ -185,6 +228,13 @@ class ReservaWorkflowTests(TestCase):
         self.assertContains(response, 'name="hora"')
         self.assertContains(response, 'Elige tu postre')
         self.assertContains(response, f'href="{reverse("productos")}#productosGrid"')
+        self.assertContains(response, '3026493531')
+        self.assertContains(response, '3143983857')
+        self.assertContains(response, 'data-copy-payment', count=3)
+        self.assertContains(response, 'name="comprobante_archivo"')
+        self.assertContains(response, 'accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"')
+        self.assertNotContains(response, 'Tarjeta')
+        self.assertNotContains(response, 'Bancolombia')
         self.assertEqual(lookup_response.status_code, 200)
         self.assertContains(lookup_response, 'Consulta tu reserva')
 
@@ -228,13 +278,20 @@ class ReservaWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(list(response.context['reservas']), [own_reservation])
         self.assertContains(response, f'Reserva #{own_reservation.pk}')
+        self.assertContains(response, 'Ver más detalles')
         self.assertContains(
             response,
             reverse('reserva_cliente', args=[own_reservation.pk]),
         )
         self.assertNotContains(response, 'Reserva de otra persona')
+        detalle = self.client.get(reverse('reserva_cliente', args=[own_reservation.pk]))
+        self.assertContains(detalle, own_reservation.nombre_cliente)
+        self.assertContains(detalle, own_reservation.telefono)
+        self.assertContains(detalle, self.user.email)
+        self.assertContains(detalle, self.producto.nombre)
 
-    def test_public_reservation_saves_products_and_sends_notification(self):
+    def test_authenticated_customer_reserves_a_table_and_must_pay(self):
+        self.client.force_login(self.user)
         response = self.client.post(
             reverse('reservas'),
             self.datos_reserva(),
@@ -245,27 +302,69 @@ class ReservaWorkflowTests(TestCase):
         reserva = Reserva.objects.get()
         self.assertEqual(reserva.numero_personas, 4)
         self.assertEqual(reserva.tipo_reserva, 'Mesa')
-        self.assertEqual(reserva.estado, 'Pendiente')
+        self.assertEqual(reserva.estado, 'Pendiente de pago')
+        self.assertFalse(reserva.pago_confirmado)
+        self.assertTrue(response.json()['require_payment'])
+        self.assertEqual(
+            response.json()['payment_url'],
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+        )
         self.assertEqual(reserva.lineas.get().cantidad, 2)
         self.assertIn(f'/reserva/consultar/{reserva.pk}/', response.json()['next_url'])
         self.assertIn('SOLICITUD DE RESERVA DE MESA', unquote(response.json()['whatsapp_url']))
         self.assertEqual(response.json()['reservation_id'], reserva.pk)
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertIn(f'Reserva #{reserva.pk}', mail.outbox[0].body)
+        self.assertEqual(len(mail.outbox), 0)
         detail_response = self.client.get(response.json()['next_url'])
-        self.assertContains(detail_response, 'Reserva de mesa sin prepago')
-        self.assertContains(detail_response, 'Enviar solicitud por WhatsApp')
+        self.assertContains(detail_response, 'Pago anticipado pendiente')
+        self.assertContains(detail_response, 'inlinePayForm')
+        self.assertContains(detail_response, 'data-copy-payment', count=3)
 
-    def test_anonymous_takeaway_is_rejected_requiring_login(self):
-        data = self.datos_reserva()
-        data.update(tipo_reserva='Para llevar', numero_personas='')
-        response = self.client.post(
-            reverse('reservas'),
-            data,
+        payment_response = self.client.post(
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+            {
+                'metodo_pago': 'Daviplata',
+                'referencia': 'mesa-ref-456',
+                'comprobante_archivo': self.archivo_comprobante(
+                    'pago.pdf',
+                    b'%PDF-1.7\ncontenido',
+                ),
+            },
             HTTP_ACCEPT='application/json',
         )
-        self.assertEqual(response.status_code, 401)
-        self.assertTrue(response.json()['require_login'])
+        self.assertEqual(payment_response.status_code, 200)
+        self.assertFalse(payment_response.json()['pago_confirmado'])
+        self.assertTrue(payment_response.json()['email_sent'])
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(f'reserva #{reserva.pk}', mail.outbox[0].body.lower())
+        self.assertEqual(reserva.comprobantes.get().referencia, 'mesa-ref-456')
+        comprobante = reserva.comprobantes.get()
+        self.assertTrue(comprobante.direccion_comprobante.name.endswith('.pdf'))
+        self.assertContains(
+            self.client.get(response.json()['next_url']),
+            reverse('ver_comprobante_cliente', args=[comprobante.pk]),
+        )
+        archivo_response = self.client.get(
+            reverse('ver_comprobante_cliente', args=[comprobante.pk]),
+        )
+        self.assertEqual(archivo_response.status_code, 200)
+        self.assertEqual(archivo_response['Content-Type'], 'application/pdf')
+
+    def test_anonymous_cannot_reserve_a_table_or_takeaway(self):
+        for modalidad in ('Mesa', 'Para llevar'):
+            with self.subTest(modalidad=modalidad):
+                data = self.datos_reserva()
+                data.update(
+                    tipo_reserva=modalidad,
+                    numero_personas='4' if modalidad == 'Mesa' else '',
+                )
+                response = self.client.post(
+                    reverse('reservas'),
+                    data,
+                    HTTP_ACCEPT='application/json',
+                )
+                self.assertEqual(response.status_code, 401)
+                self.assertTrue(response.json()['require_login'])
+        self.assertEqual(Reserva.objects.count(), 0)
 
     def test_takeaway_reservation_requires_advance_payment_and_builds_whatsapp_summary(self):
         self.client.force_login(self.user)
@@ -280,6 +379,10 @@ class ReservaWorkflowTests(TestCase):
 
         self.assertEqual(response.status_code, 201)
         reserva = Reserva.objects.get()
+        self.assertEqual(
+            response.json()['payment_url'],
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+        )
         self.assertEqual(reserva.estado, 'Pendiente de pago')
         self.assertFalse(reserva.pago_confirmado)
         self.assertEqual(reserva.total, Decimal('50000.00'))
@@ -287,8 +390,123 @@ class ReservaWorkflowTests(TestCase):
         self.assertIn('Total del pedido: $50.000 COP', unquote(response.json()['whatsapp_url']))
         detail_response = self.client.get(response.json()['next_url'])
         self.assertContains(detail_response, 'Pago anticipado pendiente')
+        self.assertContains(detail_response, '3026493531')
+        self.assertContains(detail_response, 'name="comprobante_archivo"')
+        self.assertContains(detail_response, 'accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"')
+        self.assertContains(detail_response, '3143983857')
+        self.assertContains(detail_response, 'data-payment-account="Nequi"')
+        self.assertContains(detail_response, 'data-payment-account="Llave"')
+        self.assertContains(detail_response, 'data-payment-account="Daviplata"')
+        self.assertContains(detail_response, 'data-copy-payment', count=3)
+        self.assertNotContains(detail_response, 'Tarjeta')
+        self.assertNotContains(detail_response, 'Bancolombia')
         self.assertContains(detail_response, 'Coordinar pago por WhatsApp')
         self.assertContains(detail_response, 'Cancelar reserva')
+
+    def test_customer_can_submit_payment_using_llave(self):
+        self.client.force_login(self.user)
+        data = self.datos_reserva()
+        data.update(tipo_reserva='Para llevar', numero_personas='')
+        self.client.post(reverse('reservas'), data, HTTP_ACCEPT='application/json')
+        reserva = Reserva.objects.get()
+
+        invalid_method = self.client.post(
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+            {'metodo_pago': 'Tarjeta', 'referencia': 'ref-123'},
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(invalid_method.status_code, 400)
+        self.assertEqual(reserva.comprobantes.count(), 0)
+
+        missing_file = self.client.post(
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+            {'metodo_pago': 'Llave', 'referencia': 'llave-123'},
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(missing_file.status_code, 400)
+        self.assertIn('Adjunta el comprobante', missing_file.json()['error'])
+
+        invalid_file = self.client.post(
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+            {
+                'metodo_pago': 'Llave',
+                'referencia': 'llave-123',
+                'comprobante_archivo': self.archivo_comprobante(
+                    'pago.png',
+                    b'no es una imagen PNG',
+                ),
+            },
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(invalid_file.status_code, 400)
+        self.assertIn('no coincide', invalid_file.json()['error'])
+
+        response = self.client.post(
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+            {
+                'metodo_pago': 'Llave',
+                'referencia': 'llave-123',
+                'comprobante_archivo': self.archivo_comprobante(),
+            },
+            HTTP_ACCEPT='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['metodo_pago'], 'Llave')
+        comprobante = reserva.comprobantes.get()
+        self.assertEqual(comprobante.referencia, 'llave-123')
+        self.assertEqual(response.json()['title'], '¡Comprobante enviado con éxito!')
+
+        archivo_response = self.client.get(
+            reverse('ver_comprobante_cliente', args=[comprobante.pk]),
+        )
+        self.assertEqual(archivo_response.status_code, 200)
+        self.assertEqual(archivo_response['Content-Type'], 'image/png')
+        self.assertIn('attachment', archivo_response['Content-Disposition'])
+
+        otro_usuario = Usuario.objects.create_user(
+            username='otro-cliente',
+            email='otro@example.com',
+            password='password123',
+        )
+        self.client.force_login(otro_usuario)
+        acceso_denegado = self.client.get(
+            reverse('ver_comprobante_cliente', args=[comprobante.pk]),
+        )
+        self.assertRedirects(acceso_denegado, reverse('consultar_reserva'))
+
+    def test_customer_upload_succeeds_with_filesystem_storage(self):
+        self.client.force_login(self.user)
+        reservation_response = self.client.post(
+            reverse('reservas'),
+            self.datos_reserva(),
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(reservation_response.status_code, 201)
+        reserva = Reserva.objects.get()
+
+        with TemporaryDirectory() as media_root:
+            with override_settings(
+                MEDIA_ROOT=media_root,
+                STORAGES={
+                    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+                    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+                },
+            ):
+                response = self.client.post(
+                    reverse('pagar_reserva_cliente', args=[reserva.pk]),
+                    {
+                        'metodo_pago': 'Nequi',
+                        'referencia': 'fs-upload-123',
+                        'comprobante_archivo': self.archivo_comprobante(),
+                    },
+                    HTTP_ACCEPT='application/json',
+                )
+                self.assertEqual(response.status_code, 200, response.content.decode())
+                comprobante = reserva.comprobantes.get()
+                self.assertTrue(os.path.isfile(
+                    os.path.join(media_root, comprobante.direccion_comprobante.name),
+                ))
 
     def test_customer_can_cancel_pending_payment_and_reopen_the_saved_reservation(self):
         self.client.force_login(self.user)
@@ -331,8 +549,22 @@ class ReservaWorkflowTests(TestCase):
         self.assertContains(reopened_detail, 'Reserva cancelada')
         self.assertEqual(Reserva.objects.count(), 1)
 
-    def test_customer_can_complete_payment_and_receives_sweet_confirmation_message(self):
+    def test_customer_submits_payment_reference_for_staff_validation(self):
+        from django.contrib.auth.models import Permission
+
         self.client.force_login(self.user)
+        encargado = Usuario.objects.create_user(
+            username='encargado_pago',
+            email='encargado@example.com',
+            password='password123',
+        )
+        encargado.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label='reserva',
+                codename='view_reserva',
+            ),
+        )
+        self.assertTrue(encargado.has_perm('reserva.view_reserva'))
         data = self.datos_reserva()
         data.update(tipo_reserva='Para llevar', numero_personas='')
         submission = self.client.post(
@@ -343,26 +575,66 @@ class ReservaWorkflowTests(TestCase):
         self.assertEqual(submission.status_code, 201)
         reserva = Reserva.objects.get()
         self.assertFalse(reserva.pago_confirmado)
+        comprobante_legacy = Comprobante.objects.create(
+            reserva=reserva,
+            referencia='referencia-anterior',
+        )
 
         # Complete payment
         payment_response = self.client.post(
             reverse('pagar_reserva_cliente', args=[reserva.pk]),
-            {'metodo_pago': 'Nequi', 'referencia': '123456'},
+            {
+                'metodo_pago': 'Nequi',
+                'referencia': '123456',
+                'comprobante_archivo': self.archivo_comprobante('pago.jpg', b'\xff\xd8\xffcontenido'),
+            },
             HTTP_ACCEPT='application/json',
         )
         self.assertEqual(payment_response.status_code, 200)
         self.assertTrue(payment_response.json()['ok'])
-        self.assertTrue(payment_response.json()['pago_confirmado'])
-        self.assertIn('Pago recibido con éxito', payment_response.json()['message'])
+        self.assertFalse(payment_response.json()['pago_confirmado'])
+        self.assertIn('pendiente de validación', payment_response.json()['message'])
         self.assertIn('Nequi', payment_response.json()['metodo_pago'])
+        self.assertTrue(payment_response.json()['email_sent'])
+        self.assertEqual(len(mail.outbox), 1)
 
         reserva.refresh_from_db()
-        self.assertTrue(reserva.pago_confirmado)
-        self.assertEqual(reserva.estado, 'Confirmada')
+        self.assertFalse(reserva.pago_confirmado)
+        self.assertEqual(reserva.estado, 'Pendiente de pago')
         self.assertEqual(reserva.metodo_pago, 'Nequi')
-        self.assertIsNotNone(reserva.fecha_pago_confirmado)
+        self.assertIsNone(reserva.fecha_pago_confirmado)
+        comprobante = reserva.comprobantes.get()
+        self.assertEqual(comprobante.pk, comprobante_legacy.pk)
+        self.assertEqual(comprobante.estado, 'Pendiente de confirmación')
+        self.assertEqual(comprobante.referencia, '123456')
+        self.assertTrue(comprobante.direccion_comprobante.name.endswith('.jpg'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(
+            set(mail.outbox[0].to),
+            {'reservas@example.com', 'encargado@example.com'},
+        )
+        self.assertIn(f'/reserva/consultar/{reserva.pk}/', mail.outbox[0].body)
+        self.assertIn(
+            reverse('ver_comprobante_cliente', args=[comprobante.pk]),
+            mail.outbox[0].body,
+        )
+
+        detalle = self.client.get(reverse('reserva_cliente', args=[reserva.pk]))
+        self.assertContains(detalle, '¡Comprobante enviado correctamente!')
+        self.assertContains(detalle, 'pendiente de validación')
+        self.assertNotContains(detalle, 'inlinePayForm')
+
+        duplicate_response = self.client.post(
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+            {'metodo_pago': 'Nequi', 'referencia': '123456'},
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertTrue(duplicate_response.json()['ok'])
+        self.assertEqual(reserva.comprobantes.count(), 1)
+        self.assertEqual(len(mail.outbox), 1)
 
     def test_past_reservation_is_rejected(self):
+        self.client.force_login(self.user)
         datos = self.datos_reserva()
         datos['fecha'] = (date.today() - timedelta(days=1)).isoformat()
 
@@ -376,7 +648,24 @@ class ReservaWorkflowTests(TestCase):
         self.assertEqual(Reserva.objects.count(), 0)
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_two_pm_today_is_not_mistaken_for_past_in_bogota(self):
+        self.client.force_login(self.user)
+        datos = self.datos_reserva()
+        datos.update(fecha='2026-11-19', hora='14:00')
+        ahora_utc = datetime(2026, 11, 19, 15, 12, tzinfo=timezone.utc)
+
+        with patch('django.utils.timezone.now', return_value=ahora_utc):
+            response = self.client.post(
+                reverse('reservas'),
+                datos,
+                HTTP_ACCEPT='application/json',
+            )
+
+        self.assertEqual(response.status_code, 201, response.content.decode())
+        self.assertEqual(Reserva.objects.get().hora.isoformat(), '14:00:00')
+
     def test_reservation_rejects_times_outside_business_hours(self):
+        self.client.force_login(self.user)
         for hora in ('13:59', '18:31'):
             with self.subTest(hora=hora):
                 response = self.client.post(
@@ -465,6 +754,7 @@ class ReservaWorkflowTests(TestCase):
         )
         self.assertRedirects(create_response, reverse('gestion_reservas'))
         reserva = Reserva.objects.get()
+        self.assertEqual(reserva.estado, 'Pendiente de pago')
         confirm_response = self.client.post(
             reverse('gestion_reservas'),
             {
@@ -474,8 +764,26 @@ class ReservaWorkflowTests(TestCase):
             },
         )
         self.assertRedirects(confirm_response, reverse('gestion_reservas'))
-        self.assertEqual(len(mail.outbox), 2)
-        self.assertIn('confirmada', mail.outbox[1].subject)
+        reserva.refresh_from_db()
+        self.assertFalse(reserva.pago_confirmado)
+        self.assertEqual(reserva.estado, 'Pendiente de pago')
+
+        comprobante = Comprobante.objects.create(
+            reserva=reserva,
+            referencia='mesa-ref-123',
+            direccion_comprobante=self.archivo_comprobante(),
+        )
+        self.client.post(
+            reverse('gestion_reservas'),
+            {'accion': 'confirmar_pago', 'reserva_id': str(reserva.pk)},
+        )
+        reserva.refresh_from_db()
+        comprobante.refresh_from_db()
+        self.assertTrue(reserva.pago_confirmado)
+        self.assertEqual(reserva.estado, 'Confirmada')
+        self.assertEqual(comprobante.estado, 'Confirmado')
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('confirmada', mail.outbox[0].subject)
 
         attendance_response = self.client.post(
             reverse('gestion_reservas'),
@@ -624,10 +932,57 @@ class ReservaWorkflowTests(TestCase):
         reserva.refresh_from_db()
         self.assertEqual(reserva.estado, 'Pendiente de pago')
         self.assertFalse(reserva.pago_confirmado)
+        self.assertEqual(len(mail.outbox), 0)
+        without_comprobante = self.client.get(reverse('gestion_reservas'))
+        self.assertContains(without_comprobante, 'Esperando comprobante adjunto')
+        self.assertNotContains(without_comprobante, 'data-confirm-receipt-action')
+
+        rejected_confirmation = self.client.post(
+            reverse('gestion_reservas'),
+            {'accion': 'confirmar_pago', 'reserva_id': str(reserva.pk)},
+            follow=True,
+        )
+        self.assertContains(
+            rejected_confirmation,
+            'No se puede aprobar la reserva hasta recibir un comprobante pendiente con archivo adjunto.',
+        )
+        reserva.refresh_from_db()
+        self.assertFalse(reserva.pago_confirmado)
+
+        comprobante = Comprobante.objects.create(
+            reserva=reserva,
+            referencia='ref-admin-123',
+            direccion_comprobante=self.archivo_comprobante(),
+        )
+        self.assertEqual(comprobante.estado, 'Pendiente de confirmación')
+        notification_response = self.client.get(reverse('gestion_reservas'))
+        self.assertContains(notification_response, 'pendiente(s) de validación')
+        self.assertContains(notification_response, 'Aprobar')
+        self.assertContains(notification_response, 'Rechazar')
+        self.assertContains(notification_response, 'data-confirm-receipt-action="approve"')
+        self.assertContains(notification_response, 'data-confirm-receipt-action="reject"')
+        self.assertContains(notification_response, 'name="motivo_rechazo"')
+        self.assertContains(notification_response, 'maxlength="500"')
+        self.assertContains(
+            notification_response,
+            reverse('reserva_cliente', args=[reserva.pk]),
+        )
+        self.assertContains(
+            notification_response,
+            reverse('ver_comprobante_cliente', args=[comprobante.pk]),
+        )
+        archivo_response = self.client.get(
+            reverse('ver_comprobante_cliente', args=[comprobante.pk]),
+        )
+        self.assertEqual(archivo_response.status_code, 200)
+        self.assertEqual(archivo_response['Content-Type'], 'image/png')
 
         response = self.client.post(
             reverse('gestion_reservas'),
-            {'accion': 'confirmar_pago', 'reserva_id': str(reserva.pk)},
+            {
+                'accion': 'aprobar_comprobante',
+                'comprobante_id': str(comprobante.pk),
+            },
         )
 
         self.assertRedirects(response, reverse('gestion_reservas'))
@@ -635,7 +990,9 @@ class ReservaWorkflowTests(TestCase):
         self.assertTrue(reserva.pago_confirmado)
         self.assertIsNotNone(reserva.fecha_pago_confirmado)
         self.assertEqual(reserva.estado, 'Confirmada')
-        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(len(mail.outbox), 1)
+        comprobante.refresh_from_db()
+        self.assertEqual(comprobante.estado, 'Confirmado')
 
         edit_data = self.datos_reserva()
         edit_data.update(
@@ -651,6 +1008,123 @@ class ReservaWorkflowTests(TestCase):
         self.assertFalse(reserva.pago_confirmado)
         self.assertIsNone(reserva.fecha_pago_confirmado)
         self.assertEqual(reserva.total, Decimal('75000.00'))
+        comprobante.refresh_from_db()
+        self.assertEqual(comprobante.estado, 'Rechazado')
+
+    def test_customer_sees_approval_notification_after_admin_approves_receipt(self):
+        reserva, comprobante = self.crear_reserva_con_comprobante('Mesa')
+        admin = Usuario.objects.create_superuser(
+            username='receipt-approval-admin',
+            email='receipt-approval-admin@example.com',
+            password='test-password',
+            telefono='3118689863',
+        )
+        self.client.force_login(admin)
+
+        response = self.client.post(
+            reverse('gestion_reservas'),
+            {
+                'accion': 'aprobar_comprobante',
+                'comprobante_id': str(comprobante.pk),
+            },
+        )
+
+        self.assertRedirects(response, reverse('gestion_reservas'))
+        self.client.force_login(self.user)
+        detalle = self.client.get(reverse('reserva_cliente', args=[reserva.pk]))
+        self.assertContains(detalle, '¡Comprobante aprobado correctamente!')
+        self.assertNotContains(detalle, 'inlinePayForm')
+        correo_cliente = mail.outbox[-1]
+        self.assertEqual(correo_cliente.to, [self.user.email])
+        self.assertIn('aprobado', correo_cliente.subject)
+        self.assertIn('Ver los detalles de mi reserva', correo_cliente.alternatives[0].content)
+        self.assertIn(
+            reverse('reserva_cliente', args=[reserva.pk]),
+            correo_cliente.body,
+        )
+
+    def test_admin_can_reject_and_customer_can_resubmit_comprobante(self):
+        reserva, comprobante = self.crear_reserva_con_comprobante('Para llevar')
+        admin = Usuario.objects.create_superuser(
+            username='receipt-review-admin',
+            email='receipt-review-admin@example.com',
+            password='test-password',
+            telefono='3118689862',
+        )
+        self.client.force_login(admin)
+
+        respuesta_sin_motivo = self.client.post(
+            reverse('gestion_reservas'),
+            {
+                'accion': 'rechazar_comprobante',
+                'comprobante_id': str(comprobante.pk),
+            },
+            follow=True,
+        )
+        self.assertContains(
+            respuesta_sin_motivo,
+            'Escribe el motivo del rechazo para informar al cliente.',
+        )
+        comprobante.refresh_from_db()
+        self.assertEqual(comprobante.estado, 'Pendiente de confirmación')
+
+        response = self.client.post(
+            reverse('gestion_reservas'),
+            {
+                'accion': 'rechazar_comprobante',
+                'comprobante_id': str(comprobante.pk),
+                'motivo_rechazo': 'La referencia no coincide con el pago recibido.',
+            },
+            follow=True,
+        )
+
+        self.assertContains(response, f'Comprobante de la reserva #{reserva.pk} rechazado; se informó al cliente.')
+        comprobante.refresh_from_db()
+        reserva.refresh_from_db()
+        self.assertEqual(comprobante.estado, 'Rechazado')
+        self.assertEqual(
+            comprobante.motivo_rechazo,
+            'La referencia no coincide con el pago recibido.',
+        )
+        self.assertFalse(reserva.pago_confirmado)
+        self.assertEqual(reserva.estado, 'Pendiente de pago')
+        correo_cliente = mail.outbox[-1]
+        self.assertEqual(correo_cliente.to, [self.user.email])
+        self.assertIn('rechazado', correo_cliente.subject)
+        self.assertIn(
+            'La referencia no coincide con el pago recibido.',
+            correo_cliente.alternatives[0].content,
+        )
+        self.assertIn(
+            'Ver los detalles de mi reserva',
+            correo_cliente.alternatives[0].content,
+        )
+
+        self.client.force_login(self.user)
+        detalle = self.client.get(reverse('reserva_cliente', args=[reserva.pk]))
+        self.assertContains(detalle, 'Comprobante rechazado')
+        self.assertContains(detalle, 'La referencia no coincide con el pago recibido.')
+        self.assertContains(detalle, 'Enviar un nuevo comprobante')
+        self.assertContains(detalle, 'inlinePayForm')
+        historial = self.client.get(reverse('mis_reservas'))
+        self.assertContains(historial, 'Comprobante: Rechazado')
+        self.assertContains(historial, 'La referencia no coincide con el pago recibido.')
+
+        reenvio = self.client.post(
+            reverse('pagar_reserva_cliente', args=[reserva.pk]),
+            {
+                'metodo_pago': 'Nequi',
+                'referencia': 'ref-corregida-456',
+                'comprobante_archivo': self.archivo_comprobante('corregido.jpg', b'\xff\xd8\xffcontenido'),
+            },
+            HTTP_ACCEPT='application/json',
+        )
+
+        self.assertEqual(reenvio.status_code, 200)
+        self.assertEqual(reserva.comprobantes.count(), 2)
+        detalle_actualizado = self.client.get(reverse('reserva_cliente', args=[reserva.pk]))
+        self.assertContains(detalle_actualizado, 'Comprobante enviado correctamente')
+        self.assertNotContains(detalle_actualizado, 'Comprobante rechazado')
 
     def test_admin_can_cancel_any_reservation_and_registers_channel(self):
         admin = Usuario.objects.create_superuser(

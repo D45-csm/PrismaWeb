@@ -55,13 +55,60 @@
                                 </p>
                             </div>
                         </div>
-                    {% elif reserva.tipo_reserva == 'Para llevar' %}
+                    {% else %}
                         {% if reserva.pago_confirmado %}
                             <div class="reservation-payment-note is-paid">
                                 <span class="reservation-note-icon"><i class="fas fa-circle-check"></i></span>
                                 <div>
-                                    <strong>Pago Verificado en Línea ({{ reserva.metodo_pago|default:"Digital" }})</strong>
-                                    <p>Tu pago anticipado está verificado. Tus postres se prepararán con dedicación para entregarse el {{ reserva.fecha_reserva|date:"d/m/Y" }}{% if reserva.hora %} a las {{ reserva.hora|time:"H:i" }}{% endif %}.</p>
+                                    <strong>
+                                        {% if comprobante_confirmado %}
+                                            ¡Comprobante aprobado correctamente!
+                                        {% else %}
+                                            Pago Verificado en Línea ({{ reserva.metodo_pago|default:"Digital" }})
+                                        {% endif %}
+                                    </strong>
+                                    {% if reserva.tipo_reserva == 'Mesa' %}
+                                        <p>Tu pago y reserva de mesa están confirmados para el {{ reserva.fecha_reserva|date:"d/m/Y" }} a las {{ reserva.hora|time:"H:i" }}.</p>
+                                    {% else %}
+                                        <p>Tu pago anticipado está verificado. Tus postres se prepararán con dedicación para entregarse el {{ reserva.fecha_reserva|date:"d/m/Y" }}{% if reserva.hora %} a las {{ reserva.hora|time:"H:i" }}{% endif %}.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% elif comprobante_pendiente %}
+                            <div class="reservation-payment-note is-receipt-sent" role="status" aria-live="polite">
+                                <span class="reservation-note-icon"><i class="fas fa-circle-check"></i></span>
+                                <div>
+                                    <strong>¡Comprobante enviado correctamente!</strong>
+                                    <p>Recibimos tu archivo y la referencia {{ comprobante_pendiente.referencia }}. El administrador revisará tu pago antes de confirmar la reserva.</p>
+                                    {% if comprobante_pendiente.direccion_comprobante %}
+                                        <a class="btn btn-sm btn-outline-primary mt-2"
+                                           href="{% url 'ver_comprobante_cliente' comprobante_pendiente.pk %}">
+                                            <i class="fas fa-file-arrow-down"></i> Descargar comprobante
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% elif comprobante_rechazado %}
+                            <div class="reservation-payment-note is-receipt-rejected" role="alert">
+                                <span class="reservation-note-icon"><i class="fas fa-circle-xmark"></i></span>
+                                <div>
+                                    <strong>Comprobante rechazado</strong>
+                                    <p>El administrador rechazó el comprobante con referencia {{ comprobante_rechazado.referencia }}. Revisa el archivo y los datos del pago, y envía un comprobante nuevo.</p>
+                                    {% if comprobante_rechazado.motivo_rechazo %}
+                                        <p class="reservation-rejection-reason">
+                                            <strong>Motivo indicado por el administrador:</strong>
+                                            {{ comprobante_rechazado.motivo_rechazo|linebreaksbr }}
+                                        </p>
+                                    {% endif %}
+                                    {% if comprobante_rechazado.direccion_comprobante %}
+                                        <a class="btn btn-sm btn-outline-danger mt-2"
+                                           href="{% url 'ver_comprobante_cliente' comprobante_rechazado.pk %}">
+                                            <i class="fas fa-file-arrow-down"></i> Descargar comprobante rechazado
+                                        </a>
+                                    {% endif %}
+                                    <button type="button" class="luxury-btn-gold btn-sm mt-2" id="btnOpenPayFromDetail">
+                                        <i class="fas fa-paper-plane"></i> Enviar un nuevo comprobante
+                                    </button>
                                 </div>
                             </div>
                         {% else %}
@@ -69,25 +116,31 @@
                                 <span class="reservation-note-icon"><i class="fas fa-credit-card"></i></span>
                                 <div>
                                     <strong>Pago anticipado pendiente</strong>
-                                    <p>Para confirmar tu pedido para llevar, completa tu pago a continuación con Nequi, Daviplata o Tarjeta.</p>
+                                    <p>Para confirmar tu reserva, realiza el pago con Nequi, Llave o Daviplata y envía la referencia.</p>
                                     <button type="button" class="luxury-btn-gold btn-sm mt-2" id="btnOpenPayFromDetail">
                                         <i class="fas fa-lock"></i> Completar Pago Ahora
                                     </button>
                                 </div>
                             </div>
                         {% endif %}
-                    {% else %}
-                        <div class="reservation-payment-note is-table">
-                            <span class="reservation-note-icon"><i class="fas fa-utensils"></i></span>
-                            <div>
-                                <strong>Reserva de mesa sin prepago</strong>
-                                <p>No requiere prepago. Tu mesa está agendada para el {{ reserva.fecha_reserva|date:"d/m/Y" }} a las {{ reserva.hora|time:"H:i" }} para {{ reserva.numero_personas }} comensales.</p>
-                            </div>
-                        </div>
                     {% endif %}
 
                     <!-- DATOS CLAVE EN CUADRÍCULA -->
                     <div class="reservation-facts">
+                        <div>
+                            <span>Cliente</span>
+                            <strong><i class="far fa-user"></i> {{ reserva.nombre_cliente }}</strong>
+                        </div>
+                        <div>
+                            <span>Teléfono de contacto</span>
+                            <strong><i class="fas fa-phone"></i> {{ reserva.telefono }}</strong>
+                        </div>
+                        {% if reserva.usuario.email %}
+                            <div>
+                                <span>Correo de contacto</span>
+                                <strong><i class="far fa-envelope"></i> {{ reserva.usuario.email }}</strong>
+                            </div>
+                        {% endif %}
                         <div>
                             <span>Fecha de reserva</span>
                             <strong><i class="far fa-calendar"></i> {{ reserva.fecha_reserva|date:"d/m/Y" }}</strong>
@@ -115,6 +168,16 @@
                             <div>
                                 <span>Canal</span>
                                 <strong><i class="fas fa-globe"></i> {{ reserva.canal_origen }}</strong>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <span>Fecha de solicitud</span>
+                            <strong><i class="far fa-calendar-plus"></i> {{ reserva.fecha_realizacion|date:"d/m/Y H:i" }}</strong>
+                        </div>
+                        {% if reserva.metodo_pago %}
+                            <div>
+                                <span>Método de pago</span>
+                                <strong><i class="fas fa-credit-card"></i> {{ reserva.metodo_pago }}</strong>
                             </div>
                         {% endif %}
                     </div>
@@ -193,35 +256,80 @@
                 <aside class="reservation-side-column">
 
                     <!-- SECCIÓN DE PAGO (SI ESTÁ PENDIENTE DE PAGO) -->
-                    {% if reserva.tipo_reserva == 'Para llevar' and not reserva.pago_confirmado and reserva.estado != 'Cancelada' %}
+                    {% if not reserva.pago_confirmado and not comprobante_pendiente and reserva.estado != 'Cancelada' %}
                         <section class="reservation-panel reservation-pay-box shadow-luxury" id="payBoxSection">
                             <span class="reservation-kicker">PASO OBLIGATORIO</span>
-                            <h2>Completa tu Pago</h2>
-                            <p>Para asegurar que tus postres sean horneados y preparados a tiempo, completa tu pago seguro anticipado.</p>
+                            <h2>Envía tu comprobante</h2>
+                            <p>Después de realizar el pago, envía el método y la referencia de la transacción para que Prisma pueda validarlo.</p>
 
-                            <form id="inlinePayForm" method="post" action="{% url 'pagar_reserva_cliente' reserva.pk %}">
+                            <div class="reservation-payment-accounts" aria-label="Cuentas para realizar el pago">
+                                <p class="payment-account-intro">Transfiere el total exacto a la cuenta correspondiente y copia el número para evitar errores.</p>
+                                <div class="payment-account-grid">
+                                    <div class="payment-account-card is-selected" data-payment-account="Nequi">
+                                        <div>
+                                            <span class="payment-account-name">Nequi</span>
+                                            <strong class="payment-account-number" data-payment-number>3026493531</strong>
+                                        </div>
+                                        <button class="payment-account-copy" type="button" data-copy-payment aria-label="Copiar número de Nequi">
+                                            <i class="fas fa-copy" aria-hidden="true"></i> Copiar
+                                        </button>
+                                        <span class="payment-copy-status" data-copy-status aria-live="polite"></span>
+                                    </div>
+                                    <div class="payment-account-card" data-payment-account="Llave">
+                                        <div>
+                                            <span class="payment-account-name">Llave</span>
+                                            <strong class="payment-account-number" data-payment-number>3143983857</strong>
+                                        </div>
+                                        <button class="payment-account-copy" type="button" data-copy-payment aria-label="Copiar número de Llave">
+                                            <i class="fas fa-copy" aria-hidden="true"></i> Copiar
+                                        </button>
+                                        <span class="payment-copy-status" data-copy-status aria-live="polite"></span>
+                                    </div>
+                                    <div class="payment-account-card" data-payment-account="Daviplata">
+                                        <div>
+                                            <span class="payment-account-name">Daviplata</span>
+                                            <strong class="payment-account-number" data-payment-number>3143983857</strong>
+                                        </div>
+                                        <button class="payment-account-copy" type="button" data-copy-payment aria-label="Copiar número de Daviplata">
+                                            <i class="fas fa-copy" aria-hidden="true"></i> Copiar
+                                        </button>
+                                        <span class="payment-copy-status" data-copy-status aria-live="polite"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <form id="inlinePayForm" method="post" enctype="multipart/form-data"
+                                  action="{% url 'pagar_reserva_cliente' reserva.pk %}">
                                 {% csrf_token %}
-                                <div class="payment-methods-selector mb-3">
+                                <div class="payment-methods-selector reservation-payment-methods mb-3">
                                     <label class="payment-method-tab is-active" data-method="Nequi">
                                         <input type="radio" name="metodo_pago" value="Nequi" checked>
                                         <span>🟣 Nequi</span>
+                                    </label>
+                                    <label class="payment-method-tab" data-method="Llave">
+                                        <input type="radio" name="metodo_pago" value="Llave">
+                                        <span>🔑 Llave</span>
                                     </label>
                                     <label class="payment-method-tab" data-method="Daviplata">
                                         <input type="radio" name="metodo_pago" value="Daviplata">
                                         <span>🟡 Daviplata</span>
                                     </label>
-                                    <label class="payment-method-tab" data-method="Tarjeta">
-                                        <input type="radio" name="metodo_pago" value="Tarjeta">
-                                        <span>💳 Tarjeta</span>
-                                    </label>
                                 </div>
                                 <div class="form-group-luxury mb-3">
                                     <label for="inlineReferencia">Número o Comprobante</label>
                                     <input type="text" class="input-luxury" id="inlineReferencia" name="referencia"
-                                           placeholder="311 868 9862 o No. transacción" required>
+                                           placeholder="Número de transacción" maxlength="100" required>
+                                </div>
+                                <div class="form-group-luxury mb-3">
+                                    <label for="inlineComprobanteArchivo">Comprobante (PNG, JPG, JPEG o PDF)</label>
+                                    <input type="file" class="input-luxury" id="inlineComprobanteArchivo"
+                                           name="comprobante_archivo"
+                                           accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"
+                                           required>
+                                    <small class="form-text text-muted">Adjunta la imagen o el PDF del pago realizado.</small>
                                 </div>
                                 <button type="submit" class="luxury-btn-gold btn-full">
-                                    <i class="fas fa-check-circle"></i> Pagar {{ reserva_total }} COP
+                                    <i class="fas fa-paper-plane"></i> Enviar comprobante
                                 </button>
                             </form>
                         </section>
@@ -233,10 +341,12 @@
                         <h2>
                             {% if reserva.estado == 'Cancelada' %}
                                 Reserva cancelada
-                            {% elif reserva.tipo_reserva == 'Para llevar' and not reserva.pago_confirmado %}
+                            {% elif not reserva.pago_confirmado and comprobante_pendiente %}
+                                Comprobante en revisión
+                            {% elif not reserva.pago_confirmado and comprobante_rechazado %}
+                                Comprobante rechazado
+                            {% elif not reserva.pago_confirmado %}
                                 Completa tu pago
-                            {% elif reserva.tipo_reserva == 'Mesa' and reserva.estado == 'Pendiente' %}
-                                Espera nuestra confirmación
                             {% else %}
                                 Tu reserva está al día
                             {% endif %}
@@ -244,10 +354,12 @@
                         <p>
                             {% if reserva.estado == 'Cancelada' %}
                                 Esta reserva ya no está activa. Si requieres reactivar o hacer una nueva, estamos listos para atenderte.
-                            {% elif reserva.tipo_reserva == 'Para llevar' and not reserva.pago_confirmado %}
-                                Paga a través de nuestra pasarela o escríbenos por WhatsApp para coordinar tu comprobante.
-                            {% elif reserva.tipo_reserva == 'Mesa' and reserva.estado == 'Pendiente' %}
-                                Nuestro equipo revisará la disponibilidad de la mesa y se comunicará contigo.
+                            {% elif not reserva.pago_confirmado and comprobante_pendiente %}
+                                Tu comprobante se envió correctamente (referencia {{ comprobante_pendiente.referencia }}) y está pendiente de validación.
+                            {% elif not reserva.pago_confirmado and comprobante_rechazado %}
+                                El comprobante fue rechazado. Puedes corregir los datos y enviar uno nuevo para continuar con la reserva.
+                            {% elif not reserva.pago_confirmado %}
+                                Completa el pago con Nequi, Llave o Daviplata y envía la referencia para que confirmemos tu reserva.
                             {% else %}
                                 Todo está listo. ¡Te esperamos para endulzar tu día con Prisma!
                             {% endif %}

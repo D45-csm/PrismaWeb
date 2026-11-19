@@ -73,16 +73,23 @@
                                 <span class="reservation-history-total">
                                     Total <strong>{{ reserva.total|floatformat:0 }} COP</strong>
                                 </span>
-                                {% if reserva.tipo_reserva == 'Mesa' %}
-                                    <span class="reservation-history-payment">Sin prepago</span>
-                                {% elif reserva.pago_confirmado %}
+                                {% if reserva.pago_confirmado %}
                                     <span class="reservation-history-payment is-paid"><i class="fas fa-check-circle" aria-hidden="true"></i> Pago verificado</span>
                                 {% else %}
                                     <span class="reservation-history-payment is-pending"><i class="fas fa-clock" aria-hidden="true"></i> Pago pendiente</span>
                                 {% endif %}
+                                {% for comprobante in reserva.comprobantes.all %}
+                                    {% if forloop.first %}
+                                        <div class="reservation-history-receipt {% if comprobante.estado == 'Rechazado' %}is-rejected{% elif comprobante.estado == 'Confirmado' %}is-approved{% endif %}">
+                                            <strong>Comprobante: {{ comprobante.get_estado_display }}</strong>
+                                            {% if comprobante.estado == 'Rechazado' and comprobante.motivo_rechazo %}
+                                                <span>Motivo: {{ comprobante.motivo_rechazo|truncatechars:180 }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
                                 <a class="reservation-history-open" href="{% url 'reserva_cliente' reserva.pk %}">
-                                    Ver y gestionar <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                                </a>
+                                    <i class="fas fa-eye" aria-hidden="true"></i> Ver más detalles
                             </div>
                         </article>
                     {% endfor %}

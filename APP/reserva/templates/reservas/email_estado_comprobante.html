@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Estado del comprobante</title>
+</head>
+<body style="margin:0;background:#f7f3f6;font-family:Arial,sans-serif;color:#392e34;">
+    <div style="max-width:600px;margin:32px auto;padding:32px;background:#fff;border-radius:16px;">
+        <p style="margin:0 0 8px;color:#96396f;font-weight:bold;">PRISMA · RESERVAS</p>
+        <h1 style="font-size:22px;margin:0 0 16px;">
+            {% if aprobado %}Comprobante aprobado{% else %}Comprobante rechazado{% endif %}
+        </h1>
+        <p>Hola {{ cliente.get_full_name|default:cliente.username }},</p>
+        <p>
+            El comprobante de tu reserva <strong>#{{ reserva.pk }}</strong>
+            fue <strong>{% if aprobado %}aprobado{% else %}rechazado{% endif %}</strong>.
+        </p>
+        {% if aprobado %}
+            <p>Tu pago fue verificado y la reserva quedó confirmada.</p>
+        {% else %}
+            <p><strong>Motivo indicado por el administrador:</strong></p>
+            <p style="padding:12px;background:#fff3f3;border-left:4px solid #a33a44;">
+                {{ motivo|linebreaksbr }}
+            </p>
+            <p>Puedes revisar el motivo y enviar un comprobante corregido desde los detalles de tu reserva.</p>
+        {% endif %}
+        <p style="margin:28px 0;">
+            <a href="{{ url_reserva }}"
+               style="display:inline-block;padding:13px 22px;background:#96396f;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">
+                Ver los detalles de mi reserva
+            </a>
+        </p>
+        <p style="font-size:13px;color:#766b72;">Reserva #{{ reserva.pk }} · {{ reserva.fecha_reserva|date:"d/m/Y" }}</p>
+    </div>
+</body>
+</html>

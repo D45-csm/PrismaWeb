@@ -38,4 +38,43 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     );
 
+    document.querySelectorAll('[data-confirm-receipt-action]').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (form.dataset.confirmed === 'true') return;
+
+            event.preventDefault();
+            const aprobar = form.dataset.confirmReceiptAction === 'approve';
+            const reservaId = form.dataset.reservationId;
+            const boton = form.querySelector('button[type="submit"]');
+            if (boton) boton.disabled = true;
+
+            const confirmacion = window.Swal
+                ? window.Swal.fire({
+                    title: aprobar ? '¿Aprobar el comprobante?' : '¿Rechazar el comprobante?',
+                    text: aprobar
+                        ? `La reserva #${reservaId} quedará confirmada.`
+                        : `El cliente podrá enviar un nuevo comprobante para la reserva #${reservaId}.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: aprobar ? 'Sí, aprobar' : 'Sí, rechazar',
+                    cancelButtonText: 'Volver',
+                    confirmButtonColor: aprobar ? '#198754' : '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                })
+                : Promise.resolve({
+                    isConfirmed: window.confirm(
+                        `${aprobar ? '¿Aprobar' : '¿Rechazar'} el comprobante de la reserva #${reservaId}?`,
+                    ),
+                });
+
+            confirmacion.then(function (resultado) {
+                if (resultado.isConfirmed) {
+                    form.dataset.confirmed = 'true';
+                    form.submit();
+                } else if (boton) {
+                    boton.disabled = false;
+                }
+            });
+        });
+    });
 });

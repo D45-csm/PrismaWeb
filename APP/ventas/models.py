@@ -9,8 +9,10 @@ class Comprobante(models.Model):
         ('Confirmado', 'Confirmado'),
         ('Rechazado', 'Rechazado'),
     ]
-    direccion_comprobante = models.FileField(upload_to='comprobantes/')
-    estado = models.CharField(max_length=50, choices=CHOICES_ESTADO, default='Pendiente de Confirmación')
+    direccion_comprobante = models.FileField(upload_to='comprobantes/', blank=True)
+    referencia = models.CharField(max_length=100, blank=True)
+    estado = models.CharField(max_length=50, choices=CHOICES_ESTADO, default='Pendiente de confirmación')
+    motivo_rechazo = models.TextField(blank=True, default='')
     reserva = models.ForeignKey(
         Reserva,
         on_delete=models.SET_NULL,

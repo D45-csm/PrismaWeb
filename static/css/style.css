@@ -2684,6 +2684,20 @@ input[type="submit"]:focus-visible,
 .reservation-history-payment { color: #827782; font-size: .8rem; font-weight: 700; }
 .reservation-history-payment.is-paid { color: #22734b; }
 .reservation-history-payment.is-pending { color: #896219; }
+.receipt-rejection-form { flex: 1 1 240px; max-width: 320px; }
+.reservation-history-receipt {
+    display: grid;
+    gap: 3px;
+    flex-basis: 100%;
+    padding: 10px 12px;
+    border-radius: 11px;
+    background: #f6f2f5;
+    color: #665764;
+    font-size: .82rem;
+}
+.reservation-history-receipt.is-approved { background: #f2fbf5; color: #22734b; }
+.reservation-history-receipt.is-rejected { background: #fff3f3; color: #963b43; }
+.reservation-history-receipt span { font-weight: 400; }
 .reservation-history-open {
     display: inline-flex;
     align-items: center;
@@ -2777,9 +2791,11 @@ input[type="submit"]:focus-visible,
     border-radius: 16px;
     background: linear-gradient(135deg, #fff8ed, #fffaf5);
 }
-.reservation-payment-note.is-paid { border-color: #c7e6d3; background: #f2fbf5; }
+.reservation-payment-note.is-paid,
+.reservation-payment-note.is-receipt-sent { border-color: #c7e6d3; background: #f2fbf5; }
 .reservation-payment-note.is-table { border-color: #d8cdec; background: #f8f5fc; }
 .reservation-payment-note.is-cancelled { border-color: #e4d8dc; background: #f7f5f6; }
+.reservation-payment-note.is-receipt-rejected { border-color: #efc8ca; background: #fff3f3; }
 .reservation-note-icon {
     display: grid;
     width: 38px;
@@ -2790,9 +2806,19 @@ input[type="submit"]:focus-visible,
     background: #fff;
     color: #a36a18;
 }
-.reservation-payment-note.is-paid .reservation-note-icon { color: #23804f; }
+.reservation-payment-note.is-paid .reservation-note-icon,
+.reservation-payment-note.is-receipt-sent .reservation-note-icon { color: #23804f; }
 .reservation-payment-note.is-table .reservation-note-icon { color: #794a9d; }
 .reservation-payment-note.is-cancelled .reservation-note-icon { color: #7a6269; }
+.reservation-payment-note.is-receipt-rejected .reservation-note-icon { color: #a33a44; }
+.reservation-rejection-reason {
+    margin-top: 10px !important;
+    padding: 10px 12px;
+    border-left: 3px solid #a33a44;
+    border-radius: 6px;
+    background: rgba(255,255,255,.7);
+}
+.reservation-rejection-reason strong { display: inline; }
 .reservation-payment-note strong { display: block; margin: 1px 0 4px; color: #392e34; }
 .reservation-payment-note p { margin: 0; color: #766b72; font-size: .88rem; line-height: 1.55; }
 .reservation-facts {
@@ -5550,6 +5576,71 @@ padding: 34px 0 72px;
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
     margin-bottom: 20px;
+}
+.reservation-payment-methods {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.reservation-payment-accounts {
+    margin: 18px 0;
+}
+.payment-account-intro {
+    margin-bottom: 10px;
+    color: #766b72;
+    font-size: .84rem;
+    line-height: 1.5;
+}
+.payment-account-grid {
+    display: grid;
+    gap: 9px;
+}
+.payment-account-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 10px;
+    padding: 12px;
+    border: 1px solid #eee3e9;
+    border-radius: 12px;
+    background: #fcf9fb;
+    transition: border-color .2s ease, background .2s ease;
+}
+.payment-account-card.is-selected {
+    border-color: #df9f28;
+    background: #fffaf0;
+}
+.payment-account-name {
+    display: block;
+    color: #766b72;
+    font-size: .76rem;
+    font-weight: 700;
+}
+.payment-account-number {
+    display: block;
+    margin-top: 2px;
+    color: #392e37;
+    font-size: 1.08rem;
+    letter-spacing: .04em;
+}
+.payment-account-copy {
+    min-width: 92px;
+    padding: 8px 10px;
+    border: 1px solid #df9f28;
+    border-radius: 9px;
+    background: #fff;
+    color: #80550c;
+    font-size: .82rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.payment-account-copy:hover,
+.payment-account-copy:focus-visible {
+    background: #fff3d8;
+}
+.payment-copy-status {
+    grid-column: 1 / -1;
+    min-height: 1em;
+    color: #22734b;
+    font-size: .75rem;
 }
 .payment-method-tab {
     background: #fbf7f6;

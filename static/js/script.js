@@ -918,7 +918,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const modalidadCardMesa = document.getElementById('modalityCardMesa');
         const modalidadCardLlevar = document.getElementById('modalityCardLlevar');
         const groupNumeroPersonas = document.getElementById('groupNumeroPersonas');
-        const takeawayAuthNotice = document.getElementById('takeawayAuthNotice');
+        const reservationAuthNotice = document.getElementById('reservationAuthNotice');
         const numeroPersonasInput = document.getElementById('numero_personas');
         const totalNoteText = document.getElementById('totalNoteText');
         const btnSubmitReserva = document.getElementById('btnSubmitReserva');
@@ -1042,22 +1042,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 numeroPersonasInput.required = esMesa;
             }
 
-            if (takeawayAuthNotice) {
-                takeawayAuthNotice.hidden = esMesa;
+            if (reservationAuthNotice) {
+                reservationAuthNotice.hidden = reservaForm.dataset.userLoggedIn === 'true';
             }
 
             if (totalNoteText) {
-                totalNoteText.textContent = esMesa
-                    ? 'Las mesas no requieren pago anticipado. Te recibimos en nuestro local.'
-                    : 'Para llevar requiere inicio de sesión y pago anticipado.';
+                totalNoteText.textContent = 'Todas las reservas requieren iniciar sesión y pagar antes de confirmarse.';
             }
 
             if (btnSubmitReserva) {
                 const btnText = btnSubmitReserva.querySelector('.btn-text');
                 if (btnText) {
                     btnText.textContent = esMesa
-                        ? 'Confirmar mi Reserva de Mesa'
-                        : 'Registrar y Continuar al Pago Seguro';
+                        ? 'Confirmar Mesa y Continuar al Pago'
+                        : 'Registrar y Continuar al Pago';
                 }
             }
         };
@@ -1111,18 +1109,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (borradorJSON) {
             try {
                 const borrador = JSON.parse(borradorJSON);
-                if (borrador.nombre && document.getElementById('nombre')) document.getElementById('nombre').value = borrador.nombre;
-                if (borrador.telefono && document.getElementById('telefono')) document.getElementById('telefono').value = borrador.telefono;
-                if (borrador.fecha && document.getElementById('fecha')) document.getElementById('fecha').value = borrador.fecha;
-                if (borrador.hora) {
-                    const horaBorrador = reservationTimeInputs.find(input => input.value === borrador.hora);
-                    if (horaBorrador) {
-                        horaBorrador.checked = true;
-                        actualizarHorarioSeleccionado();
+                for (const control of reservaForm.elements) {
+                    if (!control.name || !(control.name in borrador)) continue;
+                    if (control.type === 'radio') {
+                        control.checked = control.value === borrador[control.name];
+                    } else if (control.type === 'checkbox') {
+                        control.checked = control.value === borrador[control.name];
+                    } else {
+                        control.value = borrador[control.name];
                     }
                 }
-                if (borrador.detalles && document.getElementById('detalles')) document.getElementById('detalles').value = borrador.detalles;
                 if (borrador.tipo_reserva) actualizarModalidad(borrador.tipo_reserva);
+                reservaProductoCards.forEach(card => {
+                    if (card.querySelector('select')?.value) {
+                        card.classList.add('is-visible');
+                    }
+                });
+                actualizarProductosReserva();
+                actualizarHorarioSeleccionado();
                 sessionStorage.removeItem('reserva_draft');
             } catch (err) {}
         }
@@ -1132,11 +1136,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fechaReserva) fechaReserva.min = hoyISO();
 
         // Control del Modal de Pago
-        const abrirModalPago = (reservaId, totalTexto) => {
+        const mostrarErrorEnvioComprobante = (error) => {
+            const mensaje = error instanceof Error
+                ? error.message
+                : 'No se pudo completar el envío. Inténtalo nuevamente.';
+            if (window.Swal) {
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'No se pudo enviar el comprobante',
+                    text: mensaje,
+                    confirmButtonColor: '#df9f28'
+                });
+            }
+            window.alert(`No se pudo enviar el comprobante\n\n${mensaje}`);
+        };
+
+        const obtenerErrorRespuestaComprobante = (respuesta, resultado) => {
+            if (resultado?.error) return resultado.error;
+            if (respuesta.status === 413) {
+                return 'El archivo supera el límite permitido por el servidor. Reduce su tamaño e inténtalo de nuevo.';
+            }
+            if (respuesta.status === 403) {
+                return 'Tu sesión pudo haber vencido. Inicia sesión nuevamente y vuelve a enviar el comprobante.';
+            }
+            if (respuesta.status === 404) {
+                return 'No se encontró el servicio de pago. Recarga la página e inténtalo de nuevo.';
+            }
+            if (respuesta.status >= 500) {
+                return `El servidor no pudo guardar el archivo (error ${respuesta.status}). Inténtalo más tarde.`;
+            }
+            return `El servidor respondió con un error (HTTP ${respuesta.status}). Recarga la página e inténtalo de nuevo.`;
+        };
+
+        const abrirModalPago = (reservaId, totalTexto, tipoReserva, paymentUrl) => {
             if (!paymentModalOverlay) return;
             document.getElementById('payModalReservaId').textContent = `Reserva #${reservaId}`;
             document.getElementById('payModalTotal').textContent = totalTexto;
+            document.getElementById('payModalReservaType').textContent =
+                tipoReserva === 'Para llevar' ? 'PEDIDO PARA LLEVAR' : 'RESERVA DE MESA';
             document.getElementById('payActionReservaId').value = reservaId;
+            const formularioPago = document.getElementById('paymentExecutionForm');
+            if (formularioPago) formularioPago.action = paymentUrl;
             paymentModalOverlay.hidden = false;
         };
 
@@ -1159,6 +1199,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('.payment-method-details').forEach(det => det.hidden = true);
                 const activeDetails = document.getElementById(`method${metodo}Details`);
                 if (activeDetails) activeDetails.hidden = false;
+
+                document.querySelectorAll('[data-payment-account]').forEach(cuenta => {
+                    cuenta.classList.toggle(
+                        'is-selected',
+                        cuenta.dataset.paymentAccount === metodo,
+                    );
+                });
+            });
+        });
+
+        const copiarDatoPago = async (valor) => {
+            let errorPortapapeles;
+            if (navigator.clipboard && window.isSecureContext) {
+                try {
+                    await navigator.clipboard.writeText(valor);
+                    return;
+                } catch (error) {
+                    errorPortapapeles = error;
+                }
+            }
+
+            const campoTemporal = document.createElement('textarea');
+            campoTemporal.value = valor;
+            campoTemporal.setAttribute('readonly', '');
+            campoTemporal.style.position = 'fixed';
+            campoTemporal.style.opacity = '0';
+            document.body.appendChild(campoTemporal);
+            try {
+                campoTemporal.select();
+                if (!document.execCommand('copy')) {
+                    throw errorPortapapeles || new Error('El navegador no permitió copiar.');
+                }
+            } finally {
+                campoTemporal.remove();
+            }
+        };
+
+        document.querySelectorAll('[data-copy-payment]').forEach(button => {
+            button.addEventListener('click', async () => {
+                const cuenta = button.closest('[data-payment-account]');
+                const valor = cuenta?.querySelector('[data-payment-number]')?.textContent.trim();
+                const estado = cuenta?.querySelector('[data-copy-status]');
+                if (!valor || !estado) return;
+
+                try {
+                    await copiarDatoPago(valor);
+                    estado.textContent = `Número ${valor} copiado.`;
+                } catch {
+                    estado.textContent = 'No se pudo copiar automáticamente. Selecciona el número y cópialo.';
+                }
             });
         });
 
@@ -1173,26 +1263,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btnSubmitPayment = document.getElementById('btnSubmitPayment');
                 if (btnSubmitPayment) {
                     btnSubmitPayment.disabled = true;
-                    btnSubmitPayment.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando pago seguro...';
+                    btnSubmitPayment.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando comprobante...';
                 }
 
                 try {
                     const formData = new FormData(paymentExecutionForm);
-                    const respuesta = await fetch(`/reserva/pagar/${reservaId}/`, {
+                    const respuesta = await fetch(paymentExecutionForm.action, {
                         method: 'POST',
                         body: formData,
                         headers: { 'Accept': 'application/json' },
                         credentials: 'same-origin',
                     });
-                    const resultado = await respuesta.json();
-                    if (!respuesta.ok || !resultado.ok) {
-                        throw new Error(resultado.error || 'No se pudo procesar el pago.');
+                    const resultado = await respuesta.json().catch(() => null);
+                    if (!respuesta.ok || !resultado?.ok) {
+                        throw new Error(obtenerErrorRespuestaComprobante(respuesta, resultado));
                     }
 
                     cerrarModalPago();
-                    lanzarConfetti(3500);
+                    if (resultado.pago_confirmado) lanzarConfetti(3500);
 
-                    // Mensaje lindo y animado tras completar el pago
                     if (window.Swal) {
                         await Swal.fire({
                             customClass: {
@@ -1200,43 +1289,21 @@ document.addEventListener('DOMContentLoaded', () => {
                                 confirmButton: 'luxury-btn-gold'
                             },
                             icon: 'success',
-                            title: resultado.title || '¡Pago Recibido con Éxito! 🎉🍰',
-                            html: `
-                                <div class="sweet-payment-celebration">
-                                    <div class="cake-pulse-icon">🍰💖</div>
-                                    <p class="sweet-message-text">${escapeHTML(resultado.message)}</p>
-                                    <div class="sweet-receipt-pill">
-                                        <strong>Reserva #${escapeHTML(resultado.reservation_id)}</strong> · Total Pagado: <strong>${escapeHTML(resultado.total)} COP</strong>
-                                    </div>
-                                    <p class="sweet-pickup-info"><i class="fas fa-calendar-check"></i> Fecha de entrega: <strong>${escapeHTML(resultado.fecha_recogida)}</strong> a las <strong>${escapeHTML(resultado.hora_recogida)}</strong></p>
-                                </div>
-                            `,
-                            showCancelButton: true,
-                            confirmButtonText: '<i class="fas fa-receipt"></i> Ver Comprobante y Pedido',
-                            cancelButtonText: '<i class="fab fa-whatsapp"></i> Hablar por WhatsApp',
+                            title: resultado.title || '¡Comprobante enviado con éxito!',
+                            text: resultado.message,
+                            confirmButtonText: 'Ver estado de la reserva',
                             buttonsStyling: false
-                        }).then(result => {
-                            if (result.isConfirmed && resultado.next_url) {
-                                window.location.assign(resultado.next_url);
-                            } else {
-                                window.open(`https://wa.me/${window.PRISMA?.whatsapp || '573118689862'}?text=${encodeURIComponent('Hola Prisma 👋 Ya completé el pago de mi pedido #' + resultado.reservation_id)}`, '_blank');
-                                if (resultado.next_url) window.location.assign(resultado.next_url);
-                            }
                         });
+                    } else {
+                        window.alert(`¡Comprobante enviado con éxito!\n\n${resultado.message}`);
                     }
+                    if (resultado.next_url) window.location.assign(resultado.next_url);
                 } catch (err) {
-                    if (window.Swal) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error en el pago',
-                            text: err.message || 'No se pudo completar el pago.',
-                            confirmButtonColor: '#df9f28'
-                        });
-                    }
+                    mostrarErrorEnvioComprobante(err);
                 } finally {
                     if (btnSubmitPayment) {
                         btnSubmitPayment.disabled = false;
-                        btnSubmitPayment.innerHTML = '<i class="fas fa-check-circle"></i> Completar Pago Ahora';
+                        btnSubmitPayment.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar comprobante';
                     }
                 }
             });
@@ -1251,26 +1318,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const modalidadElegida = document.querySelector('input[name="tipo_reserva"]:checked')?.value || document.getElementById('tipo_reserva')?.value || 'Mesa';
                 const usuarioLogueado = reservaForm.dataset.userLoggedIn === 'true';
 
-                // REGLA CLAVE: Solo si quiere reservar postre para llevar debe iniciar sesión
-                if (modalidadElegida === 'Para llevar' && !usuarioLogueado) {
-                    // Guardar borrador en sessionStorage para que no pierda lo seleccionado
-                    const draft = {
-                        nombre: document.getElementById('nombre')?.value || '',
-                        telefono: document.getElementById('telefono')?.value || '',
-                        fecha: document.getElementById('fecha')?.value || '',
-                        hora: reservaForm.querySelector('input[name="hora"]:checked')?.value || '',
-                        detalles: document.getElementById('detalles')?.value || '',
-                        tipo_reserva: 'Para llevar'
-                    };
+                if (!usuarioLogueado) {
+                    const draft = {};
+                    new FormData(reservaForm).forEach((value, name) => {
+                        if (name !== 'csrfmiddlewaretoken') draft[name] = value;
+                    });
                     sessionStorage.setItem('reserva_draft', JSON.stringify(draft));
 
                     if (window.Swal) {
                         Swal.fire({
                             icon: 'info',
-                            title: '¡Casi Listo para tu Pedido! 🍰🔒',
+                            title: 'Inicia sesión para continuar 🔒',
                             html: `
                                 <p style="font-size:1.05rem; color:#4a3435; line-height:1.5;">
-                                    Para reservar tu postre <strong>para llevar</strong> es necesario <strong>iniciar sesión</strong> o registrarte para completar tu pago seguro.
+                                    Para realizar una reserva de <strong>mesa o para llevar</strong>, inicia sesión o crea una cuenta. Después podrás completar el pago.
                                 </p>
                                 <p class="text-muted small">
                                     ¡Tus datos y postres seleccionados han sido guardados para que continúes sin interrupción!
@@ -1318,8 +1379,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     reservaForm.dataset.submitted = 'true';
 
                     // Si es PARA LLEVAR: Abrir modal de pago interactivo
-                    if (resultado.reservation_type === 'Para llevar') {
-                        abrirModalPago(resultado.reservation_id, resultado.total);
+                    if (resultado.require_payment) {
+                        abrirModalPago(
+                            resultado.reservation_id,
+                            resultado.total,
+                            resultado.reservation_type,
+                            resultado.payment_url,
+                        );
                     } else {
                         // Si es MESA: Mostrar alerta animada festiva
                         lanzarConfetti(2800);
@@ -1391,7 +1457,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const submitBtn = inlinePayForm.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando pago...';
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando comprobante...';
             }
             try {
                 const resp = await fetch(inlinePayForm.action, {
@@ -1400,15 +1466,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Accept': 'application/json' },
                     credentials: 'same-origin',
                 });
-                const res = await resp.json();
-                if (!resp.ok || !res.ok) throw new Error(res.error || 'No se pudo completar el pago.');
+                const res = await resp.json().catch(() => null);
+                if (!resp.ok || !res?.ok) {
+                    throw new Error(obtenerErrorRespuestaComprobante(resp, res));
+                }
 
-                lanzarConfetti(3000);
+                if (res.pago_confirmado) lanzarConfetti(3000);
                 if (window.Swal) {
                     await Swal.fire({
                         customClass: { popup: 'sweet-celebration-dialog', confirmButton: 'luxury-btn-gold' },
                         icon: 'success',
-                        title: res.title || '¡Pago Recibido con Éxito! 🎉🍰',
+                        title: res.title || '¡Comprobante enviado con éxito!',
                         html: `
                             <div class="sweet-payment-celebration">
                                 <div class="cake-pulse-icon">🍰💖</div>
@@ -1421,12 +1489,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         confirmButtonText: 'Continuar',
                         buttonsStyling: false
                     });
+                } else {
+                    window.alert(`¡Comprobante enviado con éxito!\n\n${res.message}`);
                 }
                 window.location.reload();
             } catch (err) {
-                if (window.Swal) {
-                    Swal.fire({ icon: 'error', title: 'Error en el pago', text: err.message, confirmButtonColor: '#df9f28' });
-                }
+                mostrarErrorEnvioComprobante(err);
             } finally {
                 if (submitBtn) submitBtn.disabled = false;
             }

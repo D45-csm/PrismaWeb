@@ -49,11 +49,11 @@ if not SECRET_KEY:
             'Configura DJANGO_SECRET_KEY antes de ejecutar con DJANGO_DEBUG=false.'
         )
     SECRET_KEY = 'django-insecure-local-development-key-do-not-use-in-production'
-
-ALLOWED_HOSTS = _env_list(
-    'DJANGO_ALLOWED_HOSTS',
-    'localhost,127.0.0.1,[::1]' if DEBUG else '',
-)
+ALLOWED_HOSTS = '*'
+# ALLOWED_HOSTS = _env_list(
+#     'DJANGO_ALLOWED_HOSTS',
+#     'localhost,127.0.0.1,[::1]' if DEBUG else '',
+# )
 if not DEBUG and not ALLOWED_HOSTS:
     raise ImproperlyConfigured(
         'Configura DJANGO_ALLOWED_HOSTS antes de ejecutar en producción.'
@@ -201,7 +201,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'es-ES'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Bogota'
 
 USE_I18N = True
 
@@ -234,6 +234,6 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 PASSWORD_RESET_TIMEOUT = 60 * 60
 RESERVAS_EMAIL_DESTINO = os.getenv(
     'RESERVAS_EMAIL_DESTINO',
-    'juansebastiangirataguarin12@gmail.com',
+    'daniiela.rodriguez112@gmail.com',
 )
 RESERVAS_WHATSAPP_DESTINO = os.getenv('RESERVAS_WHATSAPP_DESTINO', '573118689862')
