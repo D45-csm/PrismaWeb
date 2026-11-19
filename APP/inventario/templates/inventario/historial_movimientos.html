@@ -1,0 +1,116 @@
+{% extends 'base_crud.html' %}
+{% load static %}
+
+{% block title %}Historial de inventario | Prisma{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/inventario.css' %}?v=3">{% endblock %}
+{% block crud_page_class %}inventory-admin-page{% endblock %}
+
+{% block crud_header %}
+    {% url 'inventario_dashboard' as inventario_url %}
+    {% url 'perfil' as perfil_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='TRAZABILIDAD DE EXISTENCIAS' title='Historial de movimientos' description='Consulta las entradas, salidas y ajustes registrados para cada insumo.' summary_value=pagina.paginator.count summary_label='movimientos' summary_icon='fa-solid fa-clock-rotate-left' back_url=inventario_url back_label='Volver al inventario' action_url=perfil_url action_label='Panel administrativo' action_icon='fa-solid fa-house' %}
+{% endblock %}
+
+{% block crud_layout_class %}admin-crud-workspace--single{% endblock %}
+{% block crud_main_class %}insumo-main-panel{% endblock %}
+{% block crud_main %}
+    <section class="inventory-panel" aria-label="Historial de movimientos">
+        <div class="inventory-table-wrap">
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Fecha</th>
+                        <th scope="col">Insumo</th>
+                        <th scope="col">Movimiento</th>
+                        <th scope="col">Origen</th>
+                        <th scope="col">Cantidad</th>
+                        <th scope="col">Usuario</th>
+                        <th scope="col">Estado</th>
+                        {% if puede_anular %}<th scope="col">Acción</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movimiento in pagina %}
+                        <tr{% if movimiento.estado == 'ANULADO' %} class="inventory-cancelled-row"{% endif %}>
+                            <td data-label="Fecha">{{ movimiento.fecha_movimiento|date:"d/m/Y H:i" }}</td>
+                            <td data-label="Insumo"><strong>{{ movimiento.insumo.nombre }}</strong></td>
+                            <td data-label="Movimiento">
+                                <span class="inventory-status{% if movimiento.accion == 'SALIDA' %} inventory-status-out{% else %} inventory-status-in{% endif %}">
+                                    {{ movimiento.get_accion_display }}
+                                </span>
+                            </td>
+                            <td data-label="Origen">{{ movimiento.get_origen_display }}</td>
+                            <td data-label="Cantidad">
+                                {{ movimiento.cantidad|floatformat:-3 }} {{ movimiento.get_unidad_medida_display }}
+                            </td>
+                            <td data-label="Usuario">{{ movimiento.usuario|default:"Usuario eliminado" }}</td>
+                            <td data-label="Estado">
+                                {% if movimiento.estado == 'ANULADO' %}
+                                    <span class="inventory-status inventory-status-cancelled">Anulado</span>
+                                    <small class="inventory-cancel-reason">
+                                        {{ movimiento.motivo_anulacion }}
+                                        {% if movimiento.fecha_anulacion %}
+                                            <br>{{ movimiento.fecha_anulacion|date:"d/m/Y H:i" }}
+                                        {% endif %}
+                                        {% if movimiento.anulado_por %}
+                                            <br>Anulado por {{ movimiento.anulado_por }}
+                                        {% endif %}
+                                    </small>
+                                {% else %}
+                                    <span class="inventory-status inventory-status-ok">Activo</span>
+                                {% endif %}
+                            </td>
+                            {% if puede_anular %}
+                                <td data-label="Acción">
+                                    {% if movimiento.estado == 'ACTIVO' %}
+                                        <form method="post"
+                                              action="{% url 'anular_movimiento' movimiento.pk %}"
+                                              data-cancel-movement
+                                              data-movement-name="{{ movimiento.insumo.nombre }}"
+                                              data-movement-action="{{ movimiento.get_accion_display }}"
+                                              data-movement-quantity="{{ movimiento.cantidad }} {{ movimiento.get_unidad_medida_display }}">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="motivo">
+                                            <button class="insumo-button insumo-button-filter inventory-cancel-button"
+                                                    type="submit">
+                                                <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                                                Anular movimiento
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="inventory-cancelled-label">Movimiento conservado</span>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td class="inventory-empty" colspan="{% if puede_anular %}8{% else %}7{% endif %}">
+                                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                                Todavía no hay movimientos de inventario.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if pagina.has_other_pages %}
+            <nav class="inventory-pagination" aria-label="Paginación del historial">
+                {% if pagina.has_previous %}
+                    <a class="insumo-button insumo-button-filter"
+                       href="?page={{ pagina.previous_page_number }}">Anterior</a>
+                {% endif %}
+                <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+                {% if pagina.has_next %}
+                    <a class="insumo-button insumo-button-filter"
+                       href="?page={{ pagina.next_page_number }}">Siguiente</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </section>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'js/inventario.js' %}?v=3" defer></script>
+{% endblock %}
