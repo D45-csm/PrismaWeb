@@ -132,6 +132,25 @@ class GestionInsumosTests(TestCase):
         self.assertContains(management_response, 'insumo-dialog-delete')
         self.assertContains(management_response, 'id="deleteInsumoDialog"')
 
+    def test_minimo_de_stock_se_consulta_y_actualiza_desde_la_ficha(self):
+        url = reverse('detalle_insumo', args=[self.insumo.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.json()['stock_minimo'], '0.000')
+
+        response = self.client.post(url, {
+            'accion': 'editar_insumo',
+            f'insumo-{self.insumo.pk}-nombre': self.insumo.nombre,
+            f'insumo-{self.insumo.pk}-descripcion': self.insumo.descripcion,
+            f'insumo-{self.insumo.pk}-categoria': self.categoria.pk,
+            f'insumo-{self.insumo.pk}-unidad_medida': 'l',
+            f'insumo-{self.insumo.pk}-stock_minimo': '1.250',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['stock_minimo'], '1.250')
+        self.insumo.refresh_from_db()
+        self.assertEqual(self.insumo.stock_minimo, 1.25)
+
     def test_crear_insumo_invalido_reabre_formulario_centrado(self):
         response = self.client.post(
             self.url,
@@ -178,7 +197,7 @@ class GestionInsumosTests(TestCase):
 
         page = self.client.get(self.url)
         self.assertContains(page, 'js/admin_messages.js')
-        self.assertContains(page, 'js/insumos.js?v=2')
+        self.assertContains(page, 'js/insumos.js?v=3')
 
         response = self.client.post(
             url,
