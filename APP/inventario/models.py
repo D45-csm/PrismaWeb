@@ -2,6 +2,7 @@ from django.db import models
 from APP.usuarios.models import Usuario
 from APP.insumos.models import Insumo
 
+
 class Movimiento(models.Model):
     # Opciones para estandarizar las entradas y salidas
     tipo_accion = [
@@ -20,9 +21,12 @@ class Movimiento(models.Model):
         ('ml', 'Mililitro'),
         ('kg', 'Kilogramo'),
         ('l', 'Litro'),
-        ('cajas', 'Cajas'),
         ('u', 'Unidad'),
     ]
+
+    class Estado(models.TextChoices):
+        ACTIVO = 'ACTIVO', 'Activo'
+        ANULADO = 'ANULADO', 'Anulado'
 
     # campos con choices para estandarizar los tipos de movimiento y su origen
     origen = models.CharField(max_length=20, choices=origenes)
@@ -36,6 +40,20 @@ class Movimiento(models.Model):
     #DecimalField para unidades decimales, max_digits es el total de dígitos y decimal_places es la cantidad de dígitos después del punto decimal
     cantidad = models.DecimalField(max_digits=10, decimal_places=3)
     unidad_medida = models.CharField(max_length=20, choices=unidad_medida_choices)
+    estado = models.CharField(
+        max_length=10,
+        choices=Estado.choices,
+        default=Estado.ACTIVO,
+    )
+    motivo_anulacion = models.CharField(max_length=500, blank=True)
+    fecha_anulacion = models.DateTimeField(null=True, blank=True)
+    anulado_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='movimientos_anulados',
+    )
 
     def __str__(self):
         return f"{self.accion} - {self.insumo.nombre} ({self.cantidad} {self.unidad_medida})"
