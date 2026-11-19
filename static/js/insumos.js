@@ -238,6 +238,17 @@
         });
         fields.append(makeField('Unidad de medida', `${prefix}-unidad_medida`, unit));
 
+        const minimumStock = document.createElement('input');
+        minimumStock.type = 'number';
+        minimumStock.min = '0';
+        minimumStock.step = '0.001';
+        minimumStock.value = item.stock_minimo;
+        fields.append(makeField(
+            'Stock mínimo',
+            `${prefix}-stock_minimo`,
+            minimumStock,
+        ));
+
         const image = document.createElement('input');
         image.type = 'file';
         image.accept = 'image/*';
