@@ -1,0 +1,192 @@
+{% extends 'base_crud.html' %}
+{% load static %}
+
+{% block title %}Inventario | Prisma{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/inventario.css' %}?v=3">{% endblock %}
+{% block crud_page_class %}inventory-admin-page{% endblock %}
+
+{% block crud_header %}
+    {% url 'perfil' as perfil_url %}
+    {% url 'historial_movimientos' as historial_url %}
+    {% include 'partials/admin_page_heading.html' with eyebrow='CONTROL DE EXISTENCIAS' title='Inventario' description='Consulta el stock disponible y registra ajustes o conteos físicos.' summary_value=filas_inventario|length summary_label='insumos' summary_icon='fa-solid fa-boxes-stacked' back_url=perfil_url back_label='Volver al panel' action_url=historial_url action_label='Historial de movimientos' action_icon='fa-solid fa-clock-rotate-left' %}
+{% endblock %}
+
+{% block crud_layout_class %}admin-crud-workspace--single{% endblock %}
+{% block crud_main_class %}insumo-main-panel{% endblock %}
+{% block crud_main %}
+    <section class="inventory-panel" aria-label="Existencias de insumos">
+        <div class="inventory-panel-heading">
+            <div class="insumo-list-heading">
+                <div>
+                    <span class="insumo-eyebrow">STOCK ACTUAL</span>
+                    <h2>Existencias por insumo</h2>
+                    <p>El stock se calcula sumando entradas y restando salidas registradas.</p>
+                </div>
+                <div>
+                    {% if puede_ajustar %}
+                        <button class="insumo-button insumo-button-primary" type="button"
+                                data-open-inventory-dialog>
+                            <i class="fa-solid fa-sliders"></i> Registrar ajuste / conteo manual
+                        </button>
+                    {% endif %}
+                    <a class="insumo-button insumo-button-filter"
+                       href="{% url 'exportar_inventario_pdf' %}">
+                        <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Descargar PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <form class="inventory-search" method="get" action="{% url 'inventario_dashboard' %}">
+            <label class="insumo-search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <span class="visually-hidden">Buscar por nombre o categoría</span>
+                <input type="search" name="q" value="{{ query }}"
+                       placeholder="Buscar por insumo o categoría">
+            </label>
+            <label class="inventory-filter-label">
+                <span class="visually-hidden">Filtrar por nivel de stock</span>
+                <select class="insumo-input" name="stock">
+                    <option value=""{% if not filtro_stock %} selected{% endif %}>Todos los niveles de stock</option>
+                    <option value="bajo"{% if filtro_stock == 'bajo' %} selected{% endif %}>Solo stock bajo</option>
+                </select>
+            </label>
+            <button type="submit" class="insumo-button insumo-button-filter">Buscar</button>
+            {% if hay_filtros %}
+                <a class="insumo-clear-filter" href="{% url 'inventario_dashboard' %}">Limpiar filtros</a>
+            {% endif %}
+        </form>
+
+        <div class="inventory-table-wrap">
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Insumo</th>
+                        <th scope="col">Categoría</th>
+                        <th scope="col">Stock actual</th>
+                        <th scope="col">Mínimo</th>
+                        <th scope="col">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in filas_inventario %}
+                        <tr{% if fila.stock_bajo %} class="inventory-low-stock"{% endif %}>
+                            <td data-label="Insumo">
+                                <strong>{{ fila.insumo.nombre }}</strong>
+                                {% if not fila.insumo.activo %}<small>Desactivado</small>{% endif %}
+                            </td>
+                            <td data-label="Categoría">{{ fila.insumo.categoria.nombre }}</td>
+                            <td data-label="Stock actual" class="inventory-stock">
+                                {{ fila.stock|floatformat:-3 }} {{ fila.insumo.get_unidad_medida_display }}
+                            </td>
+                            <td data-label="Mínimo">
+                                {{ fila.insumo.stock_minimo|floatformat:-3 }}
+                                {{ fila.insumo.get_unidad_medida_display }}
+                            </td>
+                            <td data-label="Estado">
+                                {% if fila.stock_bajo %}
+                                    <span class="inventory-status inventory-status-low">
+                                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                                        Stock bajo
+                                    </span>
+                                {% else %}
+                                    <span class="inventory-status inventory-status-ok">Disponible</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td class="inventory-empty" colspan="5">
+                                {% if hay_filtros %}
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    No se encontraron insumos.
+                                {% else %}
+                                    <i class="fa-solid fa-box-open" aria-hidden="true"></i>
+                                    Aún no hay insumos registrados.
+                                    <a href="{% url 'gestion_insumos' %}">Gestionar insumos</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="inventory-low-stock-note">
+            <span aria-hidden="true"></span>
+            Amarillo indica stock igual o menor al mínimo configurado en la ficha del insumo.
+        </p>
+    </section>
+{% endblock %}
+
+{% block crud_after_workspace %}
+    {% if puede_ajustar %}
+        <dialog class="inventory-dialog admin-crud-editor-dialog"
+                aria-labelledby="inventoryDialogTitle"
+                data-open="{% if manual_dialog_open %}true{% endif %}">
+            <form method="post" class="inventory-form">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="registrar_manual">
+                <div class="insumo-category-dialog-header">
+                    <div>
+                        <span class="insumo-eyebrow">ACTUALIZACIÓN DE STOCK</span>
+                        <h2 id="inventoryDialogTitle">Ajuste o conteo manual</h2>
+                        <p class="crud-editor-description">
+                            El movimiento queda registrado en el historial con tu usuario.
+                        </p>
+                    </div>
+                    <button type="button" class="insumo-dialog-close"
+                            data-close-inventory-dialog aria-label="Cerrar formulario">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                {% if manual_form.non_field_errors %}
+                    <div class="admin-form-errors" role="alert">
+                        {{ manual_form.non_field_errors }}
+                    </div>
+                {% endif %}
+                <div class="insumo-field">
+                    <label for="{{ manual_form.modo.id_for_label }}">{{ manual_form.modo.label }}</label>
+                    {{ manual_form.modo }}
+                    {% for error in manual_form.modo.errors %}
+                        <small class="insumo-field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+                <div class="insumo-field">
+                    <label for="{{ manual_form.insumo.id_for_label }}">{{ manual_form.insumo.label }}</label>
+                    {{ manual_form.insumo }}
+                    {% for error in manual_form.insumo.errors %}
+                        <small class="insumo-field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+                <div class="insumo-field" id="manualActionField">
+                    <label for="{{ manual_form.tipo_accion.id_for_label }}">{{ manual_form.tipo_accion.label }}</label>
+                    {{ manual_form.tipo_accion }}
+                    {% for error in manual_form.tipo_accion.errors %}
+                        <small class="insumo-field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+                <div class="insumo-field">
+                    <label for="{{ manual_form.cantidad.id_for_label }}" id="manualQuantityLabel">
+                        Cantidad del ajuste
+                    </label>
+                    {{ manual_form.cantidad }}
+                    {% for error in manual_form.cantidad.errors %}
+                        <small class="insumo-field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+                <div class="insumo-dialog-actions">
+                    <button class="insumo-button insumo-button-filter" type="button"
+                            data-close-inventory-dialog>Cancelar</button>
+                    <button class="insumo-button insumo-button-primary" type="submit">
+                        <i class="fa-regular fa-floppy-disk" aria-hidden="true"></i> Guardar movimiento
+                    </button>
+                </div>
+            </form>
+        </dialog>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'js/inventario.js' %}?v=3" defer></script>
+{% endblock %}
