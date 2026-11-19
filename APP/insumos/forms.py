@@ -39,11 +39,13 @@ class InsumoForm(forms.ModelForm):
             'descripcion',
             'categoria',
             'unidad_medida',
+            'stock_minimo',
             'proveedor_referencia',
             'imagen',
         ]
         labels = {
             'proveedor_referencia': 'Proveedor de referencia',
+            'stock_minimo': 'Stock mínimo',
         }
         widgets = {
             'nombre': forms.TextInput(attrs={
@@ -57,6 +59,11 @@ class InsumoForm(forms.ModelForm):
             }),
             'categoria': forms.Select(attrs={'class': 'insumo-input'}),
             'unidad_medida': forms.Select(attrs={'class': 'insumo-input'}),
+            'stock_minimo': forms.NumberInput(attrs={
+                'class': 'insumo-input',
+                'min': '0',
+                'step': '0.001',
+            }),
             'proveedor_referencia': forms.Select(attrs={'class': 'insumo-input'}),
             'imagen': forms.ClearableFileInput(attrs={
                 'accept': 'image/*',
@@ -68,3 +75,12 @@ class InsumoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['proveedor_referencia'].queryset = Proveedor.objects.order_by('nombre')
         self.fields['proveedor_referencia'].empty_label = 'Sin proveedor de referencia'
+        self.fields['stock_minimo'].required = False
+
+    def clean_stock_minimo(self):
+        stock_minimo = self.cleaned_data.get('stock_minimo')
+        if stock_minimo is not None:
+            return stock_minimo
+        if self.instance.pk:
+            return self.instance.stock_minimo
+        return 0
