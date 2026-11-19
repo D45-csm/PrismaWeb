@@ -59,6 +59,7 @@ def detalle_insumo(request, pk):
             ),
             'unidad_medida': insumo.unidad_medida,
             'unidad_medida_display': insumo.get_unidad_medida_display(),
+            'stock_minimo': str(insumo.stock_minimo),
             'unidades': [
                 {'id': value, 'nombre': label}
                 for value, label in Insumo.unidad_medida_choices
@@ -115,6 +116,7 @@ def detalle_insumo(request, pk):
             'proveedor_referencia_id': insumo.proveedor_referencia_id,
             'unidad_medida': insumo.unidad_medida,
             'unidad_medida_display': insumo.get_unidad_medida_display(),
+            'stock_minimo': str(insumo.stock_minimo),
             'imagen': insumo.imagen.url if insumo.imagen else '',
             'activo': insumo.activo,
             'message': 'Insumo actualizado correctamente.',
