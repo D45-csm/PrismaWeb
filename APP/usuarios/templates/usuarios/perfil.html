@@ -175,7 +175,7 @@
             </a>
 
             <!-- Inventario -->
-            <a {% if permisos_modulos.inventario %}href="#inventario"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
+            <a {% if permisos_modulos.inventario %}href="{% url 'inventario_dashboard' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}
                class="quick-action{% if not permisos_modulos.inventario %} dashboard-module-blocked{% endif %}">
                 <div class="quick-icon blue-icon">
                     <i class="fa-solid fa-boxes-stacked"></i>
@@ -316,9 +316,14 @@
 
         <div class="section-heading">
             <div>
-                <h2>Insumos registrados</h2>
-                <p>Resumen de los insumos activos por categoría.</p>
+                <h2>Inventario</h2>
+                <p>Consulta el stock disponible y revisa qué insumos necesitan reposición.</p>
             </div>
+            {% if permisos_modulos.inventario %}
+                <a class="admin-button admin-button-primary" href="{% url 'inventario_dashboard' %}">
+                    <i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> Abrir inventario
+                </a>
+            {% endif %}
         </div>
 
         {% if permisos_modulos.inventario %}
