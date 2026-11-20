@@ -566,7 +566,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const checkout = () => {
         if (carrito.length === 0) return;
-        window.location.assign(URLS.reservas || '/reserva/');
+        const base = URLS.reservas || '/reserva/';
+        window.location.assign(base.includes('?') ? `${base}&modo=llevar` : `${base}?modo=llevar`);
     };
 
     // ============================================
@@ -924,6 +925,90 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnSubmitReserva = document.getElementById('btnSubmitReserva');
         const paymentModalOverlay = document.getElementById('paymentModalOverlay');
 
+        let sincronizarCarritoDesdeReserva = () => {};
+
+        const visualCartStrip = document.getElementById('reservaCartVisualCards');
+        const ticketSummaryItems = document.getElementById('ticketSummaryItems');
+        const ticketSummaryModality = document.getElementById('ticketSummaryModality');
+        const ticketSummarySchedule = document.getElementById('ticketSummarySchedule');
+        const ticketPaymentMethodsPreview = document.getElementById('ticketPaymentMethodsPreview');
+
+        const actualizarResumenTicketVisual = () => {
+            const visibles = reservaProductoCards.filter(card => card.classList.contains('is-visible'));
+            const lineas = [];
+            visibles.forEach((card) => {
+                const select = card.querySelector('select');
+                if (!select || !select.value) return;
+                const opt = select.selectedOptions[0];
+                const cantidad = Math.max(1, Number(card.querySelector('input[type="number"]')?.value) || 1);
+                const precio = Number(opt?.dataset.price) || 0;
+                const nombre = opt?.dataset.nombre || opt?.textContent.trim() || 'Postre Prisma';
+                const img = opt?.dataset.img || '';
+                lineas.push({
+                    slot: card.dataset.reservaProductoSlot,
+                    id: select.value,
+                    nombre,
+                    cantidad,
+                    precio,
+                    subtotal: precio * cantidad,
+                    img,
+                });
+            });
+
+            if (visualCartStrip) {
+                if (!lineas.length) {
+                    visualCartStrip.innerHTML = '';
+                    visualCartStrip.hidden = true;
+                } else {
+                    visualCartStrip.hidden = false;
+                    visualCartStrip.innerHTML = lineas.map((item) => `
+                        <div class="reserva-cart-mini-card" data-mini-slot="${escapeHTML(item.slot)}">
+                            ${item.img
+                                ? `<img src="${escapeHTML(imgUrl(item.img))}" alt="${escapeHTML(item.nombre)}">`
+                                : `<div class="mini-card-fallback"><i class="fas fa-cake-candles" aria-hidden="true"></i></div>`}
+                            <div class="mini-card-info">
+                                <strong>${escapeHTML(item.nombre)}</strong>
+                                <span>${formatearCOP(item.precio)} c/u</span>
+                            </div>
+                            <span class="mini-card-qty-badge">×${item.cantidad}</span>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            if (ticketSummaryItems) {
+                if (!lineas.length) {
+                    ticketSummaryItems.innerHTML = '<p class="ticket-empty-msg">Elige tus postres o agrégalos desde tu carrito.</p>';
+                } else {
+                    ticketSummaryItems.innerHTML = lineas.map((item) => `
+                        <div class="ticket-item-row">
+                            <span><b>${item.cantidad}×</b> ${escapeHTML(item.nombre)}</span>
+                            <strong>${formatearCOP(item.subtotal)}</strong>
+                        </div>
+                    `).join('');
+                }
+            }
+        };
+
+        const actualizarAgendaTicket = () => {
+            if (!ticketSummarySchedule) return;
+            const fechaVal = document.getElementById('fecha')?.value || '';
+            const horaEl = reservationTimeInputs.find(input => input.checked);
+            const horaText = horaEl?.closest('label')?.querySelector('span')?.textContent?.trim() || '';
+            if (fechaVal && horaText) {
+                const partes = fechaVal.split('-');
+                const fechaBonita = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : fechaVal;
+                ticketSummarySchedule.textContent = `${fechaBonita} · ${horaText}`;
+            } else if (fechaVal) {
+                const partes = fechaVal.split('-');
+                ticketSummarySchedule.textContent = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]} · Elige hora` : fechaVal;
+            } else if (horaText) {
+                ticketSummarySchedule.textContent = `Fecha pendiente · ${horaText}`;
+            } else {
+                ticketSummarySchedule.textContent = 'Elige fecha y hora';
+            }
+        };
+
         // Función para actualizar cálculos de productos
         const actualizarProductosReserva = () => {
             const visibles = reservaProductoCards.filter(card => card.classList.contains('is-visible'));
@@ -959,7 +1044,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? `${cantidad} postre${cantidad === 1 ? '' : 's'} seleccionado${cantidad === 1 ? '' : 's'} para tu reserva.`
                     : 'Elige al menos un postre para continuar.';
             }
-
+            sincronizarCarritoDesdeReserva();
+            actualizarResumenTicketVisual();
         };
 
         if (reservaProductosList && reservaProductoCards.length) {
@@ -997,6 +1083,71 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             actualizarProductosReserva();
         }
+
+        // ---------- Vínculo carrito <-> reserva ----------
+        // El carrito llena los postres de la reserva y, al revés, lo que eliges aquí se guarda en el carrito.
+        const vinculoCarrito = reservaForm.dataset.cartLink === 'true';
+        let carritoListo = false;
+        let carritoExtra = [];
+        const contadorReservaCarrito = document.getElementById('reservaCartCount');
+        const avisoCarrito = document.getElementById('reservaCartSync');
+
+        sincronizarCarritoDesdeReserva = () => {
+            if (!vinculoCarrito || !carritoListo) return;
+            const elegidos = [];
+            reservaProductoCards.filter(c => c.classList.contains('is-visible')).forEach(card => {
+                const select = card.querySelector('select');
+                if (!select || !select.value) return;
+                const id = Number(select.value);
+                const cantidad = Math.max(1, Math.min(50, Number(card.querySelector('input[type="number"]')?.value) || 1));
+                const previo = carrito.find(i => i.id === id);
+                const opcion = select.selectedOptions[0];
+                const item = previo
+                    ? { ...previo }
+                    : {
+                        id,
+                        nombre: opcion.dataset.nombre || opcion.textContent.trim(),
+                        precio: Number(opcion.dataset.price) || 0,
+                        img: opcion.dataset.img || '',
+                        tamaño: 'personal'
+                    };
+                item.cantidad = cantidad;
+                item.precio = previo ? previo.precio : item.precio;
+                elegidos.push(item);
+            });
+            carrito = [...elegidos, ...carritoExtra];
+            localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
+            actualizarContadorCarrito();
+            if (contadorReservaCarrito) contadorReservaCarrito.textContent = carrito.reduce((t, i) => t + i.cantidad, 0);
+        };
+
+        const cargarCarritoEnReserva = () => {
+            if (!vinculoCarrito) return;
+            if (contadorReservaCarrito) contadorReservaCarrito.textContent = carrito.reduce((t, i) => t + i.cantidad, 0);
+            if (!carrito.length) { carritoListo = true; return; }
+            const porProducto = new Map();
+            carrito.forEach(i => porProducto.set(i.id, (porProducto.get(i.id) || 0) + (Number(i.cantidad) || 1)));
+            const cargados = new Set();
+            let slot = 0;
+            porProducto.forEach((cantidad, id) => {
+                const card = reservaProductoCards[slot];
+                const select = card?.querySelector('select');
+                if (!select || ![...select.options].some(o => o.value === String(id))) return;
+                select.value = String(id);
+                card.querySelector('input[type="number"]').value = Math.min(50, cantidad);
+                card.classList.add('is-visible');
+                cargados.add(id);
+                slot++;
+            });
+            carritoExtra = carrito.filter(i => !cargados.has(i.id));
+            carritoListo = true;
+            actualizarProductosReserva();
+            if (avisoCarrito && cargados.size) {
+                avisoCarrito.hidden = false;
+                avisoCarrito.innerHTML = `<i class="fas fa-link" aria-hidden="true"></i> Cargamos ${cargados.size === 1 ? 'el postre' : `los ${cargados.size} postres`} de tu carrito.` +
+                    (carritoExtra.length ? ` Quedan ${carritoExtra.length} más en el carrito (máximo 5 por reserva).` : '');
+            }
+        };
 
         // Stepper Quantity Buttons (+ / -)
         document.querySelectorAll('.qty-btn-minus').forEach(btn => {
@@ -1057,8 +1208,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (btnText) {
                     btnText.textContent = esMesa
                         ? 'Confirmar mi Reserva de Mesa'
-                        : 'Registrar y Continuar al Pago Seguro';
+                        : 'Confirmar y Pagar Pedido';
                 }
+            }
+
+            if (ticketSummaryModality) {
+                ticketSummaryModality.textContent = esMesa
+                    ? 'Con Mesa · Sin prepago'
+                    : 'Para Llevar · Pago en línea';
+            }
+            if (ticketPaymentMethodsPreview) {
+                ticketPaymentMethodsPreview.hidden = esMesa;
             }
         };
 
@@ -1085,14 +1245,49 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // Horario: botón con lista desplegable (cascada)
+        const timeDd = document.getElementById('timeDd');
+        const timeDdBtn = document.getElementById('timeDdBtn');
+        const timeDdValue = document.getElementById('timeDdValue');
+        const horaProxy = document.getElementById('horaProxy');
+        const abrirHorarios = (abrir) => {
+            if (!timeDd) return;
+            timeDd.classList.toggle('is-open', abrir);
+            timeDdBtn.setAttribute('aria-expanded', String(abrir));
+            if (abrir) timeDd.querySelector('.is-selected')?.scrollIntoView({ block: 'nearest' });
+        };
         const actualizarHorarioSeleccionado = () => {
+            let elegido = null;
             reservationTimeInputs.forEach(input => {
                 input.closest('.reservation-time-option')?.classList.toggle('is-selected', input.checked);
+                if (input.checked) elegido = input;
             });
+            if (timeDdValue) {
+                const etiqueta = elegido?.closest('label')?.querySelector('span')?.textContent;
+                timeDdValue.textContent = etiqueta || 'Selecciona tu hora';
+                timeDdValue.classList.toggle('is-placeholder', !etiqueta);
+                timeDd?.classList.toggle('has-value', Boolean(etiqueta));
+            }
+            if (horaProxy) horaProxy.value = elegido ? elegido.value : '';
+            actualizarAgendaTicket();
         };
         reservationTimeInputs.forEach(input => {
-            input.addEventListener('change', actualizarHorarioSeleccionado);
+            input.addEventListener('change', () => {
+                actualizarHorarioSeleccionado();
+                if (timeDd) {
+                    abrirHorarios(false);
+                    timeDdBtn.focus({ preventScroll: true });
+                }
+            });
         });
+        if (timeDd && timeDdBtn) {
+            timeDdBtn.addEventListener('click', () => abrirHorarios(!timeDd.classList.contains('is-open')));
+            document.addEventListener('click', (e) => { if (!timeDd.contains(e.target)) abrirHorarios(false); });
+            timeDd.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') { abrirHorarios(false); timeDdBtn.focus(); }
+            });
+            horaProxy?.addEventListener('invalid', () => abrirHorarios(true));
+        }
 
         // Chips para indicaciones
         document.querySelectorAll('.reserva-chip-btn').forEach(chip => {
@@ -1127,9 +1322,24 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {}
         }
 
+        cargarCarritoEnReserva();
+
+        // Preseleccionar Para Llevar si viene desde "Proceder al pago" del carrito
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('modo') === 'llevar') {
+                actualizarModalidad('Para llevar');
+            }
+        } catch (err) {}
+
         // Date input min = hoy
         const fechaReserva = document.getElementById('fecha');
-        if (fechaReserva) fechaReserva.min = hoyISO();
+        if (fechaReserva) {
+            fechaReserva.min = hoyISO();
+            fechaReserva.addEventListener('change', actualizarAgendaTicket);
+        }
+        actualizarAgendaTicket();
+        actualizarResumenTicketVisual();
 
         // Control del Modal de Pago
         const abrirModalPago = (reservaId, totalTexto) => {
@@ -1139,6 +1349,96 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('payActionReservaId').value = reservaId;
             paymentModalOverlay.hidden = false;
         };
+
+        // Control del Modal interactivo "Mis Reservas" (Consulta por Nombre o Número)
+        const misReservasBtn = document.getElementById('btnOpenMisReservasModal');
+        const misReservasOverlay = document.getElementById('misReservasModalOverlay');
+        const btnCloseMisReservas = document.getElementById('btnCloseMisReservasModal');
+        const misReservasSearchForm = document.getElementById('misReservasQuickSearchForm');
+        const misReservasInput = document.getElementById('misReservasQuickInput');
+        const misReservasResults = document.getElementById('misReservasResults');
+
+        const buscarMisReservasAjax = async (termino = '', soloMias = false) => {
+            if (!misReservasResults) return;
+            const lookupBase = misReservasBtn?.dataset.lookupUrl || misReservasSearchForm?.action || '/reserva/consultar/';
+            const qs = soloMias ? '?mias=1' : `?q=${encodeURIComponent(termino)}`;
+            misReservasResults.innerHTML = '<p class="mis-reservas-placeholder"><i class="fas fa-spinner fa-spin"></i> Buscando reservas...</p>';
+            try {
+                const resp = await fetch(`${lookupBase}${qs}`, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                });
+                const data = await resp.json();
+                const lista = data.reservas || [];
+                if (!lista.length) {
+                    misReservasResults.innerHTML = termino
+                        ? `<p class="mis-reservas-placeholder">No encontramos reservas con "<strong>${escapeHTML(termino)}</strong>". Prueba con otro nombre, teléfono o número de reserva.</p>`
+                        : '<p class="mis-reservas-placeholder">Aún no encontramos reservas asociadas. Escribe tu nombre o tu número arriba para buscar.</p>';
+                    return;
+                }
+                misReservasResults.innerHTML = lista.map((r) => `
+                    <article class="mis-reserva-ajax-card">
+                        <div class="mis-reserva-ajax-top">
+                            <div>
+                                <strong>Reserva #${escapeHTML(r.id)}</strong>
+                                <span class="mis-reserva-client">${escapeHTML(r.nombre_cliente)}</span>
+                            </div>
+                            <span class="mis-reserva-badge">${escapeHTML(r.estado)}</span>
+                        </div>
+                        <div class="mis-reserva-ajax-meta">
+                            <span><i class="far fa-calendar"></i> ${escapeHTML(r.fecha)}</span>
+                            <span><i class="far fa-clock"></i> ${escapeHTML(r.hora)}</span>
+                            <span><i class="fas ${r.tipo_reserva === 'Mesa' ? 'fa-utensils' : 'fa-bag-shopping'}"></i> ${escapeHTML(r.tipo_reserva)}</span>
+                        </div>
+                        ${r.lineas?.length ? `<p class="mis-reserva-ajax-lines">${escapeHTML(r.lineas.join(' · '))}</p>` : ''}
+                        <div class="mis-reserva-ajax-foot">
+                            <strong>${escapeHTML(r.total)} COP</strong>
+                            <div class="mis-reserva-ajax-actions">
+                                ${r.require_payment
+                                    ? `<button type="button" class="btn-mis-res-pay" data-pay-reserva-id="${escapeHTML(r.id)}" data-pay-reserva-total="${escapeHTML(r.total)} COP"><i class="fas fa-lock"></i> Pagar Ahora</button>`
+                                    : ''}
+                                <a href="${escapeHTML(r.detail_url)}" class="btn-mis-res-view">Ver detalle <i class="fas fa-arrow-right"></i></a>
+                            </div>
+                        </div>
+                    </article>
+                `).join('');
+            } catch (err) {
+                misReservasResults.innerHTML = '<p class="mis-reservas-placeholder">No se pudo consultar en este momento. Intenta de nuevo.</p>';
+            }
+        };
+
+        if (misReservasBtn && misReservasOverlay) {
+            misReservasBtn.addEventListener('click', () => {
+                misReservasOverlay.hidden = false;
+                const val = misReservasInput?.value.trim() || '';
+                if (val) {
+                    buscarMisReservasAjax(val, false);
+                } else if (reservaForm.dataset.userLoggedIn === 'true') {
+                    buscarMisReservasAjax('', true);
+                }
+                setTimeout(() => misReservasInput?.focus(), 60);
+            });
+            btnCloseMisReservas?.addEventListener('click', () => {
+                misReservasOverlay.hidden = true;
+            });
+            misReservasOverlay.addEventListener('mousedown', (e) => {
+                if (e.target === misReservasOverlay) misReservasOverlay.hidden = true;
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !misReservasOverlay.hidden) misReservasOverlay.hidden = true;
+            });
+            misReservasSearchForm?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const val = misReservasInput?.value.trim() || '';
+                buscarMisReservasAjax(val, !val && reservaForm.dataset.userLoggedIn === 'true');
+            });
+            misReservasResults?.addEventListener('click', (e) => {
+                const payBtn = e.target.closest('[data-pay-reserva-id]');
+                if (!payBtn) return;
+                misReservasOverlay.hidden = true;
+                abrirModalPago(payBtn.dataset.payReservaId, payBtn.dataset.payReservaTotal);
+            });
+        }
 
         const cerrarModalPago = () => {
             if (paymentModalOverlay) paymentModalOverlay.hidden = true;
@@ -1316,6 +1616,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     reservaForm.dataset.submitted = 'true';
+                    if (vinculoCarrito) {
+                        carrito = carritoExtra;
+                        localStorage.setItem('prismaCarrito', JSON.stringify(carrito));
+                        actualizarContadorCarrito();
+                    }
 
                     // Si es PARA LLEVAR: Abrir modal de pago interactivo
                     if (resultado.reservation_type === 'Para llevar') {
