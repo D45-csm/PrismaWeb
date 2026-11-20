@@ -45,12 +45,14 @@
                     <button class="btn-primary btn-full" id="proceedToPayment" type="button" disabled>
                         Proceder al pago <i class="fas fa-arrow-right"></i>
                     </button>
+                    <p class="cart-summary-link-note"><i class="fas fa-link" aria-hidden="true"></i> Tu carrito está unido a Reservas: al continuar eliges Para Llevar o Mesa, horario y completas tu pago en línea.</p>
                     <a class="continue-shopping" href="{% url 'productos' %}">Seguir comprando</a>
-                    <p class="cart-summary-note"><i class="fab fa-whatsapp" aria-hidden="true"></i> El pago se coordina por WhatsApp al confirmar el pedido.</p>
+                    <p class="cart-summary-note"><i class="fas fa-lock" aria-hidden="true"></i> Para llevar permite pago inmediato con Nequi, Daviplata, Tarjeta o Bancolombia.</p>
                 </aside>
             </div>
 
         </div>
     </main>
 
+    {% include 'partials/footer_cliente.html' %}
 {% endblock %}
