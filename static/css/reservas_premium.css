@@ -1,0 +1,175 @@
+/* ===== PRISMA · Reservas v2: asistente paso a paso (nada de formulario largo) ===== */
+.reservas-luxury-page{--ink:#241a38;--soft:#6a6178;--vio:#9c7bc8;--mag:#b0197e;--line:#ece4f5;--bg:#f6f1fc;
+  --prism:linear-gradient(90deg,#e63227,#f58a1f,#f7d51d,#43b86a,#2f7de1,#7b4fd1,#b0197e);background:var(--bg)}
+.reservas-luxury-page .luxury-reservas-hero{position:relative;overflow:hidden;padding:130px 20px 130px;text-align:center;color:#fff;
+  background:linear-gradient(125deg,#241a38,#4a2a68 55%,#8a2380)}
+.reservas-luxury-page .luxury-reservas-hero::after{content:"";position:absolute;inset:auto 0 0 0;height:5px;background:var(--prism)}
+.reservas-luxury-page .luxury-hero-decor{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5}
+.reservas-luxury-page .decor-top-left{width:340px;height:340px;left:-100px;top:-100px;background:#f7d51d;opacity:.35}
+.reservas-luxury-page .decor-bottom-right{width:380px;height:380px;right:-120px;bottom:-140px;background:#2f7de1}
+.reservas-luxury-page .luxury-eyebrow{display:inline-flex;gap:10px;padding:9px 20px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);
+  font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:600;letter-spacing:.24em;color:#f1dfc4}
+.reservas-luxury-page .luxury-hero-title{margin:20px 0 12px;font-family:'Cormorant Garamond',serif;font-size:clamp(2.6rem,7vw,5rem);font-weight:600;line-height:1;color:#fff}
+.reservas-luxury-page .luxury-hero-subtitle{max-width:46ch;margin:0 auto;font-size:1.1rem;color:rgba(255,255,255,.88)}
+
+/* Layout de una sola columna centrada */
+.reservas-luxury-page .luxury-reservas-main{padding:0 0 100px;background:transparent}
+.reservas-luxury-page .luxury-reservas-grid{display:block;max-width:880px;margin:-70px auto 0;position:relative;z-index:2}
+.reservas-luxury-page .luxury-info-panel{margin-bottom:18px}
+.reservas-luxury-page .luxury-brand-card{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:16px 22px;border-radius:20px;background:rgba(255,255,255,.96);
+  box-shadow:0 14px 36px rgba(36,26,56,.12);border:1px solid var(--line)}
+.reservas-luxury-page .luxury-brand-badge{padding:7px 14px;border-radius:999px;background:linear-gradient(135deg,#f6df98,#f1dfc4);color:#43285f;font-size:.74rem;font-weight:700}
+.reservas-luxury-page .luxury-brand-card h2,.reservas-luxury-page .luxury-brand-desc{display:none}
+.reservas-luxury-page .luxury-link-btn{display:inline-flex;gap:8px;align-items:center;margin:0 0 0 auto;padding:10px 16px;border-radius:12px;background:var(--bg);
+  color:var(--mag);font-weight:700;font-size:.84rem;text-decoration:none}
+.reservas-luxury-page .luxury-link-btn:hover{background:#efe4ff}
+
+.reservas-luxury-page .luxury-form-card{padding:38px 40px 34px;border-radius:34px;background:#fff;border:1px solid var(--line);box-shadow:0 30px 70px rgba(36,26,56,.14)}
+.reservas-luxury-page .form-card-header{margin-bottom:22px;text-align:center}
+.reservas-luxury-page .form-pretitle{font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:var(--vio)}
+.reservas-luxury-page .form-title{margin:6px 0 4px;font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,2.8rem);color:var(--ink)}
+.reservas-luxury-page .form-subtitle{margin:0;color:var(--soft)}
+
+/* ---- Barra de progreso ---- */
+.wz-progress{display:flex;align-items:flex-start;justify-content:space-between;position:relative;margin:6px 0 28px;padding:0 4px}
+.wz-progress::before{content:"";position:absolute;left:8%;right:8%;top:23px;height:4px;border-radius:4px;background:var(--line)}
+.wz-progress-fill{position:absolute;left:8%;top:23px;height:4px;border-radius:4px;background:var(--prism);width:0;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.wz-step{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:none;padding:0;cursor:default}
+.wz-step .wz-dot{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:#fff;border:3px solid var(--line);color:#b7aac8;font-size:1.05rem;transition:.35s}
+.wz-step .wz-name{font-size:.72rem;font-weight:700;letter-spacing:.06em;color:#b7aac8;transition:.3s}
+.wz-step.is-done{cursor:pointer}
+.wz-step.is-done .wz-dot{background:linear-gradient(135deg,#43b86a,#2f9e5a);border-color:transparent;color:#fff}
+.wz-step.is-done .wz-name{color:var(--soft)}
+.wz-step.is-current .wz-dot{background:linear-gradient(135deg,#b0197e,#7b4fd1);border-color:transparent;color:#fff;transform:scale(1.14);box-shadow:0 12px 26px rgba(176,25,126,.4)}
+.wz-step.is-current .wz-name{color:var(--ink)}
+
+/* ---- Pasos: solo se ve uno ---- */
+.reservas-luxury-page form.wizard>.form-section-block{display:none;margin:0;padding:0;border:0;background:none}
+.reservas-luxury-page form.wizard>.form-section-block.is-current{display:block;animation:wzIn .45s cubic-bezier(.2,.7,.2,1) both}
+@keyframes wzIn{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+.reservas-luxury-page form.wizard .form-section-label{display:block;margin:0 0 20px;font-family:'Cormorant Garamond',serif;font-size:clamp(1.7rem,3.4vw,2.3rem);font-weight:700;color:var(--ink);line-height:1.1}
+.reservas-luxury-page form.wizard .step-dot{display:none}
+.reservas-luxury-page .form-hint-text{margin:0 0 14px;color:var(--soft);font-size:.92rem}
+
+/* Modalidad: 2 tarjetas enormes */
+.reservas-luxury-page .modality-cards-group{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.reservas-luxury-page .modality-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:28px 24px;border-radius:26px;background:#fff;border:3px solid var(--line);cursor:pointer;
+  transition:transform .3s,border-color .3s,box-shadow .3s}
+.reservas-luxury-page .modality-card:hover{transform:translateY(-6px);border-color:#cdb6ec;box-shadow:0 18px 40px rgba(36,26,56,.12)}
+.reservas-luxury-page .modality-card.is-selected{border-color:var(--mag);background:linear-gradient(180deg,#fff,#fdf1f8);box-shadow:0 22px 46px rgba(176,25,126,.22);transform:translateY(-4px)}
+.reservas-luxury-page .modality-icon{display:grid;place-items:center;width:68px;height:68px;border-radius:22px;background:#f1e8fb;color:var(--vio);font-size:1.7rem;transition:.3s}
+.reservas-luxury-page .modality-card.is-selected .modality-icon{background:linear-gradient(135deg,#b0197e,#7b4fd1);color:#fff;transform:rotate(-6deg) scale(1.06)}
+.reservas-luxury-page .modality-name{margin:6px 0 0;font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:700;color:var(--ink)}
+.reservas-luxury-page .modality-desc{margin:0;color:var(--soft);font-size:.92rem;line-height:1.55}
+.reservas-luxury-page .modality-badge{align-self:flex-start;padding:5px 12px;border-radius:999px;font-size:.68rem;font-weight:700}
+.reservas-luxury-page .public-badge{background:#e3f6ea;color:#1b7a43}
+.reservas-luxury-page .secure-badge{background:#fff0d8;color:#9a5b00}
+.reservas-luxury-page .modality-check{position:absolute;top:18px;right:18px;font-size:1.6rem;color:var(--mag);opacity:0;transform:scale(.4) rotate(-40deg);transition:.35s}
+.reservas-luxury-page .modality-card.is-selected .modality-check{opacity:1;transform:none}
+.reservas-luxury-page .auth-notice-box{display:flex;gap:14px;margin-top:16px;padding:16px 18px;border-radius:18px;background:#fff7e8;border:1px solid #f3ddb2}
+.reservas-luxury-page .auth-notice-box.is-logged-in{background:#ecf9f0;border-color:#bfe6cc}
+.reservas-luxury-page .auth-notice-box p{margin:2px 0 0;font-size:.88rem;color:var(--soft)}
+.reservas-luxury-page .auth-notice-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.reservas-luxury-page .btn-notice-login,.reservas-luxury-page .btn-notice-register{display:inline-flex;gap:8px;align-items:center;padding:10px 18px;border-radius:999px;font-weight:700;font-size:.84rem;text-decoration:none}
+.reservas-luxury-page .btn-notice-login{background:var(--ink);color:#fff}
+.reservas-luxury-page .btn-notice-register{background:#fff;color:var(--mag);border:1.5px solid var(--mag)}
+
+/* Campos grandes y amables */
+.reservas-luxury-page .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.reservas-luxury-page .form-group-luxury{margin-bottom:16px}
+.reservas-luxury-page .form-group-luxury>label{display:block;margin-bottom:8px;font-size:.84rem;font-weight:700;color:var(--ink)}
+.reservas-luxury-page .input-luxury-wrap{position:relative;display:flex;align-items:center;border-radius:18px;background:#faf7fe;border:2px solid #e8def5;transition:.2s}
+.reservas-luxury-page .input-luxury-wrap:focus-within{background:#fff;border-color:var(--vio);box-shadow:0 0 0 5px rgba(156,123,200,.18)}
+.reservas-luxury-page .input-ico{position:absolute;left:18px;color:var(--vio);pointer-events:none}
+.reservas-luxury-page .input-luxury-wrap input,.reservas-luxury-page .input-luxury-wrap select,.reservas-luxury-page .input-luxury-wrap textarea{
+  width:100%;min-height:58px;padding:0 18px 0 48px;border:0;background:transparent;font-size:1rem;color:var(--ink);outline:none}
+.reservas-luxury-page .input-luxury-wrap textarea{padding:16px 18px;min-height:120px;resize:vertical}
+
+/* Horarios como botones */
+.reservas-luxury-page .reservation-time-fieldset{margin:6px 0 18px;padding:0;border:0}
+.reservas-luxury-page .reservation-time-fieldset legend{margin-bottom:6px;padding:0;font-size:.84rem;font-weight:700;color:var(--ink)}
+.reservas-luxury-page .reservation-time-list{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.reservas-luxury-page .reservation-time-option{position:relative;display:flex;justify-content:center;align-items:center;gap:6px;min-height:54px;padding:0 6px;border-radius:16px;
+  background:#faf7fe;border:2px solid #e8def5;font-size:.9rem;font-weight:700;color:var(--ink);cursor:pointer;transition:.25s}
+.reservas-luxury-page .reservation-time-option input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.reservas-luxury-page .reservation-time-option>i{color:var(--vio);font-size:.8rem}
+.reservas-luxury-page .reservation-time-option:hover{border-color:var(--vio);transform:translateY(-3px)}
+.reservas-luxury-page .reservation-time-option.is-selected,.reservas-luxury-page .reservation-time-option:has(input:checked){
+  background:linear-gradient(135deg,#9c7bc8,#b0197e);border-color:transparent;color:#fff;box-shadow:0 12px 24px rgba(176,25,126,.35);transform:translateY(-3px)}
+.reservas-luxury-page .reservation-time-option.is-selected>i,.reservas-luxury-page .reservation-time-option:has(input:checked)>i{color:#fff}
+
+/* Personas */
+.reservas-luxury-page .guests-interactive-selector{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.reservas-luxury-page .guest-pills{display:flex;flex-wrap:wrap;gap:8px}
+.reservas-luxury-page .guest-pill{min-height:50px;padding:0 20px;border-radius:999px;border:2px solid #e8def5;background:#faf7fe;font-weight:700;font-size:.9rem;color:var(--ink);cursor:pointer;transition:.2s}
+.reservas-luxury-page .guest-pill:hover{border-color:var(--vio);transform:translateY(-2px)}
+.reservas-luxury-page .guest-pill.is-active{background:var(--ink);border-color:var(--ink);color:#fff;box-shadow:0 10px 22px rgba(36,26,56,.3)}
+.reservas-luxury-page .guest-manual-input{width:140px}
+.reservas-luxury-page .guest-manual-input input{padding-left:18px;min-height:50px}
+.reservas-luxury-page .unit-tag{padding-right:14px;font-size:.78rem;color:var(--soft)}
+
+/* Postres */
+.reservas-luxury-page .products-header-flex{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:6px}
+.reservas-luxury-page .products-header-flex .form-section-label{margin-bottom:6px}
+.reservas-luxury-page .badge-cap-luxury{padding:7px 14px;border-radius:999px;background:#f1e8fb;color:var(--vio);font-size:.74rem;font-weight:700}
+.reservas-luxury-page .choose-dessert-link{display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0 16px;min-height:56px;border-radius:18px;border:2px dashed #cdb6ec;color:var(--mag);font-weight:700;text-decoration:none;transition:.25s}
+.reservas-luxury-page .choose-dessert-link:hover{background:#fdf1f8;border-color:var(--mag)}
+.reservas-luxury-page .selected-products-panel{padding:0}
+.reservas-luxury-page .selected-panel-title{display:none}
+.reservas-luxury-page .reserva-producto-card{margin-bottom:12px;padding:18px;border-radius:22px;border:2px solid var(--line);background:#fcfaff}
+.reservas-luxury-page .reserva-producto-fields{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.reservas-luxury-page .qty-stepper-wrap{justify-content:space-between;padding:0 6px}
+.reservas-luxury-page .qty-stepper-wrap input{padding:0;text-align:center;min-width:0;min-height:54px;font-weight:800;font-size:1.1rem}
+.reservas-luxury-page .qty-btn-minus,.reservas-luxury-page .qty-btn-plus{flex:none;width:42px;height:42px;border:0;border-radius:14px;background:#f1e8fb;color:var(--mag);font-size:1.2rem;font-weight:800;cursor:pointer;transition:.2s}
+.reservas-luxury-page .qty-btn-minus:hover,.reservas-luxury-page .qty-btn-plus:hover{background:var(--mag);color:#fff;transform:scale(1.08)}
+.reservas-luxury-page .luxury-btn-outline{display:inline-flex;align-items:center;gap:8px;margin-top:6px;min-height:50px;padding:0 24px;border-radius:999px;border:2px solid var(--vio);background:transparent;color:var(--vio);font-weight:700;cursor:pointer;transition:.2s}
+.reservas-luxury-page .luxury-btn-outline:hover{background:var(--vio);color:#fff}
+.reservas-luxury-page .luxury-total-card{margin-top:18px;padding:22px 26px;border-radius:24px;background:linear-gradient(125deg,#241a38,#4a2a68);color:#fff;box-shadow:0 18px 40px rgba(36,26,56,.3)}
+.reservas-luxury-page .total-row-main{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.reservas-luxury-page .total-label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#f1dfc4}
+.reservas-luxury-page .total-note{display:block;margin-top:4px;color:rgba(255,255,255,.72);font-size:.78rem}
+.reservas-luxury-page .total-value{font-family:'Playfair Display',serif;font-size:2.4rem;font-weight:700;color:#f6df98;white-space:nowrap}
+
+/* Chips */
+.reservas-luxury-page .chips-container-reserva{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.reservas-luxury-page .reserva-chip-btn{padding:12px 18px;border-radius:999px;border:2px solid #e8def5;background:#faf7fe;font-size:.88rem;font-weight:700;color:var(--ink);cursor:pointer;transition:.2s}
+.reservas-luxury-page .reserva-chip-btn:hover{background:#f1e8fb;border-color:var(--vio);transform:translateY(-3px)}
+
+/* ---- Navegación del asistente ---- */
+.wz-nav{display:flex;gap:12px;margin-top:30px;padding-top:24px;border-top:2px dashed var(--line)}
+.wz-btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:60px;padding:0 30px;border:0;border-radius:20px;font-family:'Montserrat',sans-serif;font-size:.9rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:transform .25s,box-shadow .25s,background .25s}
+.wz-btn--back{background:#f1e8fb;color:var(--ink)}
+.wz-btn--back:hover{background:#e6d8f7;transform:translateX(-3px)}
+.wz-btn--next{flex:1;color:#fff;background:linear-gradient(115deg,#b0197e,#7b4fd1);box-shadow:0 16px 34px rgba(176,25,126,.38)}
+.wz-btn--next:hover{transform:translateY(-3px);box-shadow:0 22px 44px rgba(176,25,126,.48)}
+.wz-btn[hidden]{display:none}
+.reservas-luxury-page .form-submit-block{margin-top:30px;padding-top:24px;border-top:2px dashed var(--line)}
+.reservas-luxury-page form.wizard .form-submit-block{display:none}
+.reservas-luxury-page form.wizard.is-last .form-submit-block{display:block;margin-top:0;border-top:0;padding-top:0}
+.reservas-luxury-page form.wizard.is-last .wz-nav{border-top:0;margin-top:22px;padding-top:0}
+.reservas-luxury-page form.wizard.is-last .wz-btn--next{display:none}
+.reservas-luxury-page .luxury-btn-gold{display:inline-flex;justify-content:center;align-items:center;gap:12px;width:100%;min-height:68px;border:0;border-radius:22px;
+  background:linear-gradient(115deg,#43b86a,#2f9e5a 40%,#b0197e);color:#fff;font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+  box-shadow:0 18px 40px rgba(47,158,90,.4);transition:.25s}
+.reservas-luxury-page .luxury-btn-gold:hover:not(:disabled){transform:translateY(-3px) scale(1.01)}
+.reservas-luxury-page .luxury-btn-gold:disabled{opacity:.55;cursor:not-allowed}
+.reservas-luxury-page .form-privacy-note{margin:14px 0 0;text-align:center;font-size:.82rem;color:var(--soft)}
+.reservas-luxury-page .floating-gold-pill{background:linear-gradient(115deg,#b0197e,#7b4fd1);color:#fff;border-radius:999px;box-shadow:0 12px 30px rgba(176,25,126,.4)}
+
+@media (max-width:760px){
+  .reservas-luxury-page .luxury-reservas-hero{padding:110px 18px 110px}
+  .reservas-luxury-page .luxury-reservas-grid{margin-top:-60px;padding:0 12px}
+  .reservas-luxury-page .luxury-brand-card{padding:12px 16px}
+  .reservas-luxury-page .luxury-link-btn{margin:0;width:100%;justify-content:center}
+  .reservas-luxury-page .luxury-form-card{padding:26px 16px 22px;border-radius:26px}
+  .reservas-luxury-page .modality-cards-group,.reservas-luxury-page .form-grid-2,.reservas-luxury-page .reserva-producto-fields{grid-template-columns:1fr}
+  .reservas-luxury-page .modality-card{padding:20px}
+  .reservas-luxury-page .reservation-time-list{grid-template-columns:repeat(3,1fr);gap:8px}
+  .reservas-luxury-page .reservation-time-option>i{display:none}
+  .wz-step .wz-dot{width:42px;height:42px;font-size:.9rem}
+  .wz-progress::before,.wz-progress-fill{top:19px}
+  .wz-step .wz-name{font-size:.62rem;letter-spacing:0}
+  .reservas-luxury-page .total-value{font-size:1.9rem}
+  .wz-btn{min-height:56px;padding:0 20px;font-size:.82rem}
+}
+@media (prefers-reduced-motion:reduce){.reservas-luxury-page form.wizard>.form-section-block.is-current{animation:none}}
