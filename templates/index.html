@@ -2,10 +2,11 @@
 {% load static %}
 
 {% block title %}Prisma - El arte del postre{% endblock %}
-{% block body_attrs %} class="customer-area"{% endblock %}
+{% block body_attrs %} class="customer-area home-page"{% endblock %}
 
 {% block extra_head %}
     <link rel="preload" as="image" href="{% static 'img/imagen_inicio.jpeg' %}" fetchpriority="high">
+    <link rel="stylesheet" href="{% static 'css/home_premium.css' %}?v=2">
 {% endblock %}
 
 {% block content %}
@@ -20,9 +21,6 @@
             <div class="home-hero-actions">
                 <a href="{% url 'productos' %}" class="hero-cta">
                     Ver nuestros cheesecakes <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                </a>
-                <a href="{% url 'reservas' %}" class="home-hero-secondary">
-                    Hacer una reserva <i class="far fa-calendar-check" aria-hidden="true"></i>
                 </a>
             </div>
         </div>
@@ -115,11 +113,12 @@
                         <span class="price">$15,000</span>
                     </div>
                 </div>
-                <div class="featured-card">
+                <div class="featured-card featured-card--navidad">
                     <div class="featured-image">
                         <img src="{% static 'img/hero_gallery/postre_temporada_navidad.webp' %}" alt="Postre artesanal especial de Navidad servido en su plato" loading="lazy" decoding="async">
                     </div>
                     <div class="featured-info">
+                        <span class="featured-season-tag"><i class="fas fa-snowflake" aria-hidden="true"></i> Edición Especial</span>
                         <h3>Temporada Navideña</h3>
                         <p>Un postre festivo para compartir y celebrar en familia.</p>
                         <span class="price">$15,000</span>
@@ -130,4 +129,5 @@
     </section>
 
     {% include 'partials/footer_cliente.html' %}
+    <script src="{% static 'js/home_premium.js' %}?v=2" defer></script>
 {% endblock %}
