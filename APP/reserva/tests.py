@@ -673,3 +673,63 @@ class ReservaWorkflowTests(TestCase):
         self.assertRedirects(cancel_resp, reverse('gestion_reservas'))
         reserva.refresh_from_db()
         self.assertEqual(reserva.estado, 'Cancelada')
+
+    def test_customer_can_lookup_reservations_by_name_or_number_ajax_and_html(self):
+        reserva = Reserva.objects.create(
+            nombre_cliente='Lucía Fernández',
+            telefono='311 868 9862',
+            fecha_reserva=date.today() + timedelta(days=2),
+            hora='15:30',
+            tipo_reserva='Para llevar',
+            estado='Pendiente de pago',
+        )
+        DetalleReserva.objects.create(
+            reserva=reserva,
+            producto=self.producto,
+            nombre_producto=self.producto.nombre,
+            cantidad=2,
+            precio_unitario=self.producto.precio,
+        )
+
+        # Búsqueda por nombre vía JSON (usada por el botón Mis Reservas)
+        by_name_json = self.client.get(
+            reverse('consultar_reserva'),
+            {'q': 'Lucía'},
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(by_name_json.status_code, 200)
+        payload = by_name_json.json()
+        self.assertTrue(payload['ok'])
+        self.assertEqual(len(payload['reservas']), 1)
+        self.assertEqual(payload['reservas'][0]['id'], reserva.pk)
+        self.assertTrue(payload['reservas'][0]['require_payment'])
+
+        # Búsqueda por número de teléfono sin espacios vía HTML
+        by_phone_html = self.client.get(
+            reverse('consultar_reserva'),
+            {'q': '3118689862'},
+        )
+        self.assertEqual(by_phone_html.status_code, 200)
+        self.assertContains(by_phone_html, f'Reserva #{reserva.pk}')
+        self.assertContains(by_phone_html, 'Lucía Fernández')
+
+        # El acceso por consulta debe habilitar abrir el detalle directamente
+        detail_resp = self.client.get(reverse('reserva_cliente', args=[reserva.pk]))
+        self.assertEqual(detail_resp.status_code, 200)
+
+    def test_reservas_header_footer_and_experience_elements_render(self):
+        response = self.client.get(reverse('reservas'))
+        self.assertEqual(response.status_code, 200)
+        # Barra centrada + frase a la izq del logo + iconos reales
+        self.assertContains(response, 'brand-combo')
+        self.assertContains(response, 'El Arte Del Postre')
+        self.assertContains(response, 'id="headerProductSearch"')
+        # Botón Mis Reservas + unión con el carrito
+        self.assertContains(response, 'id="btnOpenMisReservasModal"')
+        self.assertContains(response, 'id="reservaCartVisualCards"')
+        self.assertContains(response, 'id="ticketSummaryItems"')
+        # Footer con iconos WhatsApp, Instagram, TikTok + accesibilidad derecha
+        self.assertContains(response, 'footer-brand-ico--wa')
+        self.assertContains(response, 'footer-brand-ico--ig')
+        self.assertContains(response, 'footer-brand-ico--tt')
+        self.assertContains(response, 'data-asw-position="bottom-right"')
