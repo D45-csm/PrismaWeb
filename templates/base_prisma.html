@@ -8,11 +8,15 @@
     <!-- Preconnect / DNS-prefetch para recursos externos (acelera carga de red) -->
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 
     <!-- CSS del sitio -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=80">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,600;1,700&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600;1,700&display=swap">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=86">
+    <link rel="stylesheet" href="{% static 'css/prisma_polish.css' %}?v=2">
     <link rel="stylesheet" href="{% static 'css/messages.css' %}?v=3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -36,8 +40,6 @@
     </noscript>
 </head>
 <body{% block body_attrs %}{% endblock %}>
-    <!-- Barra de progreso superior para transiciones instantáneas entre páginas -->
-    <div id="page-progress" aria-hidden="true"></div>
 
 {% block content %}{% endblock %}
 {% include 'partials/messages.html' %}
@@ -59,8 +61,8 @@
             }
         };
     </script>
-    <script src="{% static 'js/script.js' %}?v=15" defer></script>
+    <script src="{% static 'js/script.js' %}?v=17" defer></script>
     <script src="{% static 'js/admin_messages.js' %}" defer></script>
-    <script src="{% static 'js/sienna.min.js' %}" defer></script>
+    <script src="{% static 'js/sienna.min.js' %}" data-asw-position="bottom-right" defer></script>
 </body>
 </html>
