@@ -1,0 +1,149 @@
+/* ===== PRISMA · Inicio WOW v2 (la imagen de fondo NO se toca) ===== */
+.customer-area{
+  --ink:#241a38;--ink2:#5b5369;--lilac:#f5effd;--violet:#9c7bc8;--gold:#f1dfc4;--cream:#fffaf3;--mag:#b0197e;
+  --prism:linear-gradient(90deg,#e63227,#f58a1f,#f7d51d,#43b86a,#2f7de1,#7b4fd1,#b0197e);
+}
+html.p-js .p-reveal{opacity:0;transform:translateY(34px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+html.p-js .p-reveal.in{opacity:1;transform:none}
+
+/* ---------- HERO ---------- */
+.customer-area .home-hero{display:grid;place-items:center;min-height:max(720px,100svh)}
+.customer-area .home-hero-shade{background:
+  radial-gradient(ellipse at 50% 42%,rgba(18,10,28,.12) 0%,rgba(18,10,28,.55) 80%),
+  linear-gradient(180deg,rgba(18,10,28,.35) 0%,rgba(18,10,28,0) 35%,rgba(18,10,28,.7) 100%)}
+.customer-area .home-hero-content{padding:150px 0 190px;position:relative}
+.customer-area .home-hero-eyebrow{display:inline-flex;align-items:center;gap:12px;padding:10px 22px;margin-bottom:28px;border-radius:999px;
+  border:1px solid rgba(255,243,223,.5);background:rgba(255,255,255,.1);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  font-family:'Montserrat',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.28em;color:#fff3df;animation:pUp .8s ease both}
+.customer-area .home-hero-eyebrow::before{content:"✦";color:#f7d51d;letter-spacing:0}
+.customer-area .home-hero-eyebrow::after{content:"✦";color:#f58a1f;letter-spacing:0}
+.customer-area .home-hero-content h1{max-width:13ch;margin:0;font-size:clamp(3.4rem,9vw,8rem);font-weight:600;line-height:.95;
+  letter-spacing:-.005em;text-shadow:0 6px 40px rgba(0,0,0,.45);animation:pUp .9s .1s ease both}
+.customer-area .home-hero-content h1 span{display:block;margin-top:.04em;font-family:'Cormorant Garamond',Georgia,serif;font-style:normal;font-weight:600;
+  background:var(--prism);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 4px 18px rgba(0,0,0,.4))}
+.customer-area .home-hero-content h1::after{content:"";display:block;width:clamp(110px,16vw,200px);height:5px;margin:26px auto 0;border-radius:5px;background:var(--prism);
+  box-shadow:0 0 24px rgba(247,213,29,.5)}
+.customer-area .home-hero-content p{max-width:42ch;margin:26px auto 34px;font-size:clamp(1.05rem,1.7vw,1.3rem);animation:pUp .9s .2s ease both}
+.customer-area .home-hero-actions{gap:14px;animation:pUp .9s .3s ease both}
+.customer-area .home-hero-actions .hero-cta{display:inline-flex;align-items:center;gap:12px;min-height:60px;padding:0 36px;border:0;border-radius:999px;
+  font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  box-shadow:0 18px 40px rgba(0,0,0,.35),0 0 0 6px rgba(255,255,255,.14);transition:transform .25s,box-shadow .25s}
+.customer-area .home-hero-actions .hero-cta:hover{transform:translateY(-4px) scale(1.02)}
+.customer-area .home-hero-actions .hero-cta i{transition:transform .25s}
+.customer-area .home-hero-actions .hero-cta:hover i{transform:translateX(6px)}
+@keyframes pUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+
+/* ---------- HISTORIA ---------- */
+.customer-area .brand-story{padding:110px 24px;background:var(--lilac);text-align:left;overflow:hidden;position:relative}
+.customer-area .brand-story::before{display:none}
+.customer-area .brand-story::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle,rgba(176,25,126,.18),transparent 70%);pointer-events:none}
+.customer-area .brand-story .container{max-width:1180px;display:grid;grid-template-columns:1.1fr .9fr;gap:60px;align-items:center;position:relative;z-index:1}
+.story-left h2{margin:14px 0 0;font-family:'Cormorant Garamond',serif;font-size:clamp(2.6rem,5.6vw,5rem);font-weight:600;line-height:1.02;color:var(--ink);letter-spacing:0}
+.story-left h2 span{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-style:normal;font-weight:600;
+  background:var(--prism);-webkit-background-clip:text;background-clip:text;color:transparent}
+.story-right p{max-width:none;margin:0 0 30px;font-size:1.15rem;line-height:1.85;color:var(--ink2);text-align:left}
+.story-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.story-stat{padding:22px 14px;border-radius:22px;background:#fff;text-align:center;box-shadow:0 12px 30px rgba(36,26,56,.08);border:1px solid rgba(156,123,200,.2);transition:.3s}
+.story-stat:hover{transform:translateY(-6px) rotate(-1deg)}
+.story-stat strong{display:block;font-family:'Playfair Display',serif;font-size:2.1rem;line-height:1;background:linear-gradient(135deg,#b0197e,#7b4fd1);-webkit-background-clip:text;background-clip:text;color:transparent}
+.story-stat span{display:block;margin-top:8px;font-size:.78rem;font-weight:600;letter-spacing:.06em;color:var(--ink2)}
+
+/* ---------- SABORES (bento) ---------- */
+.customer-area .featured{padding:110px 0;background:var(--cream)}
+.customer-area .featured .container{max-width:1280px}
+.customer-area .featured .section-title{margin-bottom:12px}
+.customer-area .featured .title-text{font-family:'Cormorant Garamond',serif;font-size:clamp(2.4rem,5vw,4.2rem);font-weight:600;font-style:normal;letter-spacing:.1em;color:var(--ink)}
+.customer-area .featured .title-line{width:140px;height:5px;margin:18px auto 0;border-radius:5px;background:var(--prism)}
+.customer-area .featured-intro{max-width:50ch;margin:0 auto 56px;text-align:center;font-size:1.1rem;color:var(--ink2)}
+.customer-area .featured-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:260px;gap:18px}
+.customer-area .featured-card{position:relative;display:block;border:0;border-radius:28px;overflow:hidden;background:#241a38;
+  box-shadow:0 16px 40px rgba(36,26,56,.16);transition:transform .45s cubic-bezier(.2,.7,.2,1),box-shadow .45s}
+.customer-area .featured-card:first-child{grid-column:span 2;grid-row:span 2}
+.customer-area .featured-card:last-child{grid-column:span 2}
+.customer-area .featured-card:hover{transform:translateY(-8px) scale(1.01);box-shadow:0 30px 64px rgba(36,26,56,.3)}
+.customer-area .featured-image{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto}
+.customer-area .featured-image::after{display:none}
+.customer-area .featured-image img{width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1)}
+.customer-area .featured-card:hover .featured-image img{transform:scale(1.12)}
+.customer-area .featured-card::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(20,12,32,0) 38%,rgba(20,12,32,.88) 100%)}
+.customer-area .featured-card::after{display:none}
+.customer-area .featured-info{position:absolute;inset:auto 0 0 0;z-index:2;display:block;padding:24px;color:#fff}
+.customer-area .featured-info h3{margin:0 0 6px;font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:700;color:#fff;line-height:1.05}
+.customer-area .featured-card:first-child .featured-info h3{font-size:2.8rem}
+.customer-area .featured-info p{max-height:0;margin:0;overflow:hidden;opacity:0;color:rgba(255,255,255,.88);font-size:.92rem;line-height:1.5;transition:max-height .5s ease,opacity .5s ease,margin .5s}
+.customer-area .featured-card:hover .featured-info p,.customer-area .featured-card:first-child .featured-info p{max-height:90px;opacity:1;margin-bottom:12px}
+.customer-area .featured-info .price{display:inline-block;margin-top:2px;padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.94);color:var(--mag);
+  font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:800;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+/* Tarjeta especial Temporada Navideña: posición cambiada (texto izq + postre completo der) */
+.customer-area .featured-card--navidad{background:linear-gradient(125deg,#fffaf4 0%,#f5e7db 54%,#ebd4c2 100%);border:1px solid rgba(184,126,69,.22)}
+.customer-area .featured-card--navidad::before{display:none}
+.customer-area .featured-card--navidad .featured-image{inset:8px 18px 8px auto;left:auto;width:46%;height:calc(100% - 16px);background:transparent}
+.customer-area .featured-card--navidad .featured-image img{object-fit:contain;object-position:center;mix-blend-mode:multiply;filter:drop-shadow(0 12px 18px rgba(72,42,32,.14))}
+.customer-area .featured-card--navidad:hover .featured-image img{transform:scale(1.06)}
+.customer-area .featured-card--navidad .featured-info{inset:0 auto 0 0;right:auto;width:54%;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:24px 26px;text-align:left;color:#241a38}
+.customer-area .featured-card--navidad .featured-season-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;margin-bottom:10px;border-radius:999px;background:rgba(176,25,126,.12);color:#9d196f;font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.customer-area .featured-card--navidad .featured-info h3{margin:0 0 8px;color:#241a38;font-size:2rem;text-align:left !important;margin-left:0 !important}
+.customer-area .featured-card--navidad .featured-info p{max-height:none;opacity:1;margin:0 0 14px;color:#5b5369;font-size:.92rem}
+.customer-area .featured-card--navidad .featured-info .price{background:linear-gradient(115deg,#b0197e,#7b4fd1);color:#fff;box-shadow:0 10px 22px rgba(176,25,126,.25)}
+.customer-area .featured-card--seasonal{background:linear-gradient(135deg,#fffaf3,#f2e8de)}
+.customer-area .featured-card--seasonal::before{display:none}
+.customer-area .featured-card--seasonal .featured-image{inset:0 0 58px}
+.customer-area .featured-card--seasonal .featured-image img{object-fit:cover;object-position:center 58%;transform:none}
+.customer-area .featured-card--seasonal:hover .featured-image img{transform:scale(1.03)}
+.customer-area .featured-card--seasonal .featured-info{inset:auto 0 0;display:flex;min-height:58px;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px;
+  background:var(--prism);color:#fff}
+.customer-area .featured-card--seasonal .featured-info h3{margin:0;color:#fff;font-size:1.45rem;font-style:normal}
+.customer-area .featured-card--seasonal .featured-info p{display:none}
+.customer-area .featured-card--seasonal .featured-info .price{flex:none;margin:0;background:rgba(255,255,255,.94);color:#73275f}
+.featured-more{display:flex;justify-content:center;margin-top:60px}
+.featured-more a{display:inline-flex;align-items:center;gap:14px;min-height:62px;padding:0 42px;border-radius:999px;
+  background:linear-gradient(115deg,#b0197e,#7b4fd1);color:#fff;font-family:'Montserrat',sans-serif;font-size:.86rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  text-decoration:none;box-shadow:0 18px 40px rgba(176,25,126,.38);transition:.3s}
+.featured-more a:hover{transform:translateY(-4px) scale(1.03);color:#fff}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:1024px){
+  .customer-area .brand-story .container{grid-template-columns:1fr;gap:34px}
+  .customer-area .featured-grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:240px}
+  .customer-area .featured-card:last-child{grid-column:span 2}
+}
+@media (max-width:768px){
+  .customer-area .home-hero{min-height:100svh}
+  .customer-area .home-hero-content{padding:130px 0 210px}
+  .customer-area .home-hero-eyebrow{padding:8px 14px;font-size:.6rem;letter-spacing:.18em;margin-bottom:18px}
+  .customer-area .home-hero-content h1{font-size:clamp(2.45rem,11vw,3.8rem)}
+  .customer-area .home-hero-actions{flex-direction:column;width:100%;align-items:center}
+  .customer-area .home-hero-actions .hero-cta{width:min(100%,320px);justify-content:center;min-height:56px}
+  .customer-area .brand-story{padding:70px 20px}
+  .story-stats{gap:10px}
+  .story-stat{padding:16px 8px}
+  .story-stat strong{font-size:1.6rem}
+  .story-stat span{font-size:.68rem}
+  .customer-area .featured{padding:72px 0}
+  .customer-area .featured-grid{grid-auto-rows:210px;gap:12px}
+  .customer-area .featured-card{border-radius:22px}
+  .customer-area .featured-card:first-child{grid-row:span 2}
+  .customer-area .featured-info{padding:16px}
+  .customer-area .featured-info h3{font-size:1.25rem}
+  .customer-area .featured-card:first-child .featured-info h3{font-size:1.9rem}
+  .customer-area .featured-info .price{padding:5px 12px;font-size:.76rem}
+  .customer-area .featured-info p{display:none}
+  .customer-area .featured-card:first-child .featured-info p{display:block}
+}
+@media (max-width:420px){
+  .customer-area .featured-grid{grid-template-columns:1fr;grid-auto-rows:250px}
+  .customer-area .featured-card:first-child{grid-column:auto;grid-row:span 1}
+  .customer-area .featured-card:last-child{grid-column:auto}
+  .customer-area .featured-card:first-child .featured-info h3{font-size:1.5rem}
+  .customer-area .featured-card:first-child .featured-info p{display:none}
+  .customer-area .featured-card--navidad .featured-image{inset:10px 10px 72px auto;width:44%;height:auto}
+  .customer-area .featured-card--navidad .featured-info{width:56%;padding:16px}
+  .customer-area .featured-card--navidad .featured-info h3{font-size:1.35rem}
+  .customer-area .featured-card--navidad .featured-info p{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  html.p-js .p-reveal{opacity:1;transform:none;transition:none}
+  .customer-area .home-hero-eyebrow,.customer-area .home-hero-content h1,.customer-area .home-hero-content p,.customer-area .home-hero-actions{animation:none}
+}
