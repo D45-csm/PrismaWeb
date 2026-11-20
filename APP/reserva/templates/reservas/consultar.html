@@ -1,7 +1,7 @@
 {% extends 'base_prisma.html' %}
 {% load static %}
 
-{% block title %}Consultar mi reserva | Prisma{% endblock %}
+{% block title %}Mis Reservas y Consulta | Prisma{% endblock %}
 {% block body_attrs %} class="customer-area reservation-lookup-page luxury-page"{% endblock %}
 
 {% block content %}
@@ -9,9 +9,9 @@
 
     <section class="reservation-subhero luxury-subhero reservation-subhero--compact">
         <div class="container reservation-subhero-content text-center">
-            <span class="luxury-eyebrow"><i class="fas fa-search"></i> ATENCIÓN PERSONALIZADA</span>
+            <span class="luxury-eyebrow"><i class="fas fa-search"></i> MIS RESERVAS</span>
             <h1>Consulta tu reserva</h1>
-            <p>Accede a los detalles, completa tu pago seguro o gestiona tu visita.</p>
+            <p>Busca con tu nombre o tu número (teléfono o número de reserva) para ver detalles, pagar o gestionar.</p>
         </div>
     </section>
 
@@ -19,32 +19,91 @@
         <div class="container reservation-lookup-layout">
             <section class="reservation-panel reservation-lookup-card shadow-luxury">
                 <div class="reservation-lookup-icon"><i class="fas fa-calendar-check"></i></div>
-                <span class="reservation-kicker">MIS RESERVAS</span>
-                <h2>Volvamos a tu experiencia</h2>
-                <p>Ingresa el número de reserva y el teléfono registrado para verificar tu identidad y mostrarte tu información de forma segura.</p>
+                <span class="reservation-kicker">BUSCAR POR NOMBRE O NÚMERO</span>
+                <h2>Encuentra tus reservas</h2>
+                <p>Escribe tu nombre completo, tu número de WhatsApp/teléfono o el número de tu reserva.</p>
 
                 {% include 'partials/messages.html' %}
 
-                <form method="post" class="mt-4">
-                    {% csrf_token %}
+                <form method="get" action="{% url 'consultar_reserva' %}" class="mt-4">
                     <div class="form-group-luxury">
-                        <label for="reserva_id">Número de reserva *</label>
+                        <label for="q">Nombre o número *</label>
                         <div class="input-luxury-wrap">
-                            <i class="fas fa-hashtag input-ico"></i>
-                            <input type="number" id="reserva_id" name="reserva_id" min="1" placeholder="Ej. 1024" required>
-                        </div>
-                    </div>
-                    <div class="form-group-luxury">
-                        <label for="telefono">Teléfono registrado *</label>
-                        <div class="input-luxury-wrap">
-                            <i class="fas fa-phone-alt input-ico"></i>
-                            <input type="tel" id="telefono" name="telefono" maxlength="30" placeholder="El mismo número usado al reservar" required>
+                            <i class="fas fa-search input-ico"></i>
+                            <input type="search" id="q" name="q" maxlength="100"
+                                   value="{{ termino_busqueda|default:'' }}"
+                                   placeholder="Ej. María, 3118689862 o 1024" required>
                         </div>
                     </div>
                     <button class="luxury-btn-gold btn-full mt-3" type="submit">
-                        <i class="fas fa-arrow-right"></i> Ver mi reserva
+                        <i class="fas fa-search"></i> Buscar Mis Reservas
                     </button>
                 </form>
+
+                {% if resultados_busqueda is not None %}
+                    <div class="lookup-results-section mt-4" aria-live="polite">
+                        <h3 class="lookup-results-title">
+                            {% if resultados_busqueda %}
+                                Encontramos {{ resultados_busqueda|length }} reserva{{ resultados_busqueda|length|pluralize:"s" }}
+                            {% else %}
+                                No encontramos reservas con "{{ termino_busqueda }}"
+                            {% endif %}
+                        </h3>
+
+                        {% if resultados_busqueda %}
+                            <div class="lookup-results-cards">
+                                {% for res in resultados_busqueda %}
+                                    <article class="lookup-result-card">
+                                        <div class="lookup-result-top">
+                                            <strong>Reserva #{{ res.pk }} · {{ res.nombre_cliente }}</strong>
+                                            <span class="reservation-status reservation-status--{{ res.estado|slugify }}">
+                                                {{ res.estado }}
+                                            </span>
+                                        </div>
+                                        <p class="lookup-result-meta">
+                                            <span><i class="far fa-calendar"></i> {{ res.fecha_reserva|date:"d/m/Y" }}</span>
+                                            <span><i class="far fa-clock"></i> {{ res.hora|time:"H:i"|default:"Por acordar" }}</span>
+                                            <span><i class="fas {% if res.tipo_reserva == 'Mesa' %}fa-utensils{% else %}fa-bag-shopping{% endif %}"></i> {{ res.tipo_reserva }}</span>
+                                        </p>
+                                        <div class="lookup-result-actions">
+                                            <a href="{% url 'reserva_cliente' res.pk %}" class="luxury-btn-gold btn-sm">
+                                                {% if res.tipo_reserva == 'Para llevar' and not res.pago_confirmado and res.estado != 'Cancelada' %}
+                                                    <i class="fas fa-lock"></i> Ver y Pagar
+                                                {% else %}
+                                                    <i class="fas fa-eye"></i> Ver y Gestionar
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                    </article>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <details class="lookup-classic-details mt-4">
+                    <summary>¿Prefieres acceso directo con # de reserva y teléfono exacto?</summary>
+                    <form method="post" class="mt-3">
+                        {% csrf_token %}
+                        <div class="form-group-luxury">
+                            <label for="reserva_id">Número de reserva *</label>
+                            <div class="input-luxury-wrap">
+                                <i class="fas fa-hashtag input-ico"></i>
+                                <input type="number" id="reserva_id" name="reserva_id" min="1" placeholder="Ej. 1024" required>
+                            </div>
+                        </div>
+                        <div class="form-group-luxury">
+                            <label for="telefono">Teléfono registrado *</label>
+                            <div class="input-luxury-wrap">
+                                <i class="fas fa-phone-alt input-ico"></i>
+                                <input type="tel" id="telefono" name="telefono" maxlength="30" placeholder="El mismo número usado al reservar" required>
+                            </div>
+                        </div>
+                        <button class="luxury-btn-outline btn-full mt-2" type="submit">
+                            <i class="fas fa-arrow-right"></i> Ver mi reserva directa
+                        </button>
+                    </form>
+                </details>
 
                 <div class="text-center mt-4">
                     <a class="reservation-back-link" href="{% url 'reservas' %}">
@@ -65,7 +124,7 @@
                 </ul>
                 <div class="reservation-help mt-4">
                     <i class="fas fa-shield-halved text-warning"></i>
-                    <span>Tus datos están protegidos. Solo tú puedes consultar con tu número de reserva y teléfono.</span>
+                    <span>Busca fácilmente usando tu nombre o tu número de contacto / reserva.</span>
                 </div>
             </aside>
         </div>
