@@ -1,0 +1,1 @@
+/* Barra de vista previa desactivada para mantener la interfaz limpia */
