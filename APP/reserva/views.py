@@ -361,6 +361,9 @@ def _render_reserva_form(request, template='reservas/reservas.html', **context):
         context.setdefault('reserva_total', _formatear_cop(reserva_actual.total))
         if template == 'reservas/detalle.html':
             context.setdefault('whatsapp_url', _url_whatsapp_reserva(reserva_actual))
+    mis_reservas_count = 0
+    if request.user.is_authenticated:
+        mis_reservas_count = Reserva.objects.filter(usuario=request.user).count()
     return render(request, template, {
         'productos': productos.order_by('nombre'),
         'slots_productos': SLOTS_PRODUCTOS,
@@ -369,6 +372,7 @@ def _render_reserva_form(request, template='reservas/reservas.html', **context):
         'canales_reserva': Reserva.choices_canal,
         'opciones_asistencia': Reserva.choice_asistencia,
         'whatsapp_destino': settings.RESERVAS_WHATSAPP_DESTINO,
+        'mis_reservas_count': mis_reservas_count,
         **context,
     }, status=status)
 
@@ -562,9 +566,71 @@ def reservas_view(request):
     }, status=201)
 
 
+def _buscar_reservas_por_nombre_o_numero(termino):
+    termino_limpio = (termino or '').strip()[:100]
+    if not termino_limpio:
+        return []
+    digitos = _normalizar_telefono(termino_limpio)
+    q_filter = Q(nombre_cliente__icontains=termino_limpio) | Q(telefono__icontains=termino_limpio)
+    numero_plano = termino_limpio.lstrip('#').strip()
+    if numero_plano.isdecimal() and len(numero_plano) <= 18:
+        q_filter |= Q(pk=int(numero_plano))
+
+    candidatos = list(
+        Reserva.objects.filter(q_filter)
+        .prefetch_related('lineas')
+        .order_by('-fecha_realizacion', '-pk')[:20]
+    )
+    vistos = {r.pk for r in candidatos}
+
+    if len(digitos) >= 4:
+        extra = (
+            Reserva.objects.exclude(pk__in=vistos)
+            .prefetch_related('lineas')
+            .order_by('-fecha_realizacion', '-pk')
+        )
+        for reserva in extra:
+            if digitos in _normalizar_telefono(reserva.telefono):
+                candidatos.append(reserva)
+                if len(candidatos) >= 20:
+                    break
+    return candidatos
+
+
+def _serializar_reserva_cliente(reserva):
+    es_para_llevar = reserva.tipo_reserva == 'Para llevar'
+    puede_pagar = (
+        es_para_llevar
+        and not reserva.pago_confirmado
+        and reserva.estado not in ('Cancelada', 'Realizada', 'No asistió')
+    )
+    return {
+        'id': reserva.pk,
+        'nombre_cliente': reserva.nombre_cliente or 'Cliente Prisma',
+        'telefono': reserva.telefono or '',
+        'fecha': reserva.fecha_reserva.strftime('%d/%m/%Y'),
+        'hora': reserva.hora.strftime('%H:%M') if reserva.hora else 'Por acordar',
+        'tipo_reserva': reserva.tipo_reserva,
+        'numero_personas': reserva.numero_personas,
+        'estado': reserva.estado,
+        'total': _formatear_cop(reserva.total),
+        'pago_confirmado': reserva.pago_confirmado,
+        'require_payment': puede_pagar,
+        'detail_url': reverse('reserva_cliente', args=[reserva.pk]),
+        'pay_url': reverse('pagar_reserva_cliente', args=[reserva.pk]),
+        'lineas': [
+            f'{linea.cantidad}× {linea.nombre_producto}'
+            for linea in reserva.lineas.all()
+        ],
+    }
+
+
 @require_http_methods(['GET', 'POST'])
 def consultar_reserva(request):
-    if request.method == 'POST':
+    termino = ''
+    resultados = None
+
+    if request.method == 'POST' and ('reserva_id' in request.POST and 'telefono' in request.POST):
         reserva_id = request.POST.get('reserva_id', '').strip()
         telefono = _normalizar_telefono(request.POST.get('telefono', '').strip())
         if not reserva_id.isdecimal() or len(reserva_id) > 18:
@@ -579,7 +645,41 @@ def consultar_reserva(request):
                 request.session[f'reserva_{reserva.pk}_access'] = True
                 return redirect('reserva_cliente', pk=reserva.pk)
             messages.error(request, 'El número de reserva o el teléfono no coinciden.')
-    return render(request, 'reservas/consultar.html')
+    else:
+        termino = (
+            request.POST.get('q', '')
+            if request.method == 'POST'
+            else request.GET.get('q', '')
+        ).strip()[:100]
+
+        if termino:
+            resultados = _buscar_reservas_por_nombre_o_numero(termino)
+            for reserva in resultados:
+                request.session[f'reserva_{reserva.pk}_access'] = True
+        elif request.user.is_authenticated and (
+            request.GET.get('mias') == '1'
+            or 'application/json' in request.headers.get('Accept', '')
+        ):
+            resultados = list(
+                Reserva.objects.filter(usuario=request.user)
+                .prefetch_related('lineas')
+                .order_by('-fecha_realizacion', '-pk')[:20]
+            )
+            for reserva in resultados:
+                request.session[f'reserva_{reserva.pk}_access'] = True
+
+    if 'application/json' in request.headers.get('Accept', ''):
+        lista = resultados if resultados is not None else []
+        return JsonResponse({
+            'ok': True,
+            'query': termino,
+            'reservas': [_serializar_reserva_cliente(r) for r in lista],
+        })
+
+    return render(request, 'reservas/consultar.html', {
+        'termino_busqueda': termino,
+        'resultados_busqueda': resultados,
+    })
 
 
 @login_required(login_url='login')
