@@ -1,22 +1,45 @@
 {% load static %}
 <header id="header" class="luxury-header luxury-header--customer{% if active == 'inicio' %} luxury-header--hero{% endif %}">
     <div class="container header-container">
-        <a class="logo luxury-logo" href="{% url 'base_cliente' %}" aria-label="Prisma, inicio">
+        <a class="logo luxury-logo brand-combo" href="{% url 'base_cliente' %}" aria-label="Prisma, inicio">
+            <span class="brand-phrase" aria-hidden="true">
+                <span class="brand-phrase-title">prisma</span>
+                <span class="brand-phrase-sub">El Arte Del Postre</span>
+            </span>
             <img src="{% static 'img/logo_prisma_header.png' %}" alt="Prisma">
         </a>
 
         <nav class="nav-menu" id="navMenu" aria-label="Navegación principal">
             <ul>
-                <li><a class="{% if active == 'inicio' %}active{% endif %}" href="{% url 'base_cliente' %}"><i class="nav-link-icon nav-icon-home fas fa-house" aria-hidden="true"></i>Inicio</a></li>
-                <li><a class="{% if active == 'productos' %}active{% endif %}" href="{% url 'productos' %}"><i class="nav-link-icon nav-icon-products fas fa-cake-candles" aria-hidden="true"></i>Catálogo</a></li>
-                <li><a class="{% if active == 'reservas' %}active{% endif %}" href="{% url 'reservas' %}"><i class="nav-link-icon nav-icon-reservations far fa-calendar-check" aria-hidden="true"></i>Reservas</a></li>
-                <li><a href="{% url 'base_cliente' %}#nosotros">Nosotros</a></li>
-                <li><a class="{% if active == 'contactos' %}active{% endif %}" href="{% url 'contactos' %}"><i class="nav-link-icon nav-icon-contact fas fa-comment-dots" aria-hidden="true"></i>Contacto</a></li>
+                <li>
+                    <a class="{% if active == 'inicio' %}active{% endif %}" href="{% url 'base_cliente' %}">
+                        <i class="fas fa-home nav-link-icon nav-icon-home" aria-hidden="true"></i>
+                        <span>Inicio</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="{% if active == 'productos' %}active{% endif %}" href="{% url 'productos' %}">
+                        <i class="fas fa-cake-candles nav-link-icon nav-icon-products" aria-hidden="true"></i>
+                        <span>Catálogo</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="{% if active == 'reservas' %}active{% endif %}" href="{% url 'reservas' %}">
+                        <i class="fas fa-calendar-check nav-link-icon nav-icon-reservations" aria-hidden="true"></i>
+                        <span>Reservas</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="{% if active == 'contactos' %}active{% endif %}" href="{% url 'contactos' %}">
+                        <i class="fas fa-envelope nav-link-icon nav-icon-contact" aria-hidden="true"></i>
+                        <span>Contacto</span>
+                    </a>
+                </li>
             </ul>
         </nav>
 
-        {% if active == 'inicio' %}
-            <form class="header-search-form" action="{% url 'productos' %}" method="get" role="search">
+        <div class="header-right-tools">
+            <form class="header-search-form catalog-header-search" action="{% url 'productos' %}" method="get" role="search">
                 <label class="sr-only" for="headerProductSearch">Buscar productos</label>
                 <label class="header-search-trigger" for="headerProductSearch" aria-hidden="true">
                     <i class="fas fa-magnifying-glass"></i>
@@ -28,26 +51,26 @@
                     <i class="fas fa-arrow-right" aria-hidden="true"></i>
                 </button>
             </form>
-        {% endif %}
 
-        <div class="header-actions">
-            <a href="{% url 'carrito' %}" class="btn-cart header-action-btn" aria-label="Ver carrito">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="cart-count">0</span>
-            </a>
-            {% if user.is_authenticated and not user.is_staff and not user.is_superuser %}
-                <div class="customer-session-pill">
-                    <span class="customer-session-label" title="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</span>
-                    <form method="post" action="{% url 'logout' %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="customer-logout-button" title="Cerrar sesión"><i class="fas fa-sign-out-alt"></i></button>
-                    </form>
-                </div>
-            {% else %}
-                <a href="{% url 'login' %}" class="btn-login header-action-btn" aria-label="Iniciar sesión" title="Mi Cuenta">
-                    <i class="far fa-user"></i>
+            <div class="header-actions">
+                <a href="{% url 'carrito' %}" class="btn-cart header-action-btn" aria-label="Ver carrito">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
                 </a>
-            {% endif %}
+                {% if user.is_authenticated and not user.is_staff and not user.is_superuser %}
+                    <div class="customer-session-pill">
+                        <span class="customer-session-label" title="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</span>
+                        <form method="post" action="{% url 'logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="customer-logout-button" title="Cerrar sesión"><i class="fas fa-sign-out-alt"></i></button>
+                        </form>
+                    </div>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn-login header-action-btn" aria-label="Iniciar sesión" title="Mi Cuenta">
+                        <i class="far fa-user"></i>
+                    </a>
+                {% endif %}
+            </div>
         </div>
 
         <button class="mobile-menu-btn header-action-btn" type="button" aria-label="Abrir menú" aria-expanded="false"
