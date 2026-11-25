@@ -377,7 +377,7 @@ class ReservaWorkflowTests(TestCase):
         self.assertEqual(len(mail.outbox), 0)
 
     def test_reservation_rejects_times_outside_business_hours(self):
-        for hora in ('13:59', '18:31'):
+        for hora in ('13:59', '17:01'):
             with self.subTest(hora=hora):
                 response = self.client.post(
                     reverse('reservas'),
@@ -386,7 +386,7 @@ class ReservaWorkflowTests(TestCase):
                 )
 
                 self.assertEqual(response.status_code, 400)
-                self.assertIn('2:00 PM a 6:30 PM', response.json()['error'])
+                self.assertIn('2:00 PM a 5:00 PM', response.json()['error'])
         self.assertEqual(Reserva.objects.count(), 0)
 
     def test_customer_can_update_and_cancel_with_reservation_id_and_phone(self):
@@ -587,7 +587,7 @@ class ReservaWorkflowTests(TestCase):
         )
         self.client.force_login(admin)
 
-        for hora in ('13:59', '18:31'):
+        for hora in ('13:59', '17:01'):
             with self.subTest(hora=hora):
                 response = self.client.post(
                     reverse('gestion_reservas'),
@@ -599,7 +599,7 @@ class ReservaWorkflowTests(TestCase):
                 )
 
                 self.assertEqual(response.status_code, 200)
-                self.assertContains(response, 'El horario de reservas es de 2:00 PM a 6:30 PM.')
+                self.assertContains(response, 'El horario de reservas es de 2:00 PM a 5:00 PM.')
         self.assertEqual(Reserva.objects.count(), 0)
 
     def test_admin_must_verify_takeaway_payment_before_confirming(self):
@@ -724,8 +724,13 @@ class ReservaWorkflowTests(TestCase):
         self.assertContains(response, 'brand-combo')
         self.assertContains(response, 'El Arte Del Postre')
         self.assertContains(response, 'id="headerProductSearch"')
-        # Botón Mis Reservas + unión con el carrito
+        # Botón Mis Reservas + Elige tu postre + desplegable 2PM-5PM y alertas
+        self.assertContains(response, 'reserva-short-shell')
         self.assertContains(response, 'id="btnOpenMisReservasModal"')
+        self.assertContains(response, 'id="btnEligeTuPostreCatalogo"')
+        self.assertContains(response, 'id="timeDdBtn"')
+        self.assertNotContains(response, 'value="18:30"')
+        self.assertContains(response, 'id="reservaResultadoPersistente"')
         self.assertContains(response, 'id="reservaCartVisualCards"')
         self.assertContains(response, 'id="ticketSummaryItems"')
         # Footer con iconos WhatsApp, Instagram, TikTok + accesibilidad derecha
