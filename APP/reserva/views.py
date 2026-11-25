@@ -37,7 +37,7 @@ POSTRES = {
 
 SLOTS_PRODUCTOS = tuple(range(1, 6))
 HORA_APERTURA_RESERVAS = time(14, 0)
-HORA_CIERRE_RESERVAS = time(18, 30)
+HORA_CIERRE_RESERVAS = time(17, 0)
 
 
 def _normalizar_telefono(telefono):
@@ -109,7 +109,7 @@ def _datos_reserva(post_data, reserva=None):
         raise ValueError('Ingresa una fecha y una hora válidas.') from None
 
     if not HORA_APERTURA_RESERVAS <= hora_reserva <= HORA_CIERRE_RESERVAS:
-        raise ValueError('El horario de reservas es de 2:00 PM a 6:30 PM.')
+        raise ValueError('El horario de reservas es de 2:00 PM a 5:00 PM.')
 
     ahora = timezone.localtime()
     if fecha_reserva < timezone.localdate() or (
@@ -426,12 +426,12 @@ def reservas_view(request):
             'ok': True,
             'title': (
                 '¡Pedido para llevar registrado!'
-                if es_para_llevar else '¡Recibimos tu solicitud de mesa!'
+                if es_para_llevar else '¡Listo, se completó tu reserva! Te esperamos'
             ),
             'message': (
                 'Tu pedido quedó guardado exitosamente. Ahora completa tu pago para asegurar la preparación de tus postres.'
                 if es_para_llevar else
-                'Recibimos tu solicitud de mesa. Te contactaremos por WhatsApp para darte la bienvenida y confirmar detalles.'
+                '¡Listo, se completó tu reserva! Te esperamos en Prisma para endulzar tu visita.'
             ),
             'email_sent': email_sent,
             'total': _formatear_cop(reserva.total),
@@ -741,18 +741,18 @@ def pagar_reserva_cliente(request, pk):
     _notificar_reserva(reserva, request, confirmada=True)
 
     mensaje_lindo = (
-        '¡Pago recibido con éxito! 🎉🍰✨ '
-        'Tu pedido está 100% confirmado. En Prisma estamos seleccionando los mejores '
-        'ingredientes artesanales para que tu postre esté fresco, delicioso y listo para recoger '
-        f'el {reserva.fecha_reserva.strftime("%d/%m/%Y")}'
+        '¡Listo, se completó tu reserva! Te esperamos. 🎉🍰✨ '
+        'Pago recibido con éxito: tu pedido está 100% confirmado y estamos preparando '
+        'tus postres artesanales para el '
+        f'{reserva.fecha_reserva.strftime("%d/%m/%Y")}'
         + (f' a las {reserva.hora.strftime("%H:%M")}' if reserva.hora else '')
-        + '. ¡Muchísimas gracias por confiar en nosotros para endulzar tus momentos especiales!'
+        + '.'
     )
 
     if 'application/json' in request.headers.get('Accept', ''):
         return JsonResponse({
             'ok': True,
-            'title': '¡Pago Recibido con Éxito! 🎉🍰',
+            'title': '¡Listo, se completó tu reserva! Te esperamos 🎉🍰',
             'message': mensaje_lindo,
             'reservation_id': reserva.pk,
             'total': _formatear_cop(reserva.total),
