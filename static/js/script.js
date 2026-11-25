@@ -202,10 +202,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const mostrarAccesoCarrito = () => {
+        document.querySelectorAll('.cart-toast-action').forEach(el => el.remove());
         const toast = document.createElement('div');
         toast.className = 'cart-toast-action';
         toast.setAttribute('role', 'status');
         toast.setAttribute('aria-live', 'polite');
+
+        const desdeReserva = sessionStorage.getItem('prisma_return_to_reserva') === '1';
+
+        const reservaLink = document.createElement('a');
+        reservaLink.className = 'cart-toast-action-link cart-toast-reserva-link';
+        reservaLink.href = URLS.reservas || '/reserva/';
+        reservaLink.innerHTML = `<i class="fas fa-calendar-check" aria-hidden="true"></i> <span>${desdeReserva ? '¡Postre agregado! Volver a mi Reserva' : 'Ir a reservar'}</span>`;
 
         const link = document.createElement('a');
         link.className = 'cart-toast-action-link';
@@ -217,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         icon.setAttribute('aria-hidden', 'true');
 
         const label = document.createElement('span');
-        label.textContent = 'Ir al carrito';
+        label.textContent = 'Carrito';
 
         const count = document.createElement('span');
         count.className = 'cart-toast-action-count';
@@ -225,9 +233,9 @@ document.addEventListener('DOMContentLoaded', () => {
         count.setAttribute('aria-hidden', 'true');
 
         link.append(icon, label, count);
-        toast.append(link);
+        toast.append(reservaLink, link);
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3600);
+        setTimeout(() => toast.remove(), desdeReserva ? 7000 : 4200);
     };
 
 
@@ -957,8 +965,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (visualCartStrip) {
                 if (!lineas.length) {
-                    visualCartStrip.innerHTML = '';
-                    visualCartStrip.hidden = true;
+                    visualCartStrip.innerHTML = `
+                        <div class="rshort-empty-desserts">
+                            <i class="fas fa-cake-candles" aria-hidden="true"></i>
+                            <span>Aún no has agregado postres. Toca <strong>Elige tu postre</strong> para escoger del catálogo o selecciona uno abajo.</span>
+                        </div>`;
+                    visualCartStrip.hidden = false;
                 } else {
                     visualCartStrip.hidden = false;
                     visualCartStrip.innerHTML = lineas.map((item) => `
@@ -968,9 +980,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 : `<div class="mini-card-fallback"><i class="fas fa-cake-candles" aria-hidden="true"></i></div>`}
                             <div class="mini-card-info">
                                 <strong>${escapeHTML(item.nombre)}</strong>
-                                <span>${formatearCOP(item.precio)} c/u</span>
+                                <span>${formatearCOP(item.precio)} c/u · <b>${formatearCOP(item.subtotal)}</b></span>
                             </div>
-                            <span class="mini-card-qty-badge">×${item.cantidad}</span>
+                            <div class="mini-card-controls">
+                                <button type="button" class="mini-qty-btn" data-mini-action="minus" data-mini-slot="${escapeHTML(item.slot)}" aria-label="Disminuir cantidad">−</button>
+                                <span class="mini-card-qty-val">${item.cantidad}</span>
+                                <button type="button" class="mini-qty-btn" data-mini-action="plus" data-mini-slot="${escapeHTML(item.slot)}" aria-label="Aumentar cantidad">+</button>
+                                <button type="button" class="mini-qty-btn is-remove" data-mini-action="remove" data-mini-slot="${escapeHTML(item.slot)}" aria-label="Quitar postre">×</button>
+                            </div>
                         </div>
                     `).join('');
                 }
@@ -1027,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ? `${formatearCOP(precio)} c/u · Subtotal: ${formatearCOP(subtotal)}`
                         : '';
                 }
-                select.required = seleccionados.length === 0 && card === visibles[0];
+                select.required = false;
                 const removeButton = card.querySelector('[data-remove-reserva-producto]');
                 if (removeButton) removeButton.hidden = visibles.length === 1;
             });
@@ -1050,6 +1067,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (reservaProductosList && reservaProductoCards.length) {
             reservaProductosList.classList.add('is-interactive');
+
+            if (visualCartStrip) {
+                visualCartStrip.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-mini-action]');
+                    if (!btn) return;
+                    const slotNum = btn.dataset.miniSlot;
+                    const card = reservaProductoCards.find(c => c.dataset.reservaProductoSlot === slotNum);
+                    if (!card) return;
+                    const select = card.querySelector('select');
+                    const numInput = card.querySelector('input[type="number"]');
+                    const action = btn.dataset.miniAction;
+                    if (action === 'minus' && numInput) {
+                        const nextVal = Number(numInput.value) - 1;
+                        if (nextVal >= 1) numInput.value = String(nextVal);
+                    } else if (action === 'plus' && numInput) {
+                        numInput.value = String(Math.min(50, (Number(numInput.value) || 1) + 1));
+                    } else if (action === 'remove') {
+                        if (select) select.value = '';
+                        if (numInput) numInput.value = '1';
+                        const visibles = reservaProductoCards.filter(c => c.classList.contains('is-visible'));
+                        if (visibles.length > 1) card.classList.remove('is-visible');
+                    }
+                    actualizarProductosReserva();
+                });
+            }
+
+            const btnEligePostre = document.getElementById('btnEligeTuPostreCatalogo');
+            if (btnEligePostre) {
+                btnEligePostre.addEventListener('click', () => {
+                    const draft = {
+                        nombre: document.getElementById('nombre')?.value || '',
+                        telefono: document.getElementById('telefono')?.value || '',
+                        fecha: document.getElementById('fecha')?.value || '',
+                        hora: reservaForm.querySelector('input[name="hora"]:checked')?.value || '',
+                        numero_personas: document.getElementById('numero_personas')?.value || '2',
+                        detalles: document.getElementById('detalles')?.value || '',
+                        tipo_reserva: document.querySelector('input[name="tipo_reserva"]:checked')?.value || 'Mesa',
+                    };
+                    sessionStorage.setItem('reserva_draft', JSON.stringify(draft));
+                    sessionStorage.setItem('prisma_return_to_reserva', '1');
+                });
+            }
+            sessionStorage.removeItem('prisma_return_to_reserva');
 
             reservaProductoCards.forEach(card => {
                 const select = card.querySelector('select');
@@ -1317,6 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 if (borrador.detalles && document.getElementById('detalles')) document.getElementById('detalles').value = borrador.detalles;
+                if (borrador.numero_personas && document.getElementById('numero_personas')) document.getElementById('numero_personas').value = borrador.numero_personas;
                 if (borrador.tipo_reserva) actualizarModalidad(borrador.tipo_reserva);
                 sessionStorage.removeItem('reserva_draft');
             } catch (err) {}
@@ -1463,6 +1524,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Envío del Formulario de Pago desde el Modal
+        const mostrarBannerReservaCompleta = (titulo, mensaje, nextUrl) => {
+            const banner = document.getElementById('reservaResultadoPersistente');
+            if (!banner) return;
+            const titleEl = document.getElementById('reservaResultadoTitulo');
+            const textEl = document.getElementById('reservaResultadoTexto');
+            const linkEl = document.getElementById('reservaResultadoEnlace');
+            if (titleEl) titleEl.textContent = titulo || '¡Listo, se completó tu reserva! Te esperamos';
+            if (textEl) textEl.textContent = mensaje || '';
+            if (linkEl) {
+                linkEl.href = nextUrl || '#';
+                linkEl.hidden = !nextUrl;
+            }
+            banner.hidden = false;
+            banner.focus?.({ preventScroll: true });
+            banner.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+        };
+
         const paymentExecutionForm = document.getElementById('paymentExecutionForm');
         if (paymentExecutionForm) {
             paymentExecutionForm.addEventListener('submit', async (e) => {
@@ -1490,6 +1568,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     cerrarModalPago();
+                    mostrarBannerReservaCompleta(
+                        '¡Listo, se completó tu reserva! Te esperamos 🍰✨',
+                        resultado.message,
+                        resultado.next_url
+                    );
                     lanzarConfetti(3500);
 
                     // Mensaje lindo y animado tras completar el pago
@@ -1500,7 +1583,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 confirmButton: 'luxury-btn-gold'
                             },
                             icon: 'success',
-                            title: resultado.title || '¡Pago Recibido con Éxito! 🎉🍰',
+                            title: resultado.title || '¡Listo, se completó tu reserva! Te esperamos 🎉🍰',
                             html: `
                                 <div class="sweet-payment-celebration">
                                     <div class="cake-pulse-icon">🍰💖</div>
@@ -1512,15 +1595,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             `,
                             showCancelButton: true,
-                            confirmButtonText: '<i class="fas fa-receipt"></i> Ver Comprobante y Pedido',
+                            confirmButtonText: '<i class="fas fa-receipt"></i> Ver Comprobante',
                             cancelButtonText: '<i class="fab fa-whatsapp"></i> Hablar por WhatsApp',
                             buttonsStyling: false
                         }).then(result => {
                             if (result.isConfirmed && resultado.next_url) {
                                 window.location.assign(resultado.next_url);
-                            } else {
+                            } else if (result.dismiss === Swal.DismissReason.cancel) {
                                 window.open(`https://wa.me/${window.PRISMA?.whatsapp || '573118689862'}?text=${encodeURIComponent('Hola Prisma 👋 Ya completé el pago de mi pedido #' + resultado.reservation_id)}`, '_blank');
-                                if (resultado.next_url) window.location.assign(resultado.next_url);
                             }
                         });
                     }
@@ -1595,6 +1677,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                const tienePostre = reservaProductoCards.some(c => c.querySelector('select')?.value);
+                if (!tienePostre) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Primero elige tu postre 🍰',
+                            text: 'Toca "Elige tu postre" para seleccionar tu favorito del catálogo y agregarlo a tu reserva.',
+                            confirmButtonText: '<i class="fas fa-cookie-bite"></i> Ir al Catálogo',
+                            showCancelButton: true,
+                            cancelButtonText: 'Cerrar',
+                            confirmButtonColor: '#b0197e',
+                        }).then(r => {
+                            if (r.isConfirmed) {
+                                document.getElementById('btnEligeTuPostreCatalogo')?.click();
+                            }
+                        });
+                    } else {
+                        mostrarNotificacion('Primero elige al menos un postre desde el catálogo.');
+                    }
+                    return;
+                }
+
                 if (!reservaForm.reportValidity()) return;
 
                 const submitButton = reservaForm.querySelector('[type="submit"]');
@@ -1626,7 +1730,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (resultado.reservation_type === 'Para llevar') {
                         abrirModalPago(resultado.reservation_id, resultado.total);
                     } else {
-                        // Si es MESA: Mostrar alerta animada festiva
+                        // Si es MESA: Notificación en página + alerta animada festiva
+                        mostrarBannerReservaCompleta(
+                            '¡Listo, se completó tu reserva! Te esperamos 🎉🍰',
+                            `Reserva #${resultado.reservation_id} para el ${resultado.fecha_formateada} a las ${resultado.hora_formateada}. ${resultado.message}`,
+                            resultado.next_url
+                        );
                         lanzarConfetti(2800);
                         if (window.Swal) {
                             await Swal.fire({
@@ -1635,7 +1744,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     confirmButton: 'luxury-btn-gold'
                                 },
                                 icon: 'success',
-                                title: resultado.title || '¡Solicitud de Mesa Recibida! 🥂✨',
+                                title: '¡Listo, se completó tu reserva! Te esperamos 🥂✨',
                                 html: `
                                     <div class="sweet-payment-celebration">
                                         <p class="sweet-message-text">${escapeHTML(resultado.message)}</p>
@@ -1652,9 +1761,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             }).then(choice => {
                                 if (choice.isConfirmed && resultado.next_url) {
                                     window.location.assign(resultado.next_url);
-                                } else if (resultado.whatsapp_url) {
+                                } else if (choice.dismiss === Swal.DismissReason.cancel && resultado.whatsapp_url) {
                                     window.open(resultado.whatsapp_url, '_blank');
-                                    if (resultado.next_url) window.location.assign(resultado.next_url);
                                 }
                             });
                         }
@@ -1673,7 +1781,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 } finally {
                     if (submitButton) {
                         submitButton.disabled = false;
-                        submitButton.innerHTML = '<span class="btn-text">Confirmar mi Reserva</span> <i class="fas fa-arrow-right"></i>';
+                        const label = modalidadElegida === 'Mesa' ? 'Confirmar mi Reserva de Mesa' : 'Confirmar y Pagar Pedido';
+                        submitButton.innerHTML = `<span class="btn-text">${label}</span> <i class="fas fa-arrow-right"></i>`;
                     }
                 }
             });
