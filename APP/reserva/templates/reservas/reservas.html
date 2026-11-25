@@ -2,107 +2,88 @@
 {% load l10n static %}
 
 {% block title %}Reservas - Prisma | El arte del postre{% endblock %}
-{% block body_attrs %} class="customer-area reservas-luxury-page reservas-experience-page"{% endblock %}
+{% block body_attrs %} class="customer-area reservas-luxury-page reservas-short-page"{% endblock %}
 
 {% block content %}
     {% include 'partials/header_cliente.html' with active='reservas' titles=True %}
 
-    <section class="reserva-exp-hero">
-        <div class="container reserva-exp-hero-inner">
-            <div class="reserva-exp-hero-copy">
-                <span class="reserva-exp-kicker">
-                    <i class="fas fa-sparkles" aria-hidden="true"></i> EXPERIENCIA ARTESANAL · RESERVA &amp; CARRITO UNIDOS
-                </span>
-                <h1 class="reserva-exp-title">Reserva tu momento en Prisma</h1>
-                <p class="reserva-exp-subtitle">
-                    Arma tu experiencia en segundos: elige mesa o para llevar, conecta los postres de tu carrito y agenda tu horario de 2:00 p. m. a 6:30 p. m.
-                </p>
-            </div>
-
-            <div class="reserva-exp-hero-actions">
-                <button type="button" class="btn-mis-reservas-lindo" id="btnOpenMisReservasModal"
-                        data-lookup-url="{% url 'consultar_reserva' %}">
-                    <span class="btn-mis-reservas-ico" aria-hidden="true"><i class="fas fa-calendar-check"></i></span>
-                    <span class="btn-mis-reservas-text">
-                        <strong>Mis Reservas</strong>
-                        <small>Consulta por nombre o número</small>
-                    </span>
-                    {% if mis_reservas_count %}
-                        <span class="btn-mis-reservas-badge">{{ mis_reservas_count }}</span>
-                    {% endif %}
-                    <i class="fas fa-arrow-right btn-mis-reservas-arrow" aria-hidden="true"></i>
-                </button>
-
-                <a href="{% url 'carrito' %}" class="btn-carrito-unido-pill">
-                    <i class="fas fa-shopping-bag" aria-hidden="true"></i>
-                    <span>Mi Carrito</span>
-                    <b class="reserva-cart-count" id="reservaCartCount">0</b>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <main class="reserva-exp-main">
+    <main class="reserva-short-hub">
         <div class="container">
-            {% include 'partials/messages.html' %}
-
-            <!-- BANNER PERSISTENTE TRAS CREAR RESERVA -->
-            <section id="reservaResultadoPersistente" class="reserva-persistent-result"
-                     aria-live="polite" tabindex="-1" hidden>
-                <span class="reserva-persistent-result-icon"><i class="fas fa-calendar-check" aria-hidden="true"></i></span>
-                <h3 id="reservaResultadoTitulo"></h3>
-                <p id="reservaResultadoTexto"></p>
-                <a id="reservaResultadoEnlace" href="" class="luxury-btn-primary"></a>
-            </section>
-
-            <form id="reservaForm" class="reserva-exp-workspace" data-reserva-ajax="true" data-cart-link="true"
-                  method="post" action="{% url 'reservas' %}"
-                  data-user-logged-in="{% if user.is_authenticated %}true{% else %}false{% endif %}">
-                {% csrf_token %}
-
-                <!-- COLUMNA IZQUIERDA: CONFIGURADOR INTERACTIVO -->
-                <div class="reserva-exp-configurator">
-                    <div class="reserva-exp-intro-bar">
-                        <div>
-                            <span class="form-pretitle">Planea tu visita</span>
-                            <h2 class="form-title">Tu experiencia dulce, a tu manera</h2>
+            <div class="reserva-short-shell">
+                <!-- CABECERA COMPACTA + BOTÓN MIS RESERVAS -->
+                <header class="reserva-short-header">
+                    <div class="reserva-short-title-block">
+                        <div class="reserva-short-badges">
+                            <span class="reserva-short-kicker"><i class="fas fa-sparkles" aria-hidden="true"></i> Planea tu visita</span>
+                            <span class="reserva-short-trust"><i class="fas fa-shield-halved" aria-hidden="true"></i> Reserva segura</span>
                         </div>
-                        <a href="{% url 'consultar_reserva' %}" class="reserva-exp-lookup-link">
-                            <i class="fas fa-search" aria-hidden="true"></i> Buscar reserva
-                        </a>
+                        <h1>Reserva tu momento en Prisma</h1>
+                        <p>Elige tu postre en el catálogo, selecciona tu horario y completa tu reserva en segundos.</p>
                     </div>
 
-                    <!-- BLOQUE 1: MODALIDAD -->
-                    <section class="exp-tile exp-tile--modality" aria-label="Modalidad de reserva">
-                        <div class="exp-tile-head">
-                            <span class="exp-step-pill">01 · Experiencia</span>
-                            <h3>¿Cómo deseas disfrutar de Prisma?</h3>
-                        </div>
+                    <div class="reserva-short-actions">
+                        <button type="button" class="btn-mis-reservas-lindo" id="btnOpenMisReservasModal"
+                                data-lookup-url="{% url 'consultar_reserva' %}">
+                            <span class="btn-mis-reservas-ico" aria-hidden="true"><i class="fas fa-calendar-check"></i></span>
+                            <span class="btn-mis-reservas-text">
+                                <strong>Mis Reservas</strong>
+                                <small>Consulta con nombre o celular</small>
+                            </span>
+                            {% if mis_reservas_count %}
+                                <span class="btn-mis-reservas-badge">{{ mis_reservas_count }}</span>
+                            {% endif %}
+                        </button>
+                    </div>
+                </header>
 
-                        <div class="modality-cards-group">
+                {% include 'partials/messages.html' %}
+
+                <!-- ALERTA / NOTIFICACIÓN PERSISTENTE EN PÁGINA AL COMPLETAR RESERVA -->
+                <section id="reservaResultadoPersistente" class="reserva-complete-alert"
+                         role="status" aria-live="polite" tabindex="-1" hidden>
+                    <div class="reserva-complete-alert-icon" aria-hidden="true">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+                    <div class="reserva-complete-alert-body">
+                        <h2 id="reservaResultadoTitulo">¡Listo, se completó tu reserva! Te esperamos</h2>
+                        <p id="reservaResultadoTexto"></p>
+                    </div>
+                    <a id="reservaResultadoEnlace" href="" class="reserva-complete-alert-link">
+                        Ver detalle <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </section>
+
+                <form id="reservaForm" class="reserva-short-form" data-reserva-ajax="true" data-cart-link="true"
+                      method="post" action="{% url 'reservas' %}"
+                      data-user-logged-in="{% if user.is_authenticated %}true{% else %}false{% endif %}">
+                    {% csrf_token %}
+
+                    <!-- 1. MODALIDAD INTERACTIVA -->
+                    <section class="rshort-section" aria-label="Modalidad">
+                        <div class="rshort-section-head">
+                            <span class="rshort-step">1</span>
+                            <h2>¿Con mesa o para llevar?</h2>
+                        </div>
+                        <div class="modality-cards-group rshort-modality-grid">
                             <label class="modality-card is-selected" for="modalidad_mesa" id="modalityCardMesa">
                                 <input type="radio" name="tipo_reserva" id="modalidad_mesa" value="Mesa" checked>
-                                <div class="modality-badge public-badge">
-                                    <i class="fas fa-unlock-alt" aria-hidden="true"></i> Público · Sin Registro
+                                <div class="modality-head-row">
+                                    <span class="modality-icon"><i class="fas fa-utensils" aria-hidden="true"></i></span>
+                                    <span class="modality-badge public-badge">Sin registro · Sin prepago</span>
                                 </div>
-                                <div class="modality-icon"><i class="fas fa-utensils" aria-hidden="true"></i></div>
-                                <h4 class="modality-name">Con Mesa</h4>
-                                <p class="modality-desc">
-                                    Reserva tu espacio en el local. Sin inicio de sesión ni pago anticipado.
-                                </p>
+                                <h3 class="modality-name">Con Mesa</h3>
+                                <p class="modality-desc">Te esperamos en nuestro local.</p>
                                 <div class="modality-check"><i class="fas fa-check-circle" aria-hidden="true"></i></div>
                             </label>
 
                             <label class="modality-card" for="modalidad_llevar" id="modalityCardLlevar">
                                 <input type="radio" name="tipo_reserva" id="modalidad_llevar" value="Para llevar">
-                                <div class="modality-badge secure-badge">
-                                    <i class="fas fa-shopping-cart" aria-hidden="true"></i> Unido al Carrito · Pago en Línea
+                                <div class="modality-head-row">
+                                    <span class="modality-icon"><i class="fas fa-bag-shopping" aria-hidden="true"></i></span>
+                                    <span class="modality-badge secure-badge">Requiere sesión · Pago seguro</span>
                                 </div>
-                                <div class="modality-icon"><i class="fas fa-bag-shopping" aria-hidden="true"></i></div>
-                                <h4 class="modality-name">Para Llevar</h4>
-                                <p class="modality-desc">
-                                    Tu pedido unido al carrito. Inicia sesión y completa tu pago en línea para alistarlo fresco.
-                                </p>
+                                <h3 class="modality-name">Para Llevar</h3>
+                                <p class="modality-desc">Empacado y pagado en línea para recoger.</p>
                                 <div class="modality-check"><i class="fas fa-check-circle" aria-hidden="true"></i></div>
                             </label>
                         </div>
@@ -112,16 +93,16 @@
                                 <div class="auth-notice-box is-logged-in">
                                     <i class="fas fa-circle-check text-success" aria-hidden="true"></i>
                                     <div>
-                                        <strong>Sesión activa como: {{ user.username }}</strong>
-                                        <p>Al confirmar tu pedido se abrirá tu pasarela de pago seguro con Nequi, Daviplata, Tarjeta o Bancolombia.</p>
+                                        <strong>Sesión activa: {{ user.username }}</strong>
+                                        <p>Al confirmar tu pedido completarás tu pago seguro en línea.</p>
                                     </div>
                                 </div>
                             {% else %}
                                 <div class="auth-notice-box is-required">
                                     <i class="fas fa-lock text-warning" aria-hidden="true"></i>
                                     <div>
-                                        <strong>Inicio de sesión requerido para pedidos para llevar</strong>
-                                        <p>Solo si reservas para llevar debes iniciar sesión para completar el pago de tu carrito.</p>
+                                        <strong>Inicia sesión solo si vas a reservar para llevar</strong>
+                                        <p>Para proteger tu pago necesitamos tu cuenta activa.</p>
                                         <div class="auth-notice-actions">
                                             <a href="{% url 'login' %}?next={% url 'reservas' %}" class="btn-notice-login" id="btnNoticeLogin">
                                                 <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Iniciar Sesión
@@ -136,39 +117,38 @@
                         </div>
                     </section>
 
-                    <!-- BLOQUE 2: POSTRES UNIDOS AL CARRITO -->
-                    <section class="exp-tile exp-tile--desserts" aria-label="Postres unidos al carrito">
-                        <div class="exp-tile-head exp-tile-head--split">
-                            <div>
-                                <span class="exp-step-pill">02 · Tu Carrito y Postres</span>
-                                <h3>Postres incluidos en tu reserva</h3>
+                    <!-- 2. BOTÓN ELIGE TU POSTRE (CATÁLOGO) + POSTRES EN RESERVA -->
+                    <section class="rshort-section" aria-label="Postres en tu reserva">
+                        <div class="rshort-section-head rshort-section-head--split">
+                            <div class="rshort-head-left">
+                                <span class="rshort-step">2</span>
+                                <div>
+                                    <h2>Tus postres en la reserva</h2>
+                                    <p class="rshort-subhint" id="reservaProductosHint" aria-live="polite">
+                                        Elige tus postres desde el catálogo o selecciónalos aquí.
+                                    </p>
+                                </div>
                             </div>
-                            {% if productos %}
-                                <a href="{% url 'productos' %}#productosGrid" class="choose-dessert-pill">
-                                    <i class="fas fa-cookie-bite" aria-hidden="true"></i>
-                                    <span>Elige tu postre</span>
-                                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                                </a>
-                            {% endif %}
+                            <a href="{% url 'productos' %}#productosGrid" id="btnEligeTuPostreCatalogo" class="btn-elige-postre-catalogo">
+                                <i class="fas fa-cookie-bite" aria-hidden="true"></i>
+                                <span>Elige tu postre</span>
+                                <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                            </a>
                         </div>
 
                         <p class="reserva-cart-sync" id="reservaCartSync" hidden></p>
 
-                        <!-- Tarjetas visuales interactivas de los postres del carrito -->
-                        <div class="reserva-cart-visual-strip" id="reservaCartVisualCards" aria-live="polite"></div>
+                        <!-- Tarjetas interactivas de los postres agregados desde el Catálogo / Carrito -->
+                        <div class="reserva-cart-visual-strip rshort-dessert-cards" id="reservaCartVisualCards" aria-live="polite"></div>
 
-                        {% if not productos %}
-                            <p class="reserva-productos-empty">No hay postres disponibles en este momento.</p>
-                        {% endif %}
-
-                        <!-- Selectores reales sincronizados con el carrito (solo Producto 1 visible por defecto + botón Agregar postre) -->
-                        <div class="reserva-productos-list is-interactive" id="reservaProductosList">
+                        <!-- Selector oculto sincronizado con los postres del carrito / catálogo -->
+                        <div class="reserva-productos-list is-interactive rshort-slots-tray" id="reservaProductosList" hidden>
                             {% for slot in slots_productos %}
                                 <article class="reserva-producto-card{% if slot == 1 %} is-visible{% endif %}"
                                          data-reserva-producto-slot="{{ slot }}">
                                     <div class="reserva-producto-card-heading">
                                         <span class="reserva-producto-index">{{ slot|stringformat:"02d" }}</span>
-                                        <span>Producto <strong>{{ slot }}</strong></span>
+                                        <span>Postre <strong>{{ slot }}</strong></span>
                                         <button type="button" class="reserva-producto-remove"
                                                 data-remove-reserva-producto aria-label="Quitar producto {{ slot }}">
                                             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
@@ -176,12 +156,11 @@
                                     </div>
                                     <div class="reserva-producto-fields">
                                         <div class="form-group-luxury flex-2">
-                                            <label for="producto_id_{{ slot }}">Postre</label>
+                                            <label for="producto_id_{{ slot }}" class="sr-only">Postre</label>
                                             <div class="input-luxury-wrap">
                                                 <i class="fas fa-cake-candles input-ico" aria-hidden="true"></i>
-                                                <select id="producto_id_{{ slot }}" name="producto_id_{{ slot }}"
-                                                        {% if slot == 1 %}required{% endif %}>
-                                                    <option value="">Selecciona un postre...</option>
+                                                <select id="producto_id_{{ slot }}" name="producto_id_{{ slot }}">
+                                                    <option value="">Selecciona un postre o ve al catálogo...</option>
                                                     {% for producto in productos %}
                                                         <option value="{{ producto.pk }}"
                                                                 data-price="{{ producto.precio|unlocalize }}"
@@ -194,7 +173,7 @@
                                             </div>
                                         </div>
                                         <div class="form-group-luxury flex-1">
-                                            <label for="cantidad_{{ slot }}">Cantidad</label>
+                                            <label for="cantidad_{{ slot }}" class="sr-only">Cantidad</label>
                                             <div class="input-luxury-wrap qty-stepper-wrap">
                                                 <button type="button" class="qty-btn-minus" data-target="cantidad_{{ slot }}">-</button>
                                                 <input type="number" id="cantidad_{{ slot }}" name="cantidad_{{ slot }}"
@@ -209,216 +188,155 @@
                                 <p class="reserva-productos-empty">No hay productos disponibles actualmente.</p>
                             {% endfor %}
                         </div>
-
-                        {% if productos %}
-                            <div class="reserva-dessert-actions-row">
-                                <button type="button" class="luxury-btn-outline reserva-add-postre-btn" id="addReservaProducto" hidden>
-                                    <i class="fa-solid fa-plus" aria-hidden="true"></i> Agregar postre
-                                </button>
-                                <p class="reserva-productos-hint" id="reservaProductosHint" aria-live="polite">
-                                    Elige al menos un producto para continuar.
-                                </p>
-                            </div>
-                        {% endif %}
                     </section>
 
-                    <!-- BLOQUE 3: AGENDA INTERACTIVA (FECHA, HORARIO PILLS, PERSONAS, CONTACTO COMPACTO) -->
-                    <section class="exp-tile exp-tile--schedule" aria-label="Fecha, horario y datos">
-                        <div class="exp-tile-head">
-                            <span class="exp-step-pill">03 · Tu Visita o Recogida</span>
-                            <h3>Cuándo vienes y quién reserva</h3>
+                    <!-- 3. HORARIO DESPLEGABLE (2:00 PM - 5:00 PM) + DATOS RÁPIDOS -->
+                    <section class="rshort-section" aria-label="Horario y datos del cliente">
+                        <div class="rshort-section-head">
+                            <span class="rshort-step">3</span>
+                            <h2>Elige tu horario y confirma tus datos</h2>
                         </div>
 
-                        <div class="exp-contact-pills-grid">
+                        <div class="reservation-time-field rshort-time-dropdown-wrap">
+                            <span class="time-dd-title" id="timeDdLabel"><i class="far fa-clock" aria-hidden="true"></i> Horario disponible (2:00 p. m. a 5:00 p. m.) *</span>
+                            <div class="time-dd" id="timeDd">
+                                <button type="button" class="time-dd-btn" id="timeDdBtn"
+                                        aria-haspopup="true" aria-expanded="false" aria-controls="timeDdList"
+                                        aria-labelledby="timeDdLabel timeDdValue">
+                                    <i class="far fa-clock time-dd-ico" aria-hidden="true"></i>
+                                    <span class="time-dd-value is-placeholder" id="timeDdValue">Elige tu hora (2:00 p. m. – 5:00 p. m.)</span>
+                                    <i class="fas fa-chevron-down time-dd-caret" aria-hidden="true"></i>
+                                </button>
+                                <input class="time-dd-proxy" id="horaProxy" type="text" tabindex="-1"
+                                       aria-hidden="true" autocomplete="off" required
+                                       oninvalid="this.setCustomValidity('Elige un horario entre 2:00 p. m. y 5:00 p. m.')"
+                                       oninput="this.setCustomValidity('')">
+                                <div class="time-dd-list reservation-time-list" id="timeDdList" role="radiogroup"
+                                     aria-labelledby="timeDdLabel">
+                                    <label class="reservation-time-option" for="hora_1400">
+                                        <input type="radio" id="hora_1400" name="hora" value="14:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>2:00 p. m.</span>
+                                        <i class="fas fa-check time-check" aria-hidden="true"></i>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1430">
+                                        <input type="radio" id="hora_1430" name="hora" value="14:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>2:30 p. m.</span>
+                                        <i class="fas fa-check time-check" aria-hidden="true"></i>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1500">
+                                        <input type="radio" id="hora_1500" name="hora" value="15:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>3:00 p. m.</span>
+                                        <i class="fas fa-check time-check" aria-hidden="true"></i>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1530">
+                                        <input type="radio" id="hora_1530" name="hora" value="15:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>3:30 p. m.</span>
+                                        <i class="fas fa-check time-check" aria-hidden="true"></i>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1600">
+                                        <input type="radio" id="hora_1600" name="hora" value="16:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>4:00 p. m.</span>
+                                        <i class="fas fa-check time-check" aria-hidden="true"></i>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1630">
+                                        <input type="radio" id="hora_1630" name="hora" value="16:30">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>4:30 p. m.</span>
+                                        <i class="fas fa-check time-check" aria-hidden="true"></i>
+                                    </label>
+                                    <label class="reservation-time-option" for="hora_1700">
+                                        <input type="radio" id="hora_1700" name="hora" value="17:00">
+                                        <i class="far fa-clock" aria-hidden="true"></i><span>5:00 p. m.</span>
+                                        <i class="fas fa-check time-check" aria-hidden="true"></i>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rshort-fields-grid">
                             <div class="exp-pill-field">
-                                <label for="nombre"><i class="far fa-user" aria-hidden="true"></i> Tu nombre *</label>
+                                <label for="nombre"><i class="far fa-user" aria-hidden="true"></i> Nombre completo *</label>
                                 <input type="text" id="nombre" name="nombre" maxlength="100"
                                        value="{% if user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% endif %}"
-                                       placeholder="Tu nombre y apellido" required>
+                                       placeholder="Ej. María Gómez" required>
                             </div>
                             <div class="exp-pill-field">
-                                <label for="telefono"><i class="fab fa-whatsapp" aria-hidden="true"></i> WhatsApp / Teléfono *</label>
+                                <label for="telefono"><i class="fab fa-whatsapp" aria-hidden="true"></i> Número de celular *</label>
                                 <input type="tel" id="telefono" name="telefono" maxlength="30"
                                        value="{% if user.is_authenticated and user.telefono %}{{ user.telefono }}{% endif %}"
-                                       placeholder="300 123 4567" required>
+                                       placeholder="Ej. 300 123 4567" required>
                             </div>
                             <div class="exp-pill-field">
                                 <label for="fecha"><i class="far fa-calendar-alt" aria-hidden="true"></i> Fecha *</label>
                                 <input type="date" id="fecha" name="fecha" required>
                             </div>
-                        </div>
-
-                        <fieldset class="exp-time-pills-fieldset">
-                            <legend>Elige tu hora (2:00 p. m. a 6:30 p. m.) *</legend>
-                            <div class="exp-time-pills-grid" role="radiogroup" aria-label="Horarios disponibles de 2:00 PM a 6:30 PM">
-                                <label class="reservation-time-option exp-time-pill" for="hora_1400">
-                                    <input type="radio" id="hora_1400" name="hora" value="14:00" required>
-                                    <span>2:00 p. m.</span>
-                                </label>
-                                <label class="reservation-time-option exp-time-pill" for="hora_1430">
-                                    <input type="radio" id="hora_1430" name="hora" value="14:30">
-                                    <span>2:30 p. m.</span>
-                                </label>
-                                <label class="reservation-time-option exp-time-pill" for="hora_1500">
-                                    <input type="radio" id="hora_1500" name="hora" value="15:00">
-                                    <span>3:00 p. m.</span>
-                                </label>
-                                <label class="reservation-time-option exp-time-pill" for="hora_1530">
-                                    <input type="radio" id="hora_1530" name="hora" value="15:30">
-                                    <span>3:30 p. m.</span>
-                                </label>
-                                <label class="reservation-time-option exp-time-pill" for="hora_1600">
-                                    <input type="radio" id="hora_1600" name="hora" value="16:00">
-                                    <span>4:00 p. m.</span>
-                                </label>
-                                <label class="reservation-time-option exp-time-pill" for="hora_1630">
-                                    <input type="radio" id="hora_1630" name="hora" value="16:30">
-                                    <span>4:30 p. m.</span>
-                                </label>
-                                <label class="reservation-time-option exp-time-pill" for="hora_1700">
-                                    <input type="radio" id="hora_1700" name="hora" value="17:00">
-                                    <span>5:00 p. m.</span>
-                                </label>
-                                <label class="reservation-time-option exp-time-pill" for="hora_1730">
-                                    <input type="radio" id="hora_1730" name="hora" value="17:30">
-                                    <span>5:30 p. m.</span>
-                                </label>
-                                <label class="reservation-time-option exp-time-pill" for="hora_1800">
-                                    <input type="radio" id="hora_1800" name="hora" value="18:00">
-                                    <span>6:00 p. m.</span>
-                                </label>
-                                <label class="reservation-time-option exp-time-pill" for="hora_1830">
-                                    <input type="radio" id="hora_1830" name="hora" value="18:30">
-                                    <span>6:30 p. m.</span>
-                                </label>
-                            </div>
-                        </fieldset>
-
-                        <div class="exp-guests-block" id="groupNumeroPersonas">
-                            <label for="numero_personas">
-                                ¿Cuántas personas vienen? * <small>(Máx. 50)</small>
-                            </label>
-                            <div class="guests-interactive-selector">
-                                <div class="guest-pills" id="guestPills">
-                                    <button type="button" class="guest-pill" data-guests="1">1</button>
-                                    <button type="button" class="guest-pill is-active" data-guests="2">2 personas</button>
-                                    <button type="button" class="guest-pill" data-guests="4">4 personas</button>
-                                    <button type="button" class="guest-pill" data-guests="6">6 personas</button>
-                                    <button type="button" class="guest-pill" data-guests="8">8+</button>
-                                </div>
-                                <div class="input-luxury-wrap guest-manual-input">
-                                    <input type="number" id="numero_personas" name="numero_personas"
-                                           min="1" max="50" value="2" placeholder="Cant.">
-                                    <span class="unit-tag">pers.</span>
-                                </div>
+                            <div class="exp-pill-field" id="groupNumeroPersonas">
+                                <label for="numero_personas"><i class="fas fa-users" aria-hidden="true"></i> Personas *</label>
+                                <input type="number" id="numero_personas" name="numero_personas"
+                                       min="1" max="50" value="2" placeholder="2">
                             </div>
                         </div>
 
-                        <div class="exp-chips-notes">
-                            <span class="exp-notes-label">Toques especiales (opcional)</span>
-                            <div class="chips-container-reserva" id="chipsReserva">
-                                <button type="button" class="reserva-chip-btn" data-text="Es para regalo con empaque especial">
-                                    🎁 Es para regalo
-                                </button>
-                                <button type="button" class="reserva-chip-btn" data-text="Favor incluir velita de cumpleaños">
-                                    🕯️ Con velita
-                                </button>
-                                <button type="button" class="reserva-chip-btn" data-text="Mensaje personalizado en el postre: ">
-                                    ✍️ Mensaje en postre
-                                </button>
-                                <button type="button" class="reserva-chip-btn" data-text="Empaque refrigerado para viaje">
-                                    ❄️ Empaque para viaje
-                                </button>
-                                <button type="button" class="reserva-chip-btn" data-text="Celebración de aniversario en pareja">
-                                    🌸 Aniversario
-                                </button>
+                        <div class="rshort-notes-compact">
+                            <div class="chips-container-reserva rshort-chips" id="chipsReserva">
+                                <button type="button" class="reserva-chip-btn" data-text="Es para regalo">🎁 Regalo</button>
+                                <button type="button" class="reserva-chip-btn" data-text="Con velita de cumpleaños">🕯️ Velita</button>
+                                <button type="button" class="reserva-chip-btn" data-text="Mensaje en el postre: ">✍️ Mensaje</button>
+                                <button type="button" class="reserva-chip-btn" data-text="Empaque para viaje">❄️ Viaje</button>
                             </div>
-                            <textarea id="detalles" name="detalles" rows="2" maxlength="500" class="exp-notes-textarea"
-                                      placeholder="¿Algún mensaje, alergia o detalle especial?"></textarea>
+                            <textarea id="detalles" name="detalles" rows="1" maxlength="500" class="rshort-notes-input"
+                                      placeholder="Opcional: mensaje especial o alergia..."></textarea>
                         </div>
                     </section>
-                </div>
 
-                <!-- COLUMNA DERECHA: RESUMEN UNIDO AL CARRITO & PAGO -->
-                <aside class="reserva-exp-summary-aside" aria-label="Resumen de carrito y reserva">
-                    <div class="reserva-ticket-card">
-                        <div class="reserva-ticket-head">
-                            <span class="ticket-kicker"><i class="fas fa-shopping-cart" aria-hidden="true"></i> CARRITO + RESERVA</span>
-                            <h3>Tu Ticket Prisma</h3>
-                        </div>
-
-                        <div class="reserva-ticket-meta">
-                            <div class="ticket-meta-chip">
-                                <span>Modalidad</span>
-                                <strong id="ticketSummaryModality">Con Mesa · Sin prepago</strong>
+                    <!-- BARRA FINAL DE TOTAL + CONFIRMACIÓN Y PAGO -->
+                    <footer class="rshort-checkout-bar">
+                        <div class="rshort-checkout-summary">
+                            <div class="rshort-summary-chips">
+                                <span id="ticketSummaryModality">Con Mesa</span>
+                                <span id="ticketSummarySchedule">Elige fecha y hora</span>
                             </div>
-                            <div class="ticket-meta-chip">
-                                <span>Agenda</span>
-                                <strong id="ticketSummarySchedule">Elige fecha y hora</strong>
+                            <div id="ticketSummaryItems" class="rshort-ticket-mini-list" hidden></div>
+                            <div class="rshort-total-row">
+                                <span>Total estimado:</span>
+                                <strong id="reservaTotalEstimate">$0</strong>
                             </div>
+                            <small id="totalNoteText">Las mesas no requieren pago anticipado. Te esperamos en Prisma.</small>
                         </div>
 
-                        <div class="reserva-ticket-items" id="ticketSummaryItems">
-                            <p class="ticket-empty-msg">Selecciona al menos un postre para ver el detalle.</p>
+                        <div class="rshort-checkout-cta">
+                            <button type="submit" id="btnSubmitReserva" class="luxury-btn-gold btn-full"
+                                    {% if not productos %} disabled{% endif %}>
+                                <span class="btn-text">Confirmar mi Reserva de Mesa</span>
+                                <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                            </button>
                         </div>
-
-                        <div class="reserva-ticket-total-box">
-                            <div>
-                                <span class="total-label">Total del Pedido</span>
-                                <small class="total-note" id="totalNoteText">
-                                    Las mesas no requieren pago anticipado. Te recibimos en nuestro local.
-                                </small>
-                            </div>
-                            <strong class="total-value" id="reservaTotalEstimate">$0</strong>
-                        </div>
-
-                        <div class="reserva-ticket-payment-badges" id="ticketPaymentMethodsPreview" hidden>
-                            <span><i class="fas fa-lock" aria-hidden="true"></i> Pago directo al confirmar:</span>
-                            <div class="pay-badges-row">
-                                <span>🟣 Nequi</span>
-                                <span>🟡 Daviplata</span>
-                                <span>💳 Tarjeta</span>
-                                <span>🏦 Bancolombia</span>
-                            </div>
-                        </div>
-
-                        <button type="submit" id="btnSubmitReserva" class="luxury-btn-gold btn-full"
-                                {% if not productos %} disabled{% endif %}>
-                            <span class="btn-text">Confirmar mi Reserva de Mesa</span>
-                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                        </button>
-
-                        <p class="form-privacy-note">
-                            <i class="fas fa-shield-heart" aria-hidden="true"></i>
-                            Sincronizado con tu carrito · Sin cargos ocultos.
-                        </p>
-                    </div>
-                </aside>
-            </form>
+                    </footer>
+                </form>
+            </div>
         </div>
     </main>
 
-    <!-- MODAL INTERACTIVO "MIS RESERVAS" (BUSCAR POR NOMBRE O NÚMERO) -->
+    <!-- MODAL INTERACTIVO "MIS RESERVAS" (BUSCAR POR NOMBRE O NÚMERO DE CELULAR) -->
     <div class="mis-reservas-modal-overlay" id="misReservasModalOverlay" hidden>
         <div class="mis-reservas-modal" role="dialog" aria-modal="true" aria-labelledby="misReservasModalTitle">
             <div class="mis-reservas-modal-head">
                 <div>
-                    <span class="ticket-kicker"><i class="fas fa-calendar-check" aria-hidden="true"></i> CONSULTA INSTANTÁNEA</span>
-                    <h2 id="misReservasModalTitle">Mis Reservas</h2>
+                    <span class="ticket-kicker"><i class="fas fa-calendar-check" aria-hidden="true"></i> MIS RESERVAS</span>
+                    <h2 id="misReservasModalTitle">Consulta tu reserva</h2>
                 </div>
                 <button type="button" class="payment-modal-close" id="btnCloseMisReservasModal" aria-label="Cerrar">&times;</button>
             </div>
 
             <div class="mis-reservas-modal-body">
                 <p class="mis-reservas-modal-desc">
-                    Escribe tu <strong>nombre completo</strong>, tu <strong>número de teléfono</strong> o tu <strong>número de reserva</strong> para ver tu estado, pagar o gestionar.
+                    Ingresa tu <strong>nombre</strong> o tu <strong>número de celular</strong> para ver el estado de tu reserva o completar tu pago.
                 </p>
 
                 <form id="misReservasQuickSearchForm" class="mis-reservas-search-bar" action="{% url 'consultar_reserva' %}" method="get">
                     <div class="mis-reservas-input-wrap">
                         <i class="fas fa-search" aria-hidden="true"></i>
                         <input type="search" id="misReservasQuickInput" name="q"
-                               placeholder="Ej. María, 3118689862 o #1024" maxlength="100" autocomplete="off">
+                               placeholder="Ej. María o 3118689862" maxlength="100" autocomplete="off">
                     </div>
                     <button type="submit" class="luxury-btn-gold btn-search-reservas">
                         Buscar
@@ -427,27 +345,27 @@
 
                 <div id="misReservasResults" class="mis-reservas-results-list" aria-live="polite">
                     {% if user.is_authenticated %}
-                        <p class="mis-reservas-placeholder">Cargando tus reservas guardadas o busca por nombre / número...</p>
+                        <p class="mis-reservas-placeholder">Cargando tus reservas o escribe tu nombre / celular...</p>
                     {% else %}
-                        <p class="mis-reservas-placeholder">Ingresa tu nombre o tu número arriba para consultar tus reservas al instante.</p>
+                        <p class="mis-reservas-placeholder">Escribe tu nombre o tu número de celular para checar tus reservas.</p>
                     {% endif %}
                 </div>
 
                 <div class="mis-reservas-modal-foot">
                     {% if user.is_authenticated %}
                         <a href="{% url 'mis_reservas' %}" class="btn-modal-secondary">
-                            <i class="fas fa-list" aria-hidden="true"></i> Ir a mi historial completo
+                            <i class="fas fa-list" aria-hidden="true"></i> Ver historial completo
                         </a>
                     {% endif %}
                     <a href="{% url 'consultar_reserva' %}" class="btn-modal-secondary">
-                        <i class="fas fa-external-link-alt" aria-hidden="true"></i> Abrir página de consulta
+                        <i class="fas fa-external-link-alt" aria-hidden="true"></i> Ir a página de consulta
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL DE PAGO INTERACTIVO (PARA RESERVAS PARA LLEVAR UNIDAS AL CARRITO) -->
+    <!-- MODAL DE PAGO INTERACTIVO (PARA LLEVAR) -->
     <div class="payment-modal-overlay" id="paymentModalOverlay" hidden>
         <div class="payment-modal-dialog">
             <div class="payment-modal-header">
