@@ -590,40 +590,47 @@ body.customer-area { overflow-x: hidden; }
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 5px;
     line-height: 1;
     text-align: center;
     color: #fffaf2;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.58);
 }
 
 .customer-area #header .brand-phrase-title {
     font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
     font-style: italic;
     font-weight: 700;
-    font-size: clamp(1.5rem, 2.1vw, 1.85rem);
-    letter-spacing: 0.01em;
-    line-height: 0.9;
+    font-size: clamp(1.52rem, 2.05vw, 1.85rem);
+    letter-spacing: 0.015em;
+    line-height: 1;
+    margin-bottom: 1px;
     color: #ffffff;
 }
 
 .customer-area #header .brand-phrase-sub {
-    margin-top: 2px;
-    font-family: 'Great Vibes', 'Cormorant Garamond', cursive;
-    font-size: clamp(0.88rem, 1.15vw, 1.05rem);
-    font-weight: 400;
-    letter-spacing: 0.03em;
-    color: #f6e7d8;
+    margin-top: 0;
+    font-family: 'Dancing Script', 'Parisienne', 'Great Vibes', cursive !important;
+    font-style: italic;
+    font-size: clamp(0.98rem, 1.25vw, 1.15rem);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    word-spacing: 0.08em;
+    line-height: 1.22;
+    color: #fffaf3;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.72);
     white-space: nowrap;
 }
 
 .customer-area #header .luxury-logo.brand-combo img {
-    width: 48px !important;
-    height: 48px !important;
-    padding: 2px !important;
+    width: 50px !important;
+    height: 50px !important;
+    padding: 0 !important;
+    border: 0 !important;
     border-radius: 50% !important;
-    background: #ffffff !important;
+    background: transparent !important;
     object-fit: cover !important;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28) !important;
     transition: transform .28s var(--pz-ease) !important;
 }
 
@@ -797,12 +804,16 @@ body.customer-area { overflow-x: hidden; }
 
 @media (max-width: 1100px) {
     .customer-area #header .header-container {
+        width: 100% !important;
         grid-template-columns: auto minmax(0, 1fr) auto !important;
         gap: 10px !important;
+        padding: 8px 18px !important;
+        min-height: 68px !important;
     }
     .customer-area #header .luxury-logo.brand-combo {
         justify-self: start !important;
         margin-right: 0 !important;
+        gap: 10px !important;
     }
     .customer-area #header .header-right-tools {
         justify-self: end !important;
@@ -815,6 +826,11 @@ body.customer-area { overflow-x: hidden; }
     .customer-area #header .nav-menu .nav-link-icon {
         display: inline-flex !important;
     }
+    .customer-area #header .nav-menu ul {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
     .customer-area #header .nav-menu ul a,
     .customer-area #header .nav-menu ul a:hover,
     .customer-area #header .nav-menu ul a.active {
@@ -823,23 +839,61 @@ body.customer-area { overflow-x: hidden; }
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
+    .customer-area #header .header-container {
+        padding: 6px 12px !important;
+        min-height: 62px !important;
+        gap: 8px !important;
+    }
+    .customer-area #header .brand-phrase {
+        gap: 3px;
+    }
     .customer-area #header .brand-phrase-title {
-        font-size: 1.2rem;
+        font-size: 1.24rem;
     }
     .customer-area #header .brand-phrase-sub {
-        font-size: 0.72rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.02em;
     }
     .customer-area #header .luxury-logo.brand-combo {
         gap: 8px !important;
     }
     .customer-area #header .luxury-logo.brand-combo img {
-        width: 38px !important;
-        height: 38px !important;
+        width: 40px !important;
+        height: 40px !important;
     }
     .customer-area #header .header-search-form {
         display: none !important;
     }
+    .customer-area #header .header-actions {
+        gap: 6px !important;
+    }
+    .customer-area #header .header-actions .header-action-btn,
+    .customer-area #header .mobile-menu-btn.header-action-btn {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 0.98rem !important;
+    }
+    .customer-area #header .customer-session-pill {
+        max-width: 118px !important;
+        min-height: 38px !important;
+        padding: 3px 8px !important;
+        font-size: 0.78rem !important;
+    }
+    .customer-area #header .customer-session-label {
+        max-width: 64px !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+/* Footer logo sin borde blanco exterior */
+.customer-area .footer-brand img {
+    background: transparent !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    box-shadow: 0 5px 16px rgba(48, 37, 65, 0.14) !important;
 }
 
 /* ==========================================================
@@ -1769,5 +1823,671 @@ body.customer-area { overflow-x: hidden; }
     }
     .exp-time-pills-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+
+/* ==========================================================
+   10. NUEVO DISEÑO CORTO, FÁCIL Y RESPONSIVE DE RESERVAS +
+       TOAST CATÁLOGO -> RESERVA
+   ========================================================== */
+.exp-pill-field[hidden],
+.takeaway-auth-notice[hidden],
+.rshort-ticket-mini-list[hidden] {
+    display: none !important;
+}
+
+.cart-toast-action {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.cart-toast-reserva-link {
+    background: linear-gradient(115deg, #b0197e, #7b4fd1) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 8px 22px rgba(176, 25, 126, 0.35) !important;
+}
+
+.cart-toast-reserva-link:hover {
+    transform: translateY(-2px);
+    color: #ffffff !important;
+}
+
+.reservas-short-page {
+    background: linear-gradient(180deg, #f8f2fc 0%, #fffaf5 55%, #fcf7fc 100%) !important;
+}
+
+.reserva-short-hub {
+    padding: clamp(20px, 4vw, 40px) 0 clamp(60px, 8vw, 90px);
+}
+
+.reserva-short-shell {
+    max-width: 840px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: clamp(22px, 3vw, 32px);
+    padding: clamp(18px, 3.6vw, 34px);
+    border: 1px solid rgba(156, 123, 200, 0.18);
+    box-shadow: 0 22px 54px rgba(36, 26, 56, 0.08);
+}
+
+.reserva-short-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 20px;
+    margin-bottom: 22px;
+    border-bottom: 1.5px solid #f2eaf9;
+}
+
+.reserva-short-title-block {
+    flex: 1 1 360px;
+}
+
+.reserva-short-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.reserva-short-kicker,
+.reserva-short-trust {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.reserva-short-kicker {
+    background: #f5ecfc;
+    color: #8b2069;
+}
+
+.reserva-short-trust {
+    background: #eaf8ef;
+    color: #1c7c44;
+}
+
+.reserva-short-title-block h1 {
+    margin: 0 0 6px !important;
+    text-align: left !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 800 !important;
+    font-size: clamp(1.5rem, 3.6vw, 2.15rem) !important;
+    color: #241a38 !important;
+}
+
+.reserva-short-title-block p {
+    margin: 0;
+    color: #5b5369;
+    font-size: 0.94rem;
+    line-height: 1.45;
+}
+
+/* Alerta persistente en página al completar la reserva */
+.reserva-complete-alert[hidden] {
+    display: none !important;
+}
+
+.reserva-complete-alert {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    border-radius: 20px;
+    background: linear-gradient(125deg, #ecf9f1, #fdf3fb);
+    border: 2px solid #59c183;
+    box-shadow: 0 12px 28px rgba(47, 158, 90, 0.16);
+    animation: pz-rise .45s var(--pz-ease) both;
+}
+
+.reserva-complete-alert-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2fb666, #1c8549);
+    color: #ffffff;
+    font-size: 1.35rem;
+    flex: 0 0 46px;
+}
+
+.reserva-complete-alert-body {
+    flex: 1 1 220px;
+}
+
+.reserva-complete-alert-body h2 {
+    margin: 0 0 2px !important;
+    text-align: left !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 1.08rem !important;
+    font-weight: 800 !important;
+    color: #165e33 !important;
+}
+
+.reserva-complete-alert-body p {
+    margin: 0;
+    color: #2e4b3a;
+    font-size: 0.88rem;
+}
+
+.reserva-complete-alert-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: #1c8549;
+    color: #ffffff !important;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+/* Secciones cortas dentro del card */
+.rshort-section {
+    padding: 18px 0;
+    border-bottom: 1px dashed #ebe2f6;
+}
+
+.rshort-section:last-of-type {
+    border-bottom: 0;
+    padding-bottom: 10px;
+}
+
+.rshort-section-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.rshort-section-head--split {
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.rshort-head-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rshort-step {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #b0197e, #7b4fd1);
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.rshort-section-head h2 {
+    margin: 0 !important;
+    text-align: left !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: clamp(1.02rem, 2.3vw, 1.18rem) !important;
+    font-weight: 800 !important;
+    color: #241a38 !important;
+}
+
+.rshort-subhint {
+    margin: 2px 0 0;
+    font-size: 0.82rem;
+    color: #6b5f7d;
+}
+
+.rshort-modality-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.rshort-modality-grid .modality-card {
+    position: relative;
+    padding: 16px 18px;
+    border-radius: 20px;
+    border: 2px solid #ece3f6;
+    background: #fcfaff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rshort-modality-grid .modality-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.rshort-modality-grid .modality-card.is-selected {
+    border-color: #b0197e;
+    background: linear-gradient(180deg, #ffffff, #fdf2f8);
+    box-shadow: 0 12px 26px rgba(176, 25, 126, 0.14);
+}
+
+.modality-head-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.rshort-modality-grid .modality-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: #f1e6fb;
+    color: #7b4fd1;
+    font-size: 1rem;
+}
+
+.rshort-modality-grid .modality-card.is-selected .modality-icon {
+    background: linear-gradient(135deg, #b0197e, #7b4fd1);
+    color: #ffffff;
+}
+
+.rshort-modality-grid .modality-name {
+    margin: 2px 0 0 !important;
+    text-align: left !important;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    color: #241a38;
+}
+
+.rshort-modality-grid .modality-desc {
+    margin: 0;
+    font-size: 0.84rem;
+    color: #625674;
+}
+
+.rshort-modality-grid .modality-check {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    color: #b0197e;
+    opacity: 0;
+    font-size: 1.15rem;
+    transition: opacity .2s;
+}
+
+.rshort-modality-grid .modality-card.is-selected .modality-check {
+    opacity: 1;
+}
+
+/* Botón prominente Elige tu postre -> Catálogo */
+.btn-elige-postre-catalogo {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 20px;
+    border-radius: 999px;
+    background: linear-gradient(115deg, #ffe25d, #f6c453);
+    color: #241a38 !important;
+    font-weight: 800;
+    font-size: 0.9rem;
+    box-shadow: 0 8px 20px rgba(230, 175, 55, 0.28);
+    transition: transform .22s var(--pz-ease), box-shadow .22s;
+}
+
+.btn-elige-postre-catalogo:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 26px rgba(230, 175, 55, 0.4);
+}
+
+.rshort-empty-desserts {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: #fcf8fe;
+    border: 1.5px dashed #decff0;
+    color: #5b506e;
+    font-size: 0.86rem;
+}
+
+.rshort-empty-desserts i {
+    color: #b0197e;
+    font-size: 1.1rem;
+}
+
+.rshort-dessert-cards .reserva-cart-mini-card {
+    flex: 1 1 250px;
+    justify-content: space-between;
+}
+
+.mini-card-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+}
+
+.mini-qty-btn {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 8px;
+    background: #efe4fb;
+    color: #4d267c;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background-color .15s, color .15s;
+}
+
+.mini-qty-btn:hover {
+    background: #7b4fd1;
+    color: #ffffff;
+}
+
+.mini-qty-btn.is-remove {
+    background: #fce8ee;
+    color: #b01948;
+}
+
+.mini-qty-btn.is-remove:hover {
+    background: #d93662;
+    color: #ffffff;
+}
+
+.mini-card-qty-val {
+    min-width: 18px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.88rem;
+    color: #241a38;
+}
+
+.rshort-slots-tray {
+    margin-top: 8px;
+}
+
+.rshort-slots-tray .reserva-producto-card {
+    padding: 12px 14px !important;
+    border-radius: 18px !important;
+    margin-bottom: 8px !important;
+}
+
+.rshort-add-row {
+    margin-top: 6px;
+}
+
+/* Horario + Campos rápidos */
+.rshort-time-fieldset legend {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #241a38;
+    margin-bottom: 10px;
+}
+
+.rshort-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.rshort-notes-compact {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.rshort-chips {
+    margin-bottom: 0 !important;
+    gap: 6px !important;
+}
+
+.rshort-chips .reserva-chip-btn {
+    padding: 7px 12px !important;
+    font-size: 0.8rem !important;
+}
+
+.rshort-notes-input {
+    flex: 1 1 220px;
+    min-height: 40px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #faf6fe;
+    border: 1.5px solid #e6dbf4;
+    font-size: 0.88rem;
+    color: #241a38;
+    resize: none;
+}
+
+/* Barra final de Total y Botón Confirmar */
+.rshort-checkout-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 18px;
+    padding: 18px 22px;
+    border-radius: 22px;
+    background: linear-gradient(125deg, #241a38, #4b2b68);
+    color: #ffffff;
+}
+
+.rshort-checkout-summary {
+    flex: 1 1 280px;
+}
+
+.rshort-summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.rshort-summary-chips span {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #f6e7d8;
+}
+
+.rshort-total-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.rshort-total-row span {
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.rshort-total-row strong {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: #ffe25d;
+}
+
+.rshort-checkout-summary small {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.rshort-checkout-cta {
+    flex: 0 1 300px;
+    width: 100%;
+}
+
+/* ==========================================================
+   11. RESPONSIVE EXTRA WOW PARA MÓVIL, TABLET Y PC
+   ========================================================== */
+@media (max-width: 960px) {
+    .rshort-fields-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .reserva-short-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .reserva-short-title-block h1,
+    .reserva-short-title-block p {
+        text-align: center !important;
+    }
+    .reserva-short-badges {
+        justify-content: center;
+    }
+    .reserva-short-actions {
+        display: flex;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .reserva-short-shell {
+        padding: 16px 14px;
+        border-radius: 22px;
+    }
+    .rshort-modality-grid,
+    .rshort-fields-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .exp-time-pills-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px;
+    }
+    .btn-elige-postre-catalogo,
+    .btn-mis-reservas-lindo {
+        width: 100%;
+        justify-content: center;
+    }
+    .rshort-checkout-bar {
+        padding: 16px;
+        text-align: center;
+    }
+    .rshort-summary-chips,
+    .rshort-total-row {
+        justify-content: center;
+    }
+    .rshort-checkout-cta {
+        flex-basis: 100%;
+    }
+    .exp-pill-field[hidden],
+.takeaway-auth-notice[hidden],
+.rshort-ticket-mini-list[hidden] {
+    display: none !important;
+}
+
+.cart-toast-action {
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 14px !important;
+        justify-content: center !important;
+    }
+    .asw-container .asw-menu-btn,
+    .asw-menu-btn {
+        right: 14px !important;
+        bottom: 14px !important;
+    }
+}
+
+/* ==========================================================
+   12. OCULTAR CAJA "POSTRE 1" + BOTÓN DESPLEGABLE HORARIO 2PM-5PM
+   ========================================================== */
+.reservas-short-page #reservaProductosList,
+.reservas-short-page #addReservaProducto,
+.reservas-short-page .rshort-add-row {
+    display: none !important;
+}
+
+.rshort-time-dropdown-wrap {
+    margin: 0 0 18px !important;
+}
+
+.rshort-time-dropdown-wrap .time-dd-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 8px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #241a38;
+}
+
+.rshort-time-dropdown-wrap .time-dd {
+    position: relative;
+    max-width: 420px;
+    z-index: 40;
+}
+
+.rshort-time-dropdown-wrap .time-dd-btn {
+    border-radius: 16px;
+    border: 1.5px solid #e4d9f2;
+    background: #faf6fe;
+    min-height: 50px;
+}
+
+.rshort-time-dropdown-wrap .time-dd-btn:hover {
+    border-color: #b0197e;
+    background: #ffffff;
+}
+
+.rshort-time-dropdown-wrap .time-dd.has-value .time-dd-btn {
+    border-color: #9c7bc8;
+    background: #ffffff;
+}
+
+.rshort-time-dropdown-wrap .time-dd-list {
+    z-index: 60 !important;
+}
+
+.rshort-time-dropdown-wrap .reservation-time-option {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #2c2040;
+}
+
+.rshort-time-dropdown-wrap .reservation-time-option.is-selected {
+    background: linear-gradient(120deg, rgba(176, 25, 126, 0.12), rgba(123, 79, 209, 0.12)) !important;
+    color: #8b2069 !important;
+    font-weight: 800;
+}
+
+@media (max-width: 600px) {
+    .rshort-time-dropdown-wrap .time-dd {
+        max-width: 100%;
     }
 }
